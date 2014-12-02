@@ -16,7 +16,9 @@ trait Lilo[T] {
 
   def withFilter(p: T => Boolean) = run.filter(_.forall(p))
 
-  def run: Future[Option[T]]
+  def run = Future.Unit.flatMap(_ => result)
+
+  protected def result: Future[Option[T]]
 }
 
 object Lilo {
@@ -31,11 +33,11 @@ object Lilo {
 }
 
 class LiloConst[T](value: T) extends Lilo[T] {
-  def run = Future.value(Some(value))
+  lazy val result = Future.value(Some(value))
 }
 
 class LiloJoin[A, B](a: Lilo[A], b: Lilo[B]) extends Lilo[(A, B)] {
-  def run =
+  lazy val result =
     a.run.join(b.run).map {
       case (Some(valueA), Some(valueB)) => Some(valueA, valueB)
       case other                        => None
@@ -43,7 +45,7 @@ class LiloJoin[A, B](a: Lilo[A], b: Lilo[B]) extends Lilo[(A, B)] {
 }
 
 class LiloCollect[T](list: List[Lilo[T]]) extends Lilo[List[T]] {
-  def run =
+  lazy val result =
     Future
       .collect(list.map(_.run))
       .map(_.flatten.toList)
@@ -51,11 +53,11 @@ class LiloCollect[T](list: List[Lilo[T]]) extends Lilo[List[T]] {
 }
 
 class LiloFetch[T, U](input: T, source: LiloSource[T, U]) extends Lilo[U] {
-  def run = source.run(input)
+  lazy val result = source.run(input)
 }
 
 class LiloFlatMap[T, U](lilo: Lilo[T], f: T => Lilo[U]) extends Lilo[U] {
-  def run =
+  lazy val result =
     lilo.run.flatMap {
       case Some(value) => f(value).run
       case None        => Future.None
@@ -63,7 +65,7 @@ class LiloFlatMap[T, U](lilo: Lilo[T], f: T => Lilo[U]) extends Lilo[U] {
 }
 
 class LiloRescue[T](lilo: Lilo[T], rescue: Throwable => Lilo[T]) extends Lilo[T] {
-  def run =
+  lazy val result =
     lilo.run.rescue {
       case exception => rescue(exception).run
     }
