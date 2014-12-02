@@ -77,7 +77,10 @@ class LiloSource[T, U](fetch: List[T] => Future[Map[T, U]]) {
   private var fetched = Map[T, Future[Option[U]]]()
 
   def get(input: T): Lilo[U] = {
-    synchronized(pending += input)
+    synchronized {
+      retryFailures(input)
+      pending += input
+    }
     new LiloFetch(input, this)
   }
 
@@ -93,10 +96,17 @@ class LiloSource[T, U](fetch: List[T] => Future[Map[T, U]]) {
 
   private def flush =
     synchronized {
-      val results = fetch(pending.toList)
-      for (input <- pending)
+      val toFetch = pending -- fetched.keys
+      val results = fetch(toFetch.toList)
+      for (input <- toFetch)
         fetched += input -> results.map(_.get(input))
       pending = Set()
       results
+    }
+
+  private def retryFailures(input: T) =
+    fetched.get(input).map { result =>
+      if (result.poll.forall(_.isThrow))
+        fetched -= input
     }
 }
