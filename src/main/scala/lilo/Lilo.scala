@@ -6,13 +6,13 @@ import com.twitter.util.Throw
 
 trait Lilo[T] {
 
-  def map[U](f: T => U) = flatMap(f.andThen(Lilo.value))
+  def map[U](f: T => U) = flatMap(f.andThen(Lilo.value(_)))
 
   def flatMap[U](f: T => Lilo[U]): Lilo[U] = new LiloFlatMap(this, f)
 
   def join[U](other: Lilo[U]): Lilo[(T, U)] = new LiloJoin(this, other)
 
-  def handle(f: Throwable => T): Lilo[T] = rescue(f.andThen(Lilo.value))
+  def handle(f: Throwable => T): Lilo[T] = rescue(f.andThen(Lilo.value(_)))
 
   def rescue(f: Throwable => Lilo[T]): Lilo[T] = new LiloRescue(this, f)
 
@@ -25,8 +25,10 @@ trait Lilo[T] {
 
 object Lilo {
 
-  def value[T](value: T): Lilo[T] = new LiloConst(Try(Some(value)))
-  
+  def value[T](value: T): Lilo[T] = this.value(Option(value))
+
+  def value[T](value: Option[T]): Lilo[T] = new LiloConst(Try(value))
+
   def exception[T](exception: Throwable): Lilo[T] = new LiloConst(Throw(exception))
 
   def traverse[T, U](inputs: List[T])(f: T => Lilo[U]) = collect(inputs.map(f))
