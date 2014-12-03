@@ -25,17 +25,23 @@ trait Lilo[T] {
 
 object Lilo {
 
-  def value[T](value: T): Lilo[T] = this.value(Option(value))
+  def value[T](value: T): Lilo[T] =
+    this.value(Option(value))
 
-  def value[T](value: Option[T]): Lilo[T] = new LiloConst(Try(value))
+  def value[T](value: Option[T]): Lilo[T] =
+    new LiloConst(Try(value))
 
-  def exception[T](exception: Throwable): Lilo[T] = new LiloConst(Throw(exception))
+  def exception[T](exception: Throwable): Lilo[T] =
+    new LiloConst(Throw(exception))
 
-  def traverse[T, U](inputs: List[T])(f: T => Lilo[U]) = collect(inputs.map(f))
+  def traverse[T, U](inputs: List[T])(f: T => Lilo[U]) =
+    collect(inputs.map(f))
 
-  def collect[T](lilos: List[Lilo[T]]): Lilo[List[T]] = new LiloCollect(lilos)
+  def collect[T](lilos: List[Lilo[T]]): Lilo[List[T]] =
+    new LiloCollect(lilos)
 
-  def source[T, U](fetch: List[T] => Future[Map[T, U]]) = new LiloSource(fetch)
+  def source[T, U](fetch: List[T] => Future[Map[T, U]], maxBatchSize: Int = Int.MaxValue) =
+    new LiloSource(fetch, maxBatchSize)
 }
 
 class LiloConst[T](value: Try[Option[T]]) extends Lilo[T] {
@@ -77,7 +83,7 @@ class LiloRescue[T](lilo: Lilo[T], rescue: Throwable => Lilo[T]) extends Lilo[T]
     }
 }
 
-class LiloSource[T, U](fetch: List[T] => Future[Map[T, U]]) {
+class LiloSource[T, U](fetch: List[T] => Future[Map[T, U]], maxBatchSize: Int) {
 
   private var pending = Set[T]()
   private var fetched = Map[T, Future[Option[U]]]()
@@ -103,11 +109,19 @@ class LiloSource[T, U](fetch: List[T] => Future[Map[T, U]]) {
   private def flush =
     synchronized {
       val toFetch = pending -- fetched.keys
-      val results = fetch(toFetch.toList)
-      for (input <- toFetch)
-        fetched += input -> results.map(_.get(input))
+      val fetch = fetchInBatches(toFetch)
       pending = Set()
-      results
+      fetch
+    }
+
+  private def fetchInBatches(toFetch: Set[T]) =
+    Future.collect {
+      toFetch.grouped(maxBatchSize).toList.map { batch =>
+        val results = fetch(batch.toList)
+        for (input <- batch)
+          fetched += input -> results.map(_.get(input))
+        results
+      }
     }
 
   private def retryFailures(input: T) =
