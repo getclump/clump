@@ -1,6 +1,8 @@
 package lilo
 
 import com.twitter.util.Future
+import com.twitter.util.Try
+import com.twitter.util.Throw
 
 trait Lilo[T] {
 
@@ -23,7 +25,9 @@ trait Lilo[T] {
 
 object Lilo {
 
-  def value[T](value: T): Lilo[T] = new LiloConst(value)
+  def value[T](value: T): Lilo[T] = new LiloConst(Try(Some(value)))
+  
+  def exception[T](exception: Throwable): Lilo[T] = new LiloConst(Throw(exception))
 
   def traverse[T, U](inputs: List[T])(f: T => Lilo[U]) = collect(inputs.map(f))
 
@@ -32,8 +36,8 @@ object Lilo {
   def source[T, U](fetch: List[T] => Future[Map[T, U]]) = new LiloSource(fetch)
 }
 
-class LiloConst[T](value: T) extends Lilo[T] {
-  lazy val result = Future.value(Some(value))
+class LiloConst[T](value: Try[Option[T]]) extends Lilo[T] {
+  lazy val result = Future.const(value)
 }
 
 class LiloJoin[A, B](a: Lilo[A], b: Lilo[B]) extends Lilo[(A, B)] {
