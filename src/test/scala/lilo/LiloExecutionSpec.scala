@@ -21,8 +21,8 @@ class LiloExecutionSpec extends Spec {
       Future.value(inputs.map(i => i -> i * 10).toMap)
     }
 
-    val source1 = Lilo.source((i: List[Int]) => fetchFunction(source1Fetches, i))
-    val source2 = Lilo.source((i: List[Int]) => fetchFunction(source2Fetches, i))
+    val source1 = Lilo.sourceFrom((i: List[Int]) => fetchFunction(source1Fetches, i))
+    val source2 = Lilo.sourceFrom((i: List[Int]) => fetchFunction(source2Fetches, i))
   }
 
   "batches requests" >> {

@@ -50,7 +50,7 @@ class LiloApiSpec extends Spec {
       def fetch(inputs: List[Int]) =
         Future.value(inputs.map(i => i -> i.toString).toMap)
 
-      val source = Lilo.source(fetch, 2)
+      val source = Lilo.sourceFrom(fetch, 2)
 
       resultOf(source.get(1)) mustEqual Some("1")
     }

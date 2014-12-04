@@ -43,8 +43,11 @@ object Lilo {
   def collect[T](lilos: List[Lilo[T]]): Lilo[List[T]] =
     new LiloCollect(lilos)
 
-  def source[T, U](fetch: List[T] => Future[Map[T, U]], maxBatchSize: Int = Int.MaxValue) =
+  def sourceFrom[T, U](fetch: List[T] => Future[Map[T, U]], maxBatchSize: Int = Int.MaxValue) =
     new LiloSource(fetch, maxBatchSize)
+
+  def source[T, U](fetch: List[T] => Future[List[U]], maxBatchSize: Int = Int.MaxValue)(keyFn: U => T) =
+    new LiloSource(fetch, keyFn, maxBatchSize)
 }
 
 class LiloConst[T](value: Try[Option[T]]) extends Lilo[T] {
