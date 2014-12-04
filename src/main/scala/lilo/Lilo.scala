@@ -85,5 +85,5 @@ class LiloRescue[T](lilo: Lilo[T], rescue: Throwable => Lilo[T]) extends Lilo[T]
 
 class LiloFilter[T](lilo: Lilo[T], f: T => Boolean) extends Lilo[T] {
   lazy val result =
-    lilo.run.withFilter(_.forall(f))
+    lilo.run.map(_.filter(f))
 }
