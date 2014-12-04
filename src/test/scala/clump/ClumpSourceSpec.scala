@@ -24,7 +24,7 @@ class ClumpSourceSpec extends Spec {
 
     when(repo.fetch(List(1))).thenReturn(Future(Map(1 -> 2)))
 
-    liloResult(source.get(1)) mustEqual Some(2)
+    clumpResult(source.get(1)) mustEqual Some(2)
 
     verify(repo).fetch(List(1))
     verifyNoMoreInteractions(repo)
@@ -37,7 +37,7 @@ class ClumpSourceSpec extends Spec {
 
     val clump = source.get(List(1, 2))
 
-    liloResult(clump) mustEqual Some(List(10, 20))
+    clumpResult(clump) mustEqual Some(List(10, 20))
 
     verify(repo).fetch(List(1, 2))
     verifyNoMoreInteractions(repo)
@@ -51,11 +51,11 @@ class ClumpSourceSpec extends Spec {
 
     val clump1 = Clump.traverse(List(1, 2))(source.get)
 
-    liloResult(clump1) mustEqual Some(List(10, 20))
+    clumpResult(clump1) mustEqual Some(List(10, 20))
 
     val clump2 = Clump.traverse(List(2, 3))(source.get)
 
-    liloResult(clump2) mustEqual Some(List(20, 30))
+    clumpResult(clump2) mustEqual Some(List(20, 30))
 
     verify(repo).fetch(List(1, 2))
     verify(repo).fetch(List(3))
@@ -70,7 +70,7 @@ class ClumpSourceSpec extends Spec {
 
     val clump = Clump.traverse(List(1, 2, 3))(source.get)
 
-    liloResult(clump) mustEqual Some(List(10, 20, 30))
+    clumpResult(clump) mustEqual Some(List(10, 20, 30))
 
     verify(repo).fetch(List(1, 2))
     verify(repo).fetch(List(3))
@@ -84,8 +84,8 @@ class ClumpSourceSpec extends Spec {
       .thenReturn(Future.exception(new IllegalStateException))
       .thenReturn(Future(Map(1 -> 10)))
 
-    liloResult(source.get(1)) must throwA[IllegalStateException]
-    liloResult(source.get(1)) mustEqual Some(10)
+    clumpResult(source.get(1)) must throwA[IllegalStateException]
+    clumpResult(source.get(1)) mustEqual Some(10)
 
     verify(repo, times(2)).fetch(List(1))
     verifyNoMoreInteractions(repo)

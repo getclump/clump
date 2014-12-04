@@ -16,34 +16,34 @@ class ClumpApiSpec extends Spec {
     "allows to create a constant clump" >> {
 
       "from a value (Clump.value)" in {
-        liloResult(Clump.value(1)) mustEqual Some(1)
+        clumpResult(Clump.value(1)) mustEqual Some(1)
       }
 
       "from an option (Clump.value)" >> {
 
         "defined" in {
-          liloResult(Clump.value(Option(1))) mustEqual Option(1)
+          clumpResult(Clump.value(Option(1))) mustEqual Option(1)
         }
 
         "empty" in {
-          liloResult(Clump.value(None)) mustEqual None
+          clumpResult(Clump.value(None)) mustEqual None
         }
       }
 
       "failed (Clump.exception)" in {
-        liloResult(Clump.exception(new IllegalStateException)) must throwA[IllegalStateException]
+        clumpResult(Clump.exception(new IllegalStateException)) must throwA[IllegalStateException]
       }
     }
 
     "allows to create a clump traversing multiple inputs (Clump.traverse)" in {
       val inputs = List(1, 2, 3)
       val clump = Clump.traverse(inputs)(i => Clump.value(i + 1))
-      liloResult(clump) mustEqual Some(List(2, 3, 4))
+      clumpResult(clump) mustEqual Some(List(2, 3, 4))
     }
 
     "allows to collect multiple clumps in only one (Clump.collect)" in {
       val clumps = List(Clump.value(1), Clump.value(2))
-      liloResult(Clump.collect(clumps)) mustEqual Some(List(1, 2))
+      clumpResult(Clump.collect(clumps)) mustEqual Some(List(1, 2))
     }
 
     "allows to create a clump source (Clump.source)" in {
@@ -52,7 +52,7 @@ class ClumpApiSpec extends Spec {
 
       val source = Clump.sourceFrom(fetch, 2)
 
-      liloResult(source.get(1)) mustEqual Some("1")
+      clumpResult(source.get(1)) mustEqual Some("1")
     }
   }
 
@@ -61,16 +61,16 @@ class ClumpApiSpec extends Spec {
     "can be mapped to a new clump" >> {
 
       "using simple a value transformation (clump.map)" in {
-        liloResult(Clump.value(1).map(_ + 1)) mustEqual Some(2)
+        clumpResult(Clump.value(1).map(_ + 1)) mustEqual Some(2)
       }
 
       "using a transformation that creates a new clump (clump.flatMap)" in {
-        liloResult(Clump.value(1).flatMap(i => Clump.value(i + 1))) mustEqual Some(2)
+        clumpResult(Clump.value(1).flatMap(i => Clump.value(i + 1))) mustEqual Some(2)
       }
     }
 
     "can be joined with another clump and produce a new clump with the value of both (clump.join)" in {
-      liloResult(Clump.value(1).join(Clump.value(2))) mustEqual Some(1, 2)
+      clumpResult(Clump.value(1).join(Clump.value(2))) mustEqual Some(1, 2)
     }
 
     "allows to recover from failures" >> {
@@ -80,7 +80,7 @@ class ClumpApiSpec extends Spec {
           Clump.exception(new IllegalStateException).handle {
             case e: IllegalStateException => 2
           }
-        liloResult(clump) mustEqual Some(2)
+        clumpResult(clump) mustEqual Some(2)
       }
 
       "using a function that recovers the failure using a new clump (clump.rescue)" in {
@@ -88,13 +88,13 @@ class ClumpApiSpec extends Spec {
           Clump.exception(new IllegalStateException).rescue {
             case e: IllegalStateException => Clump.value(2)
           }
-        liloResult(clump) mustEqual Some(2)
+        clumpResult(clump) mustEqual Some(2)
       }
     }
 
     "can have its result filtered (clump.withFilter)" in {
-      liloResult(Clump.value(1).withFilter(_ != 1)) mustEqual None
-      liloResult(Clump.value(1).withFilter(_ == 1)) mustEqual Some(1)
+      clumpResult(Clump.value(1).withFilter(_ != 1)) mustEqual None
+      clumpResult(Clump.value(1).withFilter(_ == 1)) mustEqual Some(1)
     }
   }
 }

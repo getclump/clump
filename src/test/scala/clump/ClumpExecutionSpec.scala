@@ -37,7 +37,7 @@ class ClumpExecutionSpec extends Spec {
               source2.get(i)
         }
 
-      liloResult(clump) mustEqual Some(List(10, 20, 30, 40))
+      clumpResult(clump) mustEqual Some(List(10, 20, 30, 40))
       source1Fetches mustEqual List(List(1, 2))
       source2Fetches mustEqual List(List(3, 4))
     }
@@ -45,7 +45,7 @@ class ClumpExecutionSpec extends Spec {
     "for multiple clumps collected into only one clump" in new Context {
       val clump = Clump.collect(source1.get(1), source1.get(2), source2.get(3), source2.get(4))
 
-      liloResult(clump) mustEqual Some(List(10, 20, 30, 40))
+      clumpResult(clump) mustEqual Some(List(10, 20, 30, 40))
       source1Fetches mustEqual List(List(1, 2))
       source2Fetches mustEqual List(List(3, 4))
     }
@@ -54,7 +54,7 @@ class ClumpExecutionSpec extends Spec {
       val clump1 = Clump.value(1).flatMap(source1.get(_))
       val clump2 = Clump.value(2).flatMap(source1.get(_))
 
-      liloResult(Clump.collect(clump1, clump2)) mustEqual Some(List(10, 20))
+      clumpResult(Clump.collect(clump1, clump2)) mustEqual Some(List(10, 20))
       source1Fetches mustEqual List(List(1, 2))
       source2Fetches must beEmpty
     }
@@ -67,7 +67,7 @@ class ClumpExecutionSpec extends Spec {
             int <- Clump.collect(source1.get(1), source1.get(2), source2.get(3), source2.get(4))
           } yield int
 
-        liloResult(clump) mustEqual Some(List(10, 20, 30, 40))
+        clumpResult(clump) mustEqual Some(List(10, 20, 30, 40))
         source1Fetches mustEqual List(List(1, 2))
         source2Fetches mustEqual List(List(3, 4))
       }
@@ -79,7 +79,7 @@ class ClumpExecutionSpec extends Spec {
             ints2 <- Clump.collect(source2.get(3), source2.get(4))
           } yield (ints1, ints2)
 
-        liloResult(clump) mustEqual Some(List(10, 20), List(30, 40))
+        clumpResult(clump) mustEqual Some(List(10, 20), List(30, 40))
         source1Fetches mustEqual List(List(1, 2))
         source2Fetches mustEqual List(List(3, 4))
       }
@@ -91,7 +91,7 @@ class ClumpExecutionSpec extends Spec {
             int2 <- source2.get(3) if (int2 != 999)
           } yield (ints1, int2)
 
-        liloResult(clump) mustEqual Some(List(10, 20), 30)
+        clumpResult(clump) mustEqual Some(List(10, 20), 30)
         source1Fetches mustEqual List(List(1, 2))
         source2Fetches mustEqual List(List(3))
       }
@@ -103,7 +103,7 @@ class ClumpExecutionSpec extends Spec {
             ints2 <- source2.get(3).join(source2.get(4))
           } yield (ints1, ints2)
 
-        liloResult(clump) mustEqual Some(List(10, 20), (30, 40))
+        clumpResult(clump) mustEqual Some(List(10, 20), (30, 40))
         source1Fetches mustEqual List(List(1, 2))
         source2Fetches mustEqual List(List(3, 4))
       }
@@ -119,7 +119,7 @@ class ClumpExecutionSpec extends Spec {
             join2 <- source1.get(collect1).join(source2.get(join1._2))
           } yield (const1, const2, collect1, collect2, join1, join2)
 
-        liloResult(clump) mustEqual Some((1, 2, List(10, 20), List(10, 20), (4, 5), (List(100, 200), 50)))
+        clumpResult(clump) mustEqual Some((1, 2, List(10, 20), List(10, 20), (4, 5), (List(100, 200), 50)))
         source1Fetches mustEqual List(List(1), List(10, 20))
         source2Fetches mustEqual List(List(2), List(5))
       }
@@ -142,6 +142,6 @@ class ClumpExecutionSpec extends Spec {
 
   "short-circuits the computation in case of a failure" in new Context {
     val clump = Clump.exception[Int](new IllegalStateException).map(_ => throw new NullPointerException)
-    liloResult(clump) must throwA[IllegalStateException]
+    clumpResult(clump) must throwA[IllegalStateException]
   }
 }
