@@ -3,92 +3,151 @@ package lilo
 import org.specs2.mutable.Specification
 import org.specs2.mock.Mockito
 import org.specs2.specification.Scope
+import com.twitter.util.Await
+import org.junit.runner.RunWith
+import org.specs2.runner.JUnitRunner
+import com.twitter.util.Future
+import org.mockito.Mockito._
 
+@RunWith(classOf[JUnitRunner])
 class LiloSpec extends Specification with Mockito {
+
+  def resultOf[T](lilo: Lilo[T]) =
+    Await.result(lilo.run)
 
   "the Lilo object" >> {
 
     "allows to create a constant lilo" >> {
+
       "from a value (Lilo.value)" in {
-        ok
+        resultOf(Lilo.value(1)) mustEqual Some(1)
       }
-      "from an option (Lilo.value)" in {
-        ok
+
+      "from an option (Lilo.value)" >> {
+
+        "defined" in {
+          resultOf(Lilo.value(Option(1))) mustEqual Option(1)
+        }
+
+        "empty" in {
+          resultOf(Lilo.value(None)) mustEqual None
+        }
       }
+
       "failed (Lilo.exception)" in {
-        ok
+        resultOf(Lilo.exception(new IllegalStateException)) must throwA[IllegalStateException]
       }
     }
 
     "allows to create a lilo traversing multiple inputs (Lilo.traverse)" in {
-      ok
+      val inputs = List(1, 2, 3)
+      val lilo = Lilo.traverse(inputs)(i => Lilo.value(i + 1))
+      resultOf(lilo) mustEqual Some(List(2, 3, 4))
     }
 
     "allows to collect multiple lilos in only one (Lilo.collect)" in {
-      ok
+      val lilos = List(Lilo.value(1), Lilo.value(2))
+      resultOf(Lilo.collect(lilos)) mustEqual Some(List(1, 2))
     }
 
-    "allows to create a lilo source (Lilo.source)" >> {
-      "using the specified function" in {
-        ok
-      }
-      "using the specified max batch size" in {
-        ok
-      }
+    "allows to create a lilo source (Lilo.source)" in {
+      def fetch(inputs: List[Int]) =
+        Future.value(inputs.map(i => i -> i.toString).toMap)
+
+      val source = Lilo.source(fetch, 2)
+
+      resultOf(source.get(1)) mustEqual Some("1")
     }
   }
 
   "a Lilo instance" >> {
+
     "can be mapped to a new lilo" >> {
+
       "using simple a value transformation (lilo.map)" in {
-        ok
+        resultOf(Lilo.value(1).map(_ + 1)) mustEqual Some(2)
       }
+
       "using a transformation that creates a new lilo (lilo.flatMap)" in {
-        ok
+        resultOf(Lilo.value(1).flatMap(i => Lilo.value(i + 1))) mustEqual Some(2)
       }
     }
+
     "can be joined with another lilo and produce a new lilo with the value of both (lilo.join)" in {
-      ok
+      resultOf(Lilo.value(1).join(Lilo.value(2))) mustEqual Some(1, 2)
     }
+
     "allows to recover from failures" >> {
+
       "using a function that recovers using a new value (lilo.handle)" in {
-        ok
+        val lilo =
+          Lilo.exception(new IllegalStateException).handle {
+            case e: IllegalStateException => 2
+          }
+        resultOf(lilo) mustEqual Some(2)
       }
+
       "using a function that recovers the failure using a new lilo (lilo.rescue)" in {
-        ok
+        val lilo =
+          Lilo.exception(new IllegalStateException).rescue {
+            case e: IllegalStateException => Lilo.value(2)
+          }
+        resultOf(lilo) mustEqual Some(2)
       }
     }
+
     "can have its result filtered (lilo.withFilter)" in {
-      ok
-    }
-    "can be materialized and return a future (lilo.run)" in {
-      ok
+      resultOf(Lilo.value(1).withFilter(_ != 1)) mustEqual None
+      resultOf(Lilo.value(1).withFilter(_ == 1)) mustEqual Some(1)
     }
   }
 
-  "The lilo execution model batches requests" >> {
-    "for multiple lilos created from traversed inputs" in {
+  "The lilo execution model" >> {
+
+    "batches requests" >> {
+
+      "for multiple lilos created from traversed inputs" in {
+        ok
+      }
+
+      "for multiple lilos collected into only one lilo" in {
+        ok
+      }
+
+      "for lilos created inside nested flatmaps" in {
+        ok
+      }
+
+      "for lilos composed using for comprehension" >> {
+
+        "one level" in {
+          ok
+        }
+
+        "two levels" in {
+          ok
+        }
+
+        "many levels" in {
+          ok
+        }
+
+        "with a filter condition" in {
+          ok
+        }
+
+        "composition using a join" in {
+          ok
+        }
+      }
+    }
+
+    "executes joined lilos in parallel" in {
       ok
     }
-    "for multiple lilos collected into only one lilo" in {
+
+    "short-circuits the computation in case of a failure" in {
       ok
-    }
-    "for lilos created inside nested flatmaps" in {
-      ok
-    }
-    "for lilos composed using for comprehension" >> {
-      "one level" in {
-        ok
-      }
-      "two levels" in {
-        ok
-      }
-      "many levels" in {
-        ok
-      }
-      "composition using a join" in {
-        ok
-      }
     }
   }
 }
