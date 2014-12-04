@@ -1,123 +1,89 @@
 package lilo
 
-import com.twitter.util.{ Await, Future }
-import org.scalatest.{ Matchers, FlatSpec }
-import org.scalatest.junit.JUnitRunner
-import org.junit.runner.RunWith
+import org.specs2.mutable.Specification
+import org.specs2.mock.Mockito
+import org.specs2.specification.Scope
 
-@RunWith(classOf[JUnitRunner])
-class LiloSpec extends FlatSpec with Matchers {
-  val tweetRepository = new TweetRepository
-  val userRepository = new UserRepository
-  val timelineRepository = new TimelineRepository
-  val likeRepository = new LikeRepository
-  val trackRepository = new TrackRepository
+class LiloSpec extends Specification with Mockito {
 
-  val tweets = Lilo.source(tweetRepository.tweetsFor)
-  val users = Lilo.source(userRepository.usersFor)
-  val timelines = Lilo.source(timelineRepository.timelinesFor)
-  val likes = Lilo.source(likeRepository.likesFor)
-  val tracks = Lilo.source(trackRepository.tracksFor)
+  "the Lilo object" >> {
 
-  "A Lilo" should "batch calls to services" in {
-    val tweetIds = List(1L, 2L, 3L)
-    val enrichedTweets: Lilo[List[(Tweet, User)]] =
-      Lilo.collect {
-        tweetIds.map { tweetId =>
-          for {
-            tweet <- tweets.get(tweetId)
-            user <- users.get(tweet.userId)
-          } yield (tweet, user)
-        }
+    "allows to create a constant lilo" >> {
+      "from a value (Lilo.value)" in {
+        ok
       }
-
-    Await.result(enrichedTweets.run) shouldBe Some(Seq(
-      (Tweet("Tweet1", 10), User("User10")),
-      (Tweet("Tweet2", 20), User("User20")),
-      (Tweet("Tweet3", 30), User("User30"))))
-  }
-
-  it should "be able to be used in complex nested fetches" in {
-    val timelineIds = List(1, 3)
-    val enrichedTimelines = //: Lilo[Seq[(Timeline, Seq[(Like, Seq[Track], Seq[User])])]] =
-      Lilo.traverse(timelineIds) { id =>
-        for {
-          timeline <- timelines.get(id)
-          enrichedLikes <- Lilo.traverse(timeline.likeIds) { id =>
-            for {
-              like <- likes.get(id)
-              resources <- tracks.get(like.trackIds).join(users.get(like.userIds))
-            } yield (like, resources._1, resources._2)
-          }
-        } yield (timeline, enrichedLikes)
+      "from an option (Lilo.value)" in {
+        ok
       }
-
-    Await.result(enrichedTimelines.run) shouldBe Some(Seq(
-      (Timeline(List(10, 20)), Seq(
-        (Like(List(100, 200), List(1000, 2000)), Seq(Track("Track100"), Track("Track200")), Seq(User("User1000"), User("User2000"))),
-        (Like(List(200, 400), List(2000, 4000)), Seq(Track("Track200"), Track("Track400")), Seq(User("User2000"), User("User4000"))))),
-      (Timeline(List(30, 60)), Seq(
-        (Like(List(300, 600), List(3000, 6000)), Seq(Track("Track300"), Track("Track600")), Seq(User("User3000"), User("User6000"))),
-        (Like(List(600, 1200), List(6000, 12000)), Seq(Track("Track600"), Track("Track1200")), Seq(User("User6000"), User("User12000")))))))
-  }
-
-  it should "be usable with regular maps and flatMaps" in {
-    val tweetIds = List(1L, 2L, 3L)
-    val enrichedTweets: Lilo[List[(Tweet, User)]] =
-      Lilo.traverse(tweetIds) { tweetId =>
-        tweets.get(tweetId).flatMap(tweet =>
-          users.get(tweet.userId).map(user => (tweet, user)))
+      "failed (Lilo.exception)" in {
+        ok
       }
+    }
 
-    Await.result(enrichedTweets.run) shouldBe Some(Seq(
-      (Tweet("Tweet1", 10), User("User10")),
-      (Tweet("Tweet2", 20), User("User20")),
-      (Tweet("Tweet3", 30), User("User30"))))
+    "allows to create a lilo traversing multiple inputs (Lilo.traverse)" in {
+      ok
+    }
+
+    "allows to collect multiple lilos in only one (Lilo.collect)" in {
+      ok
+    }
+
+    "allows to create a lilo source (Lilo.source)" in {
+      ok
+    }
   }
-}
 
-case class Tweet(body: String, userId: Long)
-
-case class User(name: String)
-
-case class Timeline(likeIds: List[Long])
-
-case class Like(trackIds: List[Long], userIds: List[Long])
-
-case class Track(name: String)
-
-class TweetRepository {
-  def tweetsFor(ids: Seq[Long]): Future[Map[Long, Tweet]] = {
-    println("tweets", ids)
-    Future.value(ids.map(id => id -> Tweet(s"Tweet$id", id * 10)).toMap)
+  "a Lilo instance" >> {
+    "can be mapped to a new lilo" >> {
+      "using simple a value transformation (lilo.map)" in {
+        ok
+      }
+      "using a transformation that creates a new lilo (lilo.flatMap)" in {
+        ok
+      }
+    }
+    "can be joined with another lilo and produce a new lilo with the value of both (lilo.join)" in {
+      ok
+    }
+    "allows to recover from failures" >> {
+      "using a function that recovers using a new value (lilo.handle)" in {
+        ok
+      }
+      "using a function that recovers the failure using a new lilo (lilo.rescue)" in {
+        ok
+      }
+    }
+    "can have its result filtered (lilo.withFilter)" in {
+      ok
+    }
+    "can be materialized and return a future (lilo.run)" in {
+      ok
+    }
   }
-}
 
-class UserRepository {
-  def usersFor(ids: Seq[Long]): Future[Map[Long, User]] = {
-    println("users", ids)
-    Future.value(ids.map(id => id -> User(s"User$id")).toMap)
-  }
-}
-
-class TimelineRepository {
-  def timelinesFor(ids: Seq[Long]): Future[Map[Long, Timeline]] = {
-    println("timelines", ids)
-    Future.value(ids.map(id => id -> Timeline(List(id * 10, id * 20))).toMap)
-  }
-}
-
-class LikeRepository {
-  def likesFor(ids: Seq[Long]): Future[Map[Long, Like]] = {
-    println("likes", ids)
-    Future.value(ids.map(id => id -> Like(
-      List(id * 10, id * 20), List(id * 100, id * 200))).toMap)
-  }
-}
-
-class TrackRepository {
-  def tracksFor(ids: Seq[Long]): Future[Map[Long, Track]] = {
-    println("tracks", ids)
-    Future.value(ids.map(id => id -> Track(s"Track$id")).toMap)
+  "batches requests" >> {
+    "for multiple lilos created from traversed inputs" in {
+      ok
+    }
+    "for multiple lilos collected into only one lilo" in {
+      ok
+    }
+    "for lilos created inside nested flatmaps" in {
+      ok
+    }
+    "for lilos composed using for comprehension" >> {
+      "one level" in {
+        ok
+      }
+      "two levels" in {
+        ok
+      }
+      "many levels" in {
+        ok
+      }
+      "composition using a join" in {
+        ok
+      }
+    }
   }
 }
