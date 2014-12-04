@@ -1,8 +1,8 @@
-package lilo
+package clump
 
 import com.twitter.util.Future
 
-class LiloSource[T, U](fetch: List[T] => Future[Map[T, U]], maxBatchSize: Int) {
+class ClumpSource[T, U](fetch: List[T] => Future[Map[T, U]], maxBatchSize: Int) {
 
   def this(fetch: List[T] => Future[List[U]], keyFn: U => T, maxBatchSize: Int) = {
     this(fetch.andThen(_.map(_.map(v => (keyFn(v), v)).toMap)), maxBatchSize)
@@ -11,17 +11,17 @@ class LiloSource[T, U](fetch: List[T] => Future[Map[T, U]], maxBatchSize: Int) {
   private var pending = Set[T]()
   private var fetched = Map[T, Future[Option[U]]]()
 
-  def get(input: T): Lilo[U] = {
+  def get(input: T): Clump[U] = {
     synchronized {
       retryFailures(input)
       pending += input
     }
-    new LiloFetch(input, this)
+    new ClumpFetch(input, this)
   }
 
-  def get(inputs: List[T]): Lilo[List[U]] = Lilo.collect(inputs.map(get))
+  def get(inputs: List[T]): Clump[List[U]] = Clump.collect(inputs.map(get))
 
-  private[lilo] def run(input: T) = fetched.getOrElse(input, flushAndGet(input))
+  private[clump] def run(input: T) = fetched.getOrElse(input, flushAndGet(input))
 
   private def flushAndGet(input: T): Future[Option[U]] = flush.flatMap { _ => fetched(input) }
 

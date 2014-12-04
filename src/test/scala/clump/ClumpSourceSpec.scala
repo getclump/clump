@@ -1,4 +1,4 @@
-package lilo
+package clump
 
 import org.specs2.mutable.Specification
 import org.specs2.mock.Mockito
@@ -9,7 +9,7 @@ import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class LiloSourceSpec extends Spec {
+class ClumpSourceSpec extends Spec {
 
   trait Context extends Scope {
     trait TestRepository {
@@ -19,8 +19,8 @@ class LiloSourceSpec extends Spec {
     val repo = smartMock[TestRepository]
   }
 
-  "fetches an individual lilo" in new Context {
-    val source = Lilo.sourceFrom(repo.fetch)
+  "fetches an individual clump" in new Context {
+    val source = Clump.sourceFrom(repo.fetch)
 
     when(repo.fetch(List(1))).thenReturn(Future(Map(1 -> 2)))
 
@@ -30,32 +30,32 @@ class LiloSourceSpec extends Spec {
     verifyNoMoreInteractions(repo)
   }
 
-  "fetches multiple lilos" in new Context {
-    val source = Lilo.sourceFrom(repo.fetch)
+  "fetches multiple clumps" in new Context {
+    val source = Clump.sourceFrom(repo.fetch)
 
     when(repo.fetch(List(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
 
-    val lilo = source.get(List(1, 2))
+    val clump = source.get(List(1, 2))
 
-    resultOf(lilo) mustEqual Some(List(10, 20))
+    resultOf(clump) mustEqual Some(List(10, 20))
 
     verify(repo).fetch(List(1, 2))
     verifyNoMoreInteractions(repo)
   }
 
   "memoize the results of previous fetches" in new Context {
-    val source = Lilo.sourceFrom(repo.fetch)
+    val source = Clump.sourceFrom(repo.fetch)
 
     when(repo.fetch(List(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
     when(repo.fetch(List(3))).thenReturn(Future(Map(3 -> 30)))
 
-    val lilo1 = Lilo.traverse(List(1, 2))(source.get)
+    val clump1 = Clump.traverse(List(1, 2))(source.get)
 
-    resultOf(lilo1) mustEqual Some(List(10, 20))
+    resultOf(clump1) mustEqual Some(List(10, 20))
 
-    val lilo2 = Lilo.traverse(List(2, 3))(source.get)
+    val clump2 = Clump.traverse(List(2, 3))(source.get)
 
-    resultOf(lilo2) mustEqual Some(List(20, 30))
+    resultOf(clump2) mustEqual Some(List(20, 30))
 
     verify(repo).fetch(List(1, 2))
     verify(repo).fetch(List(3))
@@ -63,14 +63,14 @@ class LiloSourceSpec extends Spec {
   }
 
   "limits the batch size" in new Context {
-    val source = Lilo.sourceFrom(repo.fetch, maxBatchSize = 2)
+    val source = Clump.sourceFrom(repo.fetch, maxBatchSize = 2)
 
     when(repo.fetch(List(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
     when(repo.fetch(List(3))).thenReturn(Future(Map(3 -> 30)))
 
-    val lilo = Lilo.traverse(List(1, 2, 3))(source.get)
+    val clump = Clump.traverse(List(1, 2, 3))(source.get)
 
-    resultOf(lilo) mustEqual Some(List(10, 20, 30))
+    resultOf(clump) mustEqual Some(List(10, 20, 30))
 
     verify(repo).fetch(List(1, 2))
     verify(repo).fetch(List(3))
@@ -78,7 +78,7 @@ class LiloSourceSpec extends Spec {
   }
 
   "retries failed fetches" in new Context {
-    val source = Lilo.sourceFrom(repo.fetch)
+    val source = Clump.sourceFrom(repo.fetch)
 
     when(repo.fetch(List(1)))
       .thenReturn(Future.exception(new IllegalStateException))
