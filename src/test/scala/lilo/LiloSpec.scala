@@ -66,7 +66,7 @@ class LiloSpec extends Specification with Mockito {
     }
   }
 
-  "batches requests" >> {
+  "The lilo execution model batches requests" >> {
     "for multiple lilos created from traversed inputs" in {
       ok
     }
