@@ -28,8 +28,13 @@ class LiloSpec extends Specification with Mockito {
       ok
     }
 
-    "allows to create a lilo source (Lilo.source)" in {
-      ok
+    "allows to create a lilo source (Lilo.source)" >> {
+      "using the specified function" in {
+        ok
+      }
+      "using the specified max batch size" in {
+        ok
+      }
     }
   }
 
