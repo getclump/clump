@@ -16,7 +16,7 @@ trait Lilo[T] {
 
   def rescue(f: Throwable => Lilo[T]): Lilo[T] = new LiloRescue(this, f)
 
-  def withFilter(p: T => Boolean) = run.filter(_.forall(p))
+  def withFilter(f: T => Boolean) = new LiloFilter(this, f)
 
   def run = Future.Unit.flatMap(_ => result)
 
@@ -81,4 +81,9 @@ class LiloRescue[T](lilo: Lilo[T], rescue: Throwable => Lilo[T]) extends Lilo[T]
     lilo.run.rescue {
       case exception => rescue(exception).run
     }
+}
+
+class LiloFilter[T](lilo: Lilo[T], f: T => Boolean) extends Lilo[T] {
+  lazy val result =
+    lilo.run.withFilter(_.forall(f))
 }
