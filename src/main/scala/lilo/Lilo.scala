@@ -40,8 +40,8 @@ object Lilo {
   def collect[T](lilos: List[Lilo[T]]): Lilo[List[T]] =
     new LiloCollect(lilos)
 
-  def source[T, U](fetch: List[T] => Future[Map[T, U]], maxBatchSize: Int = Int.MaxValue) =
-    new LiloSource(fetch, maxBatchSize)
+  def source[T, U](fetch: List[T] => Future[List[U]], maxBatchSize: Int = Int.MaxValue)(keyFn: U => T) =
+    new LiloSource(fetch, keyFn, maxBatchSize)
 }
 
 class LiloConst[T](value: Try[Option[T]]) extends Lilo[T] {
@@ -83,7 +83,7 @@ class LiloRescue[T](lilo: Lilo[T], rescue: Throwable => Lilo[T]) extends Lilo[T]
     }
 }
 
-class LiloSource[T, U](fetch: List[T] => Future[Map[T, U]], maxBatchSize: Int) {
+class LiloSource[T, U](fetch: List[T] => Future[List[U]], keyFn: U => T, maxBatchSize: Int) {
 
   private var pending = Set[T]()
   private var fetched = Map[T, Future[Option[U]]]()
@@ -117,7 +117,7 @@ class LiloSource[T, U](fetch: List[T] => Future[Map[T, U]], maxBatchSize: Int) {
   private def fetchInBatches(toFetch: Set[T]) =
     Future.collect {
       toFetch.grouped(maxBatchSize).toList.map { batch =>
-        val results = fetch(batch.toList)
+        val results = fetch(batch.toList).map(_.map(v => (keyFn(v), v)).toMap)
         for (input <- batch)
           fetched += input -> results.map(_.get(input))
         results
