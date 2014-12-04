@@ -6,6 +6,6 @@ import com.twitter.util.Await
 
 trait Spec extends Specification with Mockito {
   
-  def resultOf[T](clump: Clump[T]) =
+  def liloResult[T](clump: Clump[T]) =
     Await.result(clump.run)
 }
