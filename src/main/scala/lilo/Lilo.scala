@@ -37,6 +37,9 @@ object Lilo {
   def traverse[T, U](inputs: List[T])(f: T => Lilo[U]) =
     collect(inputs.map(f))
 
+  def collect[T](lilos: Lilo[T]*): Lilo[List[T]] =
+    collect(lilos.toList)
+
   def collect[T](lilos: List[Lilo[T]]): Lilo[List[T]] =
     new LiloCollect(lilos)
 
