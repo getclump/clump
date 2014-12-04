@@ -4,6 +4,10 @@ import com.twitter.util.Future
 
 class LiloSource[T, U](fetch: List[T] => Future[Map[T, U]], maxBatchSize: Int) {
 
+  def this(fetch: List[T] => Future[List[U]], keyFn: U => T, maxBatchSize: Int) = {
+    this(fetch.andThen(_.map(_.map(v => (keyFn(v), v)).toMap)), maxBatchSize)
+  }
+
   private var pending = Set[T]()
   private var fetched = Map[T, Future[Option[U]]]()
 
@@ -15,15 +19,11 @@ class LiloSource[T, U](fetch: List[T] => Future[Map[T, U]], maxBatchSize: Int) {
     new LiloFetch(input, this)
   }
 
-  def get(inputs: List[T]): Lilo[List[U]] =
-    Lilo.collect(inputs.map(get(_)))
+  def get(inputs: List[T]): Lilo[List[U]] = Lilo.collect(inputs.map(get))
 
-  private[lilo] def run(input: T) =
-    fetched.get(input).getOrElse {
-      flush.flatMap { _ =>
-        fetched(input)
-      }
-    }
+  private[lilo] def run(input: T) = fetched.getOrElse(input, flushAndGet(input))
+
+  private def flushAndGet(input: T): Future[Option[U]] = flush.flatMap { _ => fetched(input) }
 
   private def flush =
     synchronized {
