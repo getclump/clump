@@ -1,4 +1,4 @@
-package lilo
+package clump
 
 import com.twitter.util.{Await, Future}
 import org.junit.runner.RunWith
@@ -12,14 +12,14 @@ class IntegrationSpec extends Spec {
   val likeRepository = new LikeRepository
   val trackRepository = new TrackRepository
 
-  val tweets = Lilo.sourceFrom(tweetRepository.tweetsFor)
-  val users = Lilo.sourceFrom(userRepository.usersFor)
-  val timelines = Lilo.source(timelineRepository.timelinesFor) { _.timelineId }
-  val likes = Lilo.source(likeRepository.likesFor) { _.likeId }
-  val tracks = Lilo.source(trackRepository.tracksFor) { _.trackId }
+  val tweets = Clump.sourceFrom(tweetRepository.tweetsFor)
+  val users = Clump.sourceFrom(userRepository.usersFor)
+  val timelines = Clump.source(timelineRepository.timelinesFor) { _.timelineId }
+  val likes = Clump.source(likeRepository.likesFor) { _.likeId }
+  val tracks = Clump.source(trackRepository.tracksFor) { _.trackId }
 
-  "A Lilo should batch calls to services" in {
-    val enrichedTweets = Lilo.traverse(List(1L, 2L, 3L)) { tweetId =>
+  "A Clump should batch calls to services" in {
+    val enrichedTweets = Clump.traverse(List(1L, 2L, 3L)) { tweetId =>
         for {
           tweet <- tweets.get(tweetId)
           user <- users.get(tweet.userId)
@@ -34,10 +34,10 @@ class IntegrationSpec extends Spec {
 
   "it should be able to be used in complex nested fetches" in {
     val timelineIds = List(1, 3)
-    val enrichedTimelines = Lilo.traverse(timelineIds) { id =>
+    val enrichedTimelines = Clump.traverse(timelineIds) { id =>
         for {
           timeline <- timelines.get(id)
-          enrichedLikes <- Lilo.traverse(timeline.likeIds) { id =>
+          enrichedLikes <- Clump.traverse(timeline.likeIds) { id =>
             for {
               like <- likes.get(id)
               resources <- tracks.get(like.trackIds).join(users.get(like.userIds))
@@ -57,8 +57,8 @@ class IntegrationSpec extends Spec {
 
   "it should be usable with regular maps and flatMaps" in {
     val tweetIds = List(1L, 2L, 3L)
-    val enrichedTweets: Lilo[List[(Tweet, User)]] =
-      Lilo.traverse(tweetIds) { tweetId =>
+    val enrichedTweets: Clump[List[(Tweet, User)]] =
+      Clump.traverse(tweetIds) { tweetId =>
         tweets.get(tweetId).flatMap(tweet =>
           users.get(tweet.userId).map(user => (tweet, user)))
       }
