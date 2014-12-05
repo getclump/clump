@@ -51,12 +51,12 @@ class ClumpExecutionSpec extends Spec {
     }
 
     "for clumps created inside nested flatmaps" in new Context {
-      val clump1 = Clump.value(1).flatMap(source1.get(_))
-      val clump2 = Clump.value(2).flatMap(source1.get(_))
+      val clump1 = Clump.value(1).flatMap(source1.get(_)).flatMap(source2.get(_))
+      val clump2 = Clump.value(2).flatMap(source1.get(_)).flatMap(source2.get(_))
 
-      clumpResult(Clump.collect(clump1, clump2)) mustEqual Some(List(10, 20))
+      clumpResult(Clump.collect(clump1, clump2)) mustEqual Some(List(100, 200))
       source1Fetches mustEqual List(List(1, 2))
-      source2Fetches must beEmpty
+      source2Fetches mustEqual List(List(20, 10))
     }
 
     "for clumps composed using for comprehension" >> {
