@@ -13,16 +13,16 @@ import com.twitter.util.Promise
 class ClumpExecutionSpec extends Spec {
 
   trait Context extends Scope {
-    val source1Fetches = ListBuffer[List[Int]]()
-    val source2Fetches = ListBuffer[List[Int]]()
+    val source1Fetches = ListBuffer[Set[Int]]()
+    val source2Fetches = ListBuffer[Set[Int]]()
 
-    def fetchFunction(fetches: ListBuffer[List[Int]], inputs: List[Int]) = {
+    def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) = {
       fetches += inputs
       Future.value(inputs.map(i => i -> i * 10).toMap)
     }
 
-    val source1 = Clump.sourceFrom((i: List[Int]) => fetchFunction(source1Fetches, i))
-    val source2 = Clump.sourceFrom((i: List[Int]) => fetchFunction(source2Fetches, i))
+    val source1 = Clump.sourceFrom((i: Set[Int]) => fetchFunction(source1Fetches, i))
+    val source2 = Clump.sourceFrom((i: Set[Int]) => fetchFunction(source2Fetches, i))
   }
 
   "batches requests" >> {
@@ -38,16 +38,16 @@ class ClumpExecutionSpec extends Spec {
         }
 
       clumpResult(clump) mustEqual Some(List(10, 20, 30, 40))
-      source1Fetches mustEqual List(List(1, 2))
-      source2Fetches mustEqual List(List(3, 4))
+      source1Fetches mustEqual Set(List(1, 2))
+      source2Fetches mustEqual Set(List(3, 4))
     }
 
     "for multiple clumps collected into only one clump" in new Context {
       val clump = Clump.collect(source1.get(1), source1.get(2), source2.get(3), source2.get(4))
 
       clumpResult(clump) mustEqual Some(List(10, 20, 30, 40))
-      source1Fetches mustEqual List(List(1, 2))
-      source2Fetches mustEqual List(List(3, 4))
+      source1Fetches mustEqual Set(List(1, 2))
+      source2Fetches mustEqual Set(List(3, 4))
     }
 
     "for clumps created inside nested flatmaps" in new Context {
@@ -55,8 +55,8 @@ class ClumpExecutionSpec extends Spec {
       val clump2 = Clump.value(2).flatMap(source1.get(_)).flatMap(source2.get(_))
 
       clumpResult(Clump.collect(clump1, clump2)) mustEqual Some(List(100, 200))
-      source1Fetches mustEqual List(List(1, 2))
-      source2Fetches mustEqual List(List(20, 10))
+      source1Fetches mustEqual Set(List(1, 2))
+      source2Fetches mustEqual Set(List(20, 10))
     }
 
     "for clumps composed using for comprehension" >> {
@@ -68,8 +68,8 @@ class ClumpExecutionSpec extends Spec {
           } yield int
 
         clumpResult(clump) mustEqual Some(List(10, 20, 30, 40))
-        source1Fetches mustEqual List(List(1, 2))
-        source2Fetches mustEqual List(List(3, 4))
+        source1Fetches mustEqual Set(List(1, 2))
+        source2Fetches mustEqual Set(List(3, 4))
       }
 
       "two levels" in new Context {
@@ -80,8 +80,8 @@ class ClumpExecutionSpec extends Spec {
           } yield (ints1, ints2)
 
         clumpResult(clump) mustEqual Some(List(10, 20), List(30, 40))
-        source1Fetches mustEqual List(List(1, 2))
-        source2Fetches mustEqual List(List(3, 4))
+        source1Fetches mustEqual Set(List(1, 2))
+        source2Fetches mustEqual Set(List(3, 4))
       }
 
       "with a filter condition" in new Context {
@@ -92,8 +92,8 @@ class ClumpExecutionSpec extends Spec {
           } yield (ints1, int2)
 
         clumpResult(clump) mustEqual Some(List(10, 20), 30)
-        source1Fetches mustEqual List(List(1, 2))
-        source2Fetches mustEqual List(List(3))
+        source1Fetches mustEqual Set(List(1, 2))
+        source2Fetches mustEqual Set(List(3))
       }
 
       "using a join" in new Context {
@@ -104,8 +104,8 @@ class ClumpExecutionSpec extends Spec {
           } yield (ints1, ints2)
 
         clumpResult(clump) mustEqual Some(List(10, 20), (30, 40))
-        source1Fetches mustEqual List(List(1, 2))
-        source2Fetches mustEqual List(List(3, 4))
+        source1Fetches mustEqual Set(List(1, 2))
+        source2Fetches mustEqual Set(List(3, 4))
       }
 
       "complex scenario" in new Context {
@@ -120,8 +120,8 @@ class ClumpExecutionSpec extends Spec {
           } yield (const1, const2, collect1, collect2, join1, join2)
 
         clumpResult(clump) mustEqual Some((1, 2, List(10, 20), List(10, 20), (4, 5), (List(100, 200), 50)))
-        source1Fetches mustEqual List(List(1), List(10, 20))
-        source2Fetches mustEqual List(List(2), List(5))
+        source1Fetches mustEqual Set(List(1), List(10, 20))
+        source2Fetches mustEqual Set(List(2), List(5))
       }
     }
   }
@@ -129,7 +129,7 @@ class ClumpExecutionSpec extends Spec {
   "executes joined clumps in parallel" in new Context {
     var promises = List[Promise[Map[Int, Int]]]()
 
-    override def fetchFunction(fetches: ListBuffer[List[Int]], inputs: List[Int]) = {
+    override def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) = {
       val promise = Promise[Map[Int, Int]]()
       promises :+= promise
       promise

@@ -30,7 +30,7 @@ class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
   private def fetchInBatches(toFetch: Set[T]) =
     Future.collect {
       toFetch.grouped(source.maxBatchSize).toList.map { batch =>
-        val results = source.fetch(batch.toList)
+        val results = source.fetch(batch)
         for (input <- batch)
           fetched += input -> results.map(_.get(input))
         results

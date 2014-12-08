@@ -45,10 +45,10 @@ object Clump {
   def collect[T](clumps: List[Clump[T]]): Clump[List[T]] =
     new ClumpCollect(clumps)
 
-  def sourceFrom[T, U](fetch: List[T] => Future[Map[T, U]], maxBatchSize: Int = Int.MaxValue) =
+  def sourceFrom[T, U](fetch: Set[T] => Future[Map[T, U]], maxBatchSize: Int = Int.MaxValue) =
     new ClumpSource(fetch, maxBatchSize)
 
-  def source[T, U](fetch: List[T] => Future[List[U]], maxBatchSize: Int = Int.MaxValue)(keyFn: U => T) =
+  def source[T, U](fetch: Set[T] => Future[Iterable[U]], maxBatchSize: Int = Int.MaxValue)(keyFn: U => T) =
     new ClumpSource(fetch, keyFn, maxBatchSize)
 }
 
