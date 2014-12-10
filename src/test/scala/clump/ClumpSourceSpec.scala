@@ -7,6 +7,7 @@ import com.twitter.util.Future
 import org.mockito.Mockito._
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
+import com.twitter.util.Await
 
 @RunWith(classOf[JUnitRunner])
 class ClumpSourceSpec extends Spec {
@@ -43,51 +44,23 @@ class ClumpSourceSpec extends Spec {
     verifyNoMoreInteractions(repo)
   }
 
-  "memoize the results of previous fetches" in new Context {
+  "can be used as a singleton" in new Context {
     val source = Clump.sourceFrom(repo.fetch)
 
-    when(repo.fetch(List(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
-    when(repo.fetch(List(3))).thenReturn(Future(Map(3 -> 30)))
+    when(repo.fetch(List(1))).thenReturn(Future(Map(1 -> 2)))
 
-    val clump1 = Clump.traverse(List(1, 2))(source.get)
+    val future =
+      Future.collect {
+        for (i <- 0 until 5) yield {
+          Future.Unit.flatMap { _ =>
+            source.get(List(1)).run
+          }
+        }
+      }
 
-    clumpResult(clump1) mustEqual Some(List(10, 20))
+    Await.result(future)
 
-    val clump2 = Clump.traverse(List(2, 3))(source.get)
-
-    clumpResult(clump2) mustEqual Some(List(20, 30))
-
-    verify(repo).fetch(List(1, 2))
-    verify(repo).fetch(List(3))
-    verifyNoMoreInteractions(repo)
-  }
-
-  "limits the batch size" in new Context {
-    val source = Clump.sourceFrom(repo.fetch, maxBatchSize = 2)
-
-    when(repo.fetch(List(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
-    when(repo.fetch(List(3))).thenReturn(Future(Map(3 -> 30)))
-
-    val clump = Clump.traverse(List(1, 2, 3))(source.get)
-
-    clumpResult(clump) mustEqual Some(List(10, 20, 30))
-
-    verify(repo).fetch(List(1, 2))
-    verify(repo).fetch(List(3))
-    verifyNoMoreInteractions(repo)
-  }
-
-  "retries failed fetches" in new Context {
-    val source = Clump.sourceFrom(repo.fetch)
-
-    when(repo.fetch(List(1)))
-      .thenReturn(Future.exception(new IllegalStateException))
-      .thenReturn(Future(Map(1 -> 10)))
-
-    clumpResult(source.get(1)) must throwA[IllegalStateException]
-    clumpResult(source.get(1)) mustEqual Some(10)
-
-    verify(repo, times(2)).fetch(List(1))
+    verify(repo, times(5)).fetch(List(1))
     verifyNoMoreInteractions(repo)
   }
 }

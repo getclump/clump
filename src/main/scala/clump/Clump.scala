@@ -6,6 +6,8 @@ import com.twitter.util.Try
 
 trait Clump[T] {
 
+  private val forceContextInit = ClumpContext()
+
   def map[U](f: T => U) = flatMap(f.andThen(Clump.value(_)))
 
   def flatMap[U](f: T => Clump[U]): Clump[U] = new ClumpFlatMap(this, f)
@@ -70,8 +72,8 @@ class ClumpCollect[T](list: List[Clump[T]]) extends Clump[List[T]] {
       .map(Some(_))
 }
 
-class ClumpFetch[T, U](input: T, source: ClumpSource[T, U]) extends Clump[U] {
-  lazy val result = source.run(input)
+class ClumpFetch[T, U](input: T, fetcher: ClumpFetcher[T, U]) extends Clump[U] {
+  lazy val result = fetcher.run(input)
 }
 
 class ClumpFlatMap[T, U](clump: Clump[T], f: T => Clump[U]) extends Clump[U] {
