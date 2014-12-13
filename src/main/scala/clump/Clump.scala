@@ -28,13 +28,16 @@ trait Clump[T] {
 object Clump {
 
   def value[T](value: T): Clump[T] =
-    this.value(Option(value))
+    future(Future.value(Option(value)))
 
   def value[T](value: Option[T]): Clump[T] =
-    new ClumpConst(Try(value))
+    future(Future.value(value))
 
   def exception[T](exception: Throwable): Clump[T] =
-    new ClumpConst(Throw(exception))
+    future(Future.exception(exception))
+
+  def future[T](future: Future[Option[T]]): Clump[T] =
+    new ClumpFuture(future)
 
   def traverse[T, U](inputs: List[T])(f: T => Clump[U]) =
     collect(inputs.map(f))
@@ -52,8 +55,8 @@ object Clump {
     new ClumpSource(fetch, keyFn, maxBatchSize)
 }
 
-class ClumpConst[T](value: Try[Option[T]]) extends Clump[T] {
-  lazy val result = Future.const(value)
+class ClumpFuture[T](future: Future[Option[T]]) extends Clump[T] {
+  lazy val result = future
 }
 
 class ClumpJoin[A, B](a: Clump[A], b: Clump[B]) extends Clump[(A, B)] {

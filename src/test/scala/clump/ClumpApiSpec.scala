@@ -15,6 +15,17 @@ class ClumpApiSpec extends Spec {
 
     "allows to create a constant clump" >> {
 
+      "from a future (Clump.future)" >> {
+
+        "success" in {
+          clumpResult(Clump.future(Future.value(Some(1)))) mustEqual Some(1)
+        }
+
+        "failure" in {
+          clumpResult(Clump.future(Future.exception(new IllegalStateException))) must throwA[IllegalStateException]
+        }
+      }
+
       "from a value (Clump.value)" in {
         clumpResult(Clump.value(1)) mustEqual Some(1)
       }
