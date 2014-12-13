@@ -14,7 +14,7 @@ class ClumpSourceSpec extends Spec {
 
   trait Context extends Scope {
     trait TestRepository {
-      def fetch(inputs: List[Int]): Future[Map[Int, Int]]
+      def fetch(inputs: Set[Int]): Future[Map[Int, Int]]
     }
 
     val repo = smartMock[TestRepository]
@@ -23,31 +23,31 @@ class ClumpSourceSpec extends Spec {
   "fetches an individual clump" in new Context {
     val source = Clump.sourceFrom(repo.fetch)
 
-    when(repo.fetch(List(1))).thenReturn(Future(Map(1 -> 2)))
+    when(repo.fetch(Set(1))).thenReturn(Future(Map(1 -> 2)))
 
     clumpResult(source.get(1)) mustEqual Some(2)
 
-    verify(repo).fetch(List(1))
+    verify(repo).fetch(Set(1))
     verifyNoMoreInteractions(repo)
   }
 
   "fetches multiple clumps" in new Context {
     val source = Clump.sourceFrom(repo.fetch)
 
-    when(repo.fetch(List(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
+    when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
 
     val clump = source.get(List(1, 2))
 
     clumpResult(clump) mustEqual Some(List(10, 20))
 
-    verify(repo).fetch(List(1, 2))
+    verify(repo).fetch(Set(1, 2))
     verifyNoMoreInteractions(repo)
   }
 
   "can be used as a singleton" in new Context {
     val source = Clump.sourceFrom(repo.fetch)
 
-    when(repo.fetch(List(1))).thenReturn(Future(Map(1 -> 2)))
+    when(repo.fetch(Set(1))).thenReturn(Future(Map(1 -> 2)))
 
     val future =
       Future.collect {
@@ -60,7 +60,7 @@ class ClumpSourceSpec extends Spec {
 
     Await.result(future)
 
-    verify(repo, times(5)).fetch(List(1))
+    verify(repo, times(5)).fetch(Set(1))
     verifyNoMoreInteractions(repo)
   }
 }

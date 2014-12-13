@@ -47,7 +47,7 @@ class ClumpApiSpec extends Spec {
     }
 
     "allows to create a clump source (Clump.source)" in {
-      def fetch(inputs: List[Int]) =
+      def fetch(inputs: Set[Int]) =
         Future.value(inputs.map(i => i -> i.toString).toMap)
 
       val source = Clump.sourceFrom(fetch, 2)

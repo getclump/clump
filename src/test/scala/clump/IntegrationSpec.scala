@@ -81,32 +81,32 @@ case class Like(likeId: Long, trackIds: List[Long], userIds: List[Long])
 case class Track(trackId: Long, name: String)
 
 class TweetRepository {
-  def tweetsFor(ids: List[Long]): Future[Map[Long, Tweet]] = {
+  def tweetsFor(ids: Set[Long]): Future[Map[Long, Tweet]] = {
     println("tweets", ids)
     Future.value(ids.map(id => id -> Tweet(s"Tweet$id", id * 10)).toMap)
   }
 }
 
 class UserRepository {
-  def usersFor(ids: List[Long]): Future[Map[Long, User]] = {
+  def usersFor(ids: Set[Long]): Future[Map[Long, User]] = {
     Future.value(ids.map(id => id -> User(id, s"User$id")).toMap)
   }
 }
 
 class TimelineRepository {
-  def timelinesFor(ids: List[Int]): Future[List[Timeline]] = {
+  def timelinesFor(ids: Set[Int]): Future[Set[Timeline]] = {
     Future.value(ids.map(id => Timeline(id, List(id * 10, id * 20))))
   }
 }
 
 class LikeRepository {
-  def likesFor(ids: List[Long]): Future[List[Like]] = {
+  def likesFor(ids: Set[Long]): Future[Set[Like]] = {
     Future.value(ids.map(id => Like(id, List(id * 10, id * 20), List(id * 100, id * 200))))
   }
 }
 
 class TrackRepository {
-  def tracksFor(ids: List[Long]): Future[List[Track]] = {
+  def tracksFor(ids: Set[Long]): Future[Set[Track]] = {
     Future.value(ids.map(id => Track(id, s"Track$id")))
   }
 }
