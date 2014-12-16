@@ -8,12 +8,14 @@ import org.specs2.runner.JUnitRunner
 class IntegrationSpec extends Spec {
   val tweetRepository = new TweetRepository
   val userRepository = new UserRepository
+  val zippedUserRepository = new ZippedUserRepository
   val timelineRepository = new TimelineRepository
   val likeRepository = new LikeRepository
   val trackRepository = new TrackRepository
 
   val tweets = Clump.sourceFrom(tweetRepository.tweetsFor)
   val users = Clump.sourceFrom(userRepository.usersFor)
+  val zippedUsers = Clump.sourceZip(zippedUserRepository.usersFor)
   val timelines = Clump.source(timelineRepository.timelinesFor) { _.timelineId }
   val likes = Clump.source(likeRepository.likesFor) { _.likeId }
   val tracks = Clump.source(trackRepository.tracksFor) { _.trackId }
@@ -22,7 +24,7 @@ class IntegrationSpec extends Spec {
     val enrichedTweets = Clump.traverse(List(1L, 2L, 3L)) { tweetId =>
         for {
           tweet <- tweets.get(tweetId)
-          user <- users.get(tweet.userId)
+          user <- zippedUsers.get(tweet.userId)
         } yield (tweet, user)
       }
 
@@ -90,6 +92,12 @@ class TweetRepository {
 class UserRepository {
   def usersFor(ids: Set[Long]): Future[Map[Long, User]] = {
     Future.value(ids.map(id => id -> User(id, s"User$id")).toMap)
+  }
+}
+
+class ZippedUserRepository {
+  def usersFor(ids: List[Long]): Future[List[User]] = {
+    Future.value(ids.map(id => User(id, s"User$id")))
   }
 }
 

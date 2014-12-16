@@ -48,11 +48,22 @@ object Clump {
   def collect[T](clumps: List[Clump[T]]): Clump[List[T]] =
     new ClumpCollect(clumps)
 
-  def sourceFrom[T, U](fetch: Set[T] => Future[Map[T, U]], maxBatchSize: Int = Int.MaxValue) =
-    new ClumpSource(fetch, maxBatchSize)
+  def sourceFrom[T, U](fetch: Set[T] => Future[Map[T, U]], maxBatchSize: Int = Int.MaxValue): ClumpSource[T, U] = {
+    val listToSet: List[T] => Set[T] = _.toSet
+    val func: List[T] => Future[Map[T, U]] = listToSet.andThen(fetch)
+    new ClumpSource(func, maxBatchSize)
+  }
 
-  def source[T, U](fetch: Set[T] => Future[Iterable[U]], maxBatchSize: Int = Int.MaxValue)(keyFn: U => T) =
-    new ClumpSource(fetch, keyFn, maxBatchSize)
+  def source[T, U](fetch: Set[T] => Future[Iterable[U]], maxBatchSize: Int = Int.MaxValue)(keyFn: U => T): ClumpSource[T, U] = {
+    val listToSet: List[T] => Set[T] = _.toSet
+    val iterableToList: Future[Iterable[U]] => Future[List[U]] = _.map(_.toList)
+    val func: List[T] => Future[Iterable[U]] = listToSet.andThen(fetch)
+    val func2: List[T] => Future[List[U]] = func.andThen(iterableToList)
+    new ClumpSource(func2, keyFn, maxBatchSize)
+  }
+
+  def sourceZip[T, U](fetch: List[T] => Future[List[U]], maxBatchSize: Int = Int.MaxValue) =
+    ClumpSource.zip(fetch, maxBatchSize)
 }
 
 class ClumpFuture[T](future: Future[Option[T]]) extends Clump[T] {
