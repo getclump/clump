@@ -20,7 +20,9 @@ trait Clump[T] {
 
   def withFilter(f: T => Boolean) = new ClumpFilter(this, f)
 
-  def run = Future.Unit.flatMap(_ => result)
+  def get: Future[T] = run.map(_.get)
+
+  def run: Future[Option[T]] = Future.Unit.flatMap(_ => result)
 
   protected def result: Future[Option[T]]
 }
