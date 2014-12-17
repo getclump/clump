@@ -14,6 +14,12 @@ class ClumpSource[T, U](val fetch: Set[T] => Future[Map[T, U]], val maxBatchSize
   def get(input: T): Clump[U] = {
     val fetcher = ClumpContext().fetcherFor(this)
     fetcher.append(input)
-    new ClumpFetch(input, fetcher)
+    new ClumpFetch(input, fetcher, strict = false)
+  }
+
+  def apply(input: T): Clump[U] = {
+    val fetcher = ClumpContext().fetcherFor(this)
+    fetcher.append(input)
+    new ClumpFetch(input, fetcher, strict = true)
   }
 }

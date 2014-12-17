@@ -75,8 +75,8 @@ class ClumpCollect[T](list: List[Clump[T]]) extends Clump[List[T]] {
       .map(Some(_))
 }
 
-class ClumpFetch[T, U](input: T, fetcher: ClumpFetcher[T, U]) extends Clump[U] {
-  lazy val result = fetcher.run(input)
+class ClumpFetch[T, U](input: T, fetcher: ClumpFetcher[T, U], strict: Boolean) extends Clump[U] {
+  lazy val result = fetcher.run(input, strict)
 }
 
 class ClumpFlatMap[T, U](clump: Clump[T], f: T => Clump[U]) extends Clump[U] {

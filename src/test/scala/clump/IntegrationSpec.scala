@@ -7,12 +7,14 @@ import org.specs2.runner.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class IntegrationSpec extends Spec {
   val tweetRepository = new TweetRepository
+  val filteredTweetRepository = new FilteredTweetRepository
   val userRepository = new UserRepository
   val timelineRepository = new TimelineRepository
   val likeRepository = new LikeRepository
   val trackRepository = new TrackRepository
 
   val tweets = Clump.sourceFrom(tweetRepository.tweetsFor)
+  val filteredTweets = Clump.source(filteredTweetRepository.tweetsFor) { _.tweetId }
   val users = Clump.sourceFrom(userRepository.usersFor)
   val timelines = Clump.source(timelineRepository.timelinesFor) { _.timelineId }
   val likes = Clump.source(likeRepository.likesFor) { _.likeId }
@@ -27,9 +29,9 @@ class IntegrationSpec extends Spec {
       }
 
     Await.result(enrichedTweets.run) ==== Some(List(
-      (Tweet("Tweet1", 10), User(10, "User10")),
-      (Tweet("Tweet2", 20), User(20, "User20")),
-      (Tweet("Tweet3", 30), User(30, "User30"))))
+      (Tweet(1, "Tweet1", 10), User(10, "User10")),
+      (Tweet(2, "Tweet2", 20), User(20, "User20")),
+      (Tweet(3, "Tweet3", 30), User(30, "User30"))))
   }
 
   "it should be able to be used in complex nested fetches" in {
@@ -64,13 +66,24 @@ class IntegrationSpec extends Spec {
       }
 
     Await.result(enrichedTweets.run) ==== Some(List(
-      (Tweet("Tweet1", 10), User(10, "User10")),
-      (Tweet("Tweet2", 20), User(20, "User20")),
-      (Tweet("Tweet3", 30), User(30, "User30"))))
+      (Tweet(1, "Tweet1", 10), User(10, "User10")),
+      (Tweet(2, "Tweet2", 20), User(20, "User20")),
+      (Tweet(3, "Tweet3", 30), User(30, "User30"))))
+  }
+
+  "it should fail when using ClumpSource.apply and result not found for input" in {
+    val enrichedTweets = Clump.traverse(List(1L, 2L, 3L)) { tweetId =>
+      for {
+        tweet <- filteredTweets(tweetId)
+        user <- users.get(tweet.userId)
+      } yield (tweet, user)
+    }
+
+    Await.result(enrichedTweets.run) must throwA[RuntimeException]
   }
 }
 
-case class Tweet(body: String, userId: Long)
+case class Tweet(tweetId: Long, body: String, userId: Long)
 
 case class User(userId: Long, name: String)
 
@@ -83,7 +96,14 @@ case class Track(trackId: Long, name: String)
 class TweetRepository {
   def tweetsFor(ids: Set[Long]): Future[Map[Long, Tweet]] = {
     println("tweets", ids)
-    Future.value(ids.map(id => id -> Tweet(s"Tweet$id", id * 10)).toMap)
+    Future.value(ids.map(id => id -> Tweet(id, s"Tweet$id", id * 10)).toMap)
+  }
+}
+
+class FilteredTweetRepository {
+  def tweetsFor(ids: Set[Long]): Future[Set[Tweet]] = {
+    println("tweets", ids)
+    Future.value(ids.filter(_ % 2 == 0).map(id => Tweet(id, s"Tweet$id", id * 10)))
   }
 }
 

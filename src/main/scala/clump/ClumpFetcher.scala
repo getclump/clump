@@ -13,8 +13,15 @@ class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
       pending += input
     }
 
-  def run(input: T) =
-    fetched.getOrElse(input, flushAndGet(input))
+  def run(input: T, strict: Boolean) =
+    failIf(strict, input, fetched.getOrElse(input, flushAndGet(input)))
+
+  def failIf(strict: Boolean, input: T, future: Future[Option[U]]) = {
+    future.map(option => {
+      if (strict && option.isEmpty) throw new RuntimeException(s"Expected result for input '$input'")
+      option
+    })
+  }
 
   private def flushAndGet(input: T): Future[Option[U]] =
     flush.flatMap { _ => fetched(input) }
