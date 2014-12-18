@@ -82,7 +82,6 @@ case class Track(trackId: Long, name: String)
 
 class TweetRepository {
   def tweetsFor(ids: Set[Long]): Future[Map[Long, Tweet]] = {
-    println("tweets", ids)
     Future.value(ids.map(id => id -> Tweet(s"Tweet$id", id * 10)).toMap)
   }
 }
