@@ -25,7 +25,7 @@ class ClumpSourceSpec extends Spec {
 
     when(repo.fetch(Set(1))).thenReturn(Future(Map(1 -> 2)))
 
-    clumpResult(source.get(1)) mustEqual Some(2)
+    clumpResult(source(1)) ==== 2
 
     verify(repo).fetch(Set(1))
     verifyNoMoreInteractions(repo)
@@ -36,9 +36,9 @@ class ClumpSourceSpec extends Spec {
 
     when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
 
-    val clump = source.get(List(1, 2))
+    val clump = source.list(List(1, 2))
 
-    clumpResult(clump) mustEqual Some(List(10, 20))
+    clumpResult(clump) ==== List(10, 20)
 
     verify(repo).fetch(Set(1, 2))
     verifyNoMoreInteractions(repo)
@@ -53,7 +53,7 @@ class ClumpSourceSpec extends Spec {
       Future.collect {
         for (i <- 0 until 5) yield {
           Future.Unit.flatMap { _ =>
-            source.get(List(1)).run
+            source.list(List(1)).run
           }
         }
       }
