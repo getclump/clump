@@ -178,5 +178,15 @@ class ClumpApiSpec extends Spec {
         case e: Throwable              => ko(s"expected NoSuchElementException but was $e")
       }
     }
+
+    "can be made optional (clump.optional) to avoid lossy joins" in {
+      val clump: Clump[String] = Clump.None
+      val optionalClump: Clump[Option[String]] = clump.optional
+      clumpResult(optionalClump) ==== Some(None)
+
+      val valueClump: Clump[String] = Clump.value("foo")
+      clumpResult(valueClump.join(clump)) ==== None
+      clumpResult(valueClump.join(optionalClump)) ==== Some("foo", None)
+    }
   }
 }

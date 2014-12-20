@@ -27,6 +27,8 @@ trait Clump[+T] {
 
   def orElse[B >: T](default: => B): Clump[B] = new ClumpOrElse(this, default)
 
+  def optional: Clump[Option[T]] = new ClumpOptional(this)
+
   def apply: Future[T] = get.map(_.get)
 
   def get: Future[Option[T]] =
@@ -148,4 +150,10 @@ class ClumpOrElse[T](clump: Clump[T], default: => T) extends Clump[T] {
     case None => Some(default)
     case some => some
   }
+}
+
+class ClumpOptional[T](clump: Clump[T]) extends Clump[Option[T]] {
+  val upstream = List(clump)
+  val downstream = Future.value(List())
+  val result = clump.result.map(Some(_))
 }
