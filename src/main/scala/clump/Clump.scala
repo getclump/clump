@@ -4,7 +4,7 @@ import com.twitter.util.Future
 import com.twitter.util.Throw
 import com.twitter.util.Try
 
-trait Clump[T] {
+trait Clump[+T] {
 
   private val forceContextInit = ClumpContext()
 
@@ -14,11 +14,11 @@ trait Clump[T] {
 
   def join[U](other: Clump[U]): Clump[(T, U)] = new ClumpJoin(this, other)
 
-  def handle(f: Throwable => T): Clump[T] = rescue(f.andThen(Clump.value(_)))
+  def handle[B >: T](f: Throwable => B): Clump[B] = rescue[B](f.andThen(Clump.value(_)))
 
-  def rescue(f: Throwable => Clump[T]): Clump[T] = new ClumpRescue(this, f)
+  def rescue[B >: T](f: Throwable => Clump[B]): Clump[B] = new ClumpRescue(this, f)
 
-  def withFilter(f: T => Boolean) = new ClumpFilter(this, f)
+  def withFilter[B >: T](f: B => Boolean): Clump[B] = new ClumpFilter(this, f)
 
   def run = Future.Unit.flatMap(_ => result)
 

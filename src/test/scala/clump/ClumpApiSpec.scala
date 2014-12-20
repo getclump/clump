@@ -107,5 +107,13 @@ class ClumpApiSpec extends Spec {
       clumpResult(Clump.value(1).withFilter(_ != 1)) mustEqual None
       clumpResult(Clump.value(1).withFilter(_ == 1)) mustEqual Some(1)
     }
+    
+    "uses a covariant type parameter" in {
+      trait A
+      class B extends A
+      class C extends A
+      val clump = Clump.traverse(List(new B, new C))(Clump.value(_))
+      (clump: Clump[List[A]]) must beAnInstanceOf[Clump[List[A]]]
+    }
   }
 }
