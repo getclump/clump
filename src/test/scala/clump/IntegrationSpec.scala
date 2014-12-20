@@ -8,12 +8,16 @@ import org.specs2.runner.JUnitRunner
 class IntegrationSpec extends Spec {
   val tweetRepository = new TweetRepository
   val userRepository = new UserRepository
+  val filteredUserRepository = new FilteredUserRepository
+  val filteredUserOptionRepository = new FilteredUserOptionRepository
   val timelineRepository = new TimelineRepository
   val likeRepository = new LikeRepository
   val trackRepository = new TrackRepository
 
   val tweets = Clump.sourceFrom(tweetRepository.tweetsFor)
   val users = Clump.sourceFrom(userRepository.usersFor)
+  val filteredUsers = Clump.source(filteredUserRepository.usersFor) { _.userId }
+  val filteredOptionUsers = Clump.source(filteredUserOptionRepository.usersFor) { _.userId } // doesn't compile because this should be an option
   val timelines = Clump.source(timelineRepository.timelinesFor) { _.timelineId }
   val likes = Clump.source(likeRepository.likesFor) { _.likeId }
   val tracks = Clump.source(trackRepository.tracksFor) { _.trackId }
@@ -68,6 +72,30 @@ class IntegrationSpec extends Spec {
       (Tweet("Tweet2", 20), User(20, "User20")),
       (Tweet("Tweet3", 30), User(30, "User30"))))
   }
+
+  "A Clump can have a partial result" in {
+    val enrichedTweets:Clump[List[(Tweet, User)]] = Clump.traverse(List(1L, 2L, 3L)) { tweetId =>
+      for {
+        tweet <- tweets.get(tweetId)
+        user <- filteredUsers.get(tweet.userId)
+      } yield (tweet, user)
+    }
+
+    Await.result(enrichedTweets.run) ==== Some(List((Tweet("Tweet2", 20), User(20, "User20"))))
+
+    val enrichedTweets2:Clump[List[(Tweet, Option[User])]] = Clump.traverse(List(1L, 2L, 3L)) { tweetId =>
+      for {
+        tweet <- tweets.get(tweetId)
+        user <- filteredOptionUsers.get(tweet.userId)
+      } yield (tweet, Some(user))
+    }
+
+    // no nice way to do this
+    Await.result(enrichedTweets2.run) ==== Some(List(
+      (Tweet("Tweet1", 10), None),
+      (Tweet("Tweet2", 20), Some(User(20, "User20"))),
+      (Tweet("Tweet3", 30), None)))
+  }
 }
 
 case class Tweet(body: String, userId: Long)
@@ -89,6 +117,18 @@ class TweetRepository {
 class UserRepository {
   def usersFor(ids: Set[Long]): Future[Map[Long, User]] = {
     Future.value(ids.map(id => id -> User(id, s"User$id")).toMap)
+  }
+}
+
+class FilteredUserRepository {
+  def usersFor(ids: Set[Long]): Future[Set[User]] = {
+    Future.value(ids.filter(_ % 20 == 0).map(id => User(id, s"User$id")))
+  }
+}
+
+class FilteredUserOptionRepository {
+  def usersFor(ids: Set[Long]): Future[Set[Option[User]]] = {
+    Future.value(ids.map(id => if (id % 20 == 0) None else Some(User(id, s"User$id"))))
   }
 }
 
