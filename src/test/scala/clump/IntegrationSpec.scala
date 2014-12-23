@@ -68,6 +68,20 @@ class IntegrationSpec extends Spec {
       (Tweet("Tweet2", 20), User(20, "User20")),
       (Tweet("Tweet3", 30), User(30, "User30"))))
   }
+
+  "it should allow unwrapping Clumped lists with clump.list" in {
+    val enrichedTweets: Clump[List[(Tweet, User)]] = Clump.traverse(List(1L, 2L, 3L)) { tweetId =>
+      for {
+        tweet <- tweets.get(tweetId)
+        user <- users.get(tweet.userId)
+      } yield (tweet, user)
+    }
+
+    Await.result(enrichedTweets.list) ==== List(
+      (Tweet("Tweet1", 10), User(10, "User10")),
+      (Tweet("Tweet2", 20), User(20, "User20")),
+      (Tweet("Tweet3", 30), User(30, "User30")))
+  }
 }
 
 case class Tweet(body: String, userId: Long)
