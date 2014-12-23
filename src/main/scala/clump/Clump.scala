@@ -51,8 +51,8 @@ object Clump {
   def sourceFrom[T, U](fetch: Set[T] => Future[Map[T, U]], maxBatchSize: Int = Int.MaxValue) =
     new ClumpSource(fetch, maxBatchSize)
 
-  def source[T, U](fetch: Set[T] => Future[Iterable[U]], maxBatchSize: Int = Int.MaxValue)(keyFn: U => T) =
-    new ClumpSource(fetch, keyFn, maxBatchSize)
+  def source[T, U, In <: Iterable[T], Out <: Iterable[U]](fetch: In => Future[Out], maxBatchSize: Int = Int.MaxValue)(keyFn: U => T) =
+    ClumpSource.create(fetch, keyFn, maxBatchSize)
 }
 
 class ClumpFuture[T](future: Future[Option[T]]) extends Clump[T] {
@@ -75,7 +75,7 @@ class ClumpCollect[T](list: List[Clump[T]]) extends Clump[List[T]] {
       .map(Some(_))
 }
 
-class ClumpFetch[T, U](input: T, fetcher: ClumpFetcher[T, U]) extends Clump[U] {
+class ClumpFetch[T, U, In <: Iterable[T], Out <: Iterable[U]](input: T, fetcher: ClumpFetcher[T, U, In, Out]) extends Clump[U] {
   lazy val result = fetcher.run(input)
 }
 

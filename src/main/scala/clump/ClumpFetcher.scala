@@ -2,7 +2,7 @@ package clump
 
 import com.twitter.util.Future
 
-class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
+class ClumpFetcher[T, U, In <: Iterable[T], Out <: Iterable[U]](source: ClumpSource[T, U, In, Out]) {
 
   private var pending = Set[T]()
   private var fetched = Map[T, Future[Option[U]]]()
@@ -27,7 +27,7 @@ class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
       fetch
     }
 
-  private def fetchInBatches(toFetch: Set[T]) =
+  private def fetchInBatches(toFetch: In) =
     Future.collect {
       toFetch.grouped(source.maxBatchSize).toList.map { batch =>
         val results = source.fetch(batch)

@@ -4,6 +4,8 @@ import com.twitter.util.{Await, Future}
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 
+import scalaz.Functor
+
 @RunWith(classOf[JUnitRunner])
 class IntegrationSpec extends Spec {
   val tweetRepository = new TweetRepository
@@ -67,6 +69,21 @@ class IntegrationSpec extends Spec {
       (Tweet("Tweet1", 10), User(10, "User10")),
       (Tweet("Tweet2", 20), User(20, "User20")),
       (Tweet("Tweet3", 30), User(30, "User30"))))
+  }
+
+  "foo" in {
+    val setToSet: Set[Int] => Set[String] = { _.map(_.toString + "potato")}
+    val listToList: List[Int] => List[String] = { _.map(_.toString + "tomato")}
+    val listToIterable: List[Int] => Iterable[String] = { _.map(_.toString + "ristretto")}
+    println(setToSet(Set(1,2)))
+    println(listToList(List(1,2)))
+    println(listToIterable(List(1,2)))
+
+    def applyer[In <: Iterable[Int], Out <: Iterable[String]](fn: In => Out)(inputs: In): Out = fn(inputs)
+    println(applyer(setToSet)(Set(1,2)))
+    println(applyer(listToList)(List(1,2)))
+    println(applyer(listToIterable)(List(1,2)))
+    ok
   }
 }
 
