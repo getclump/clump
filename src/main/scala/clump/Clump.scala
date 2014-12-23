@@ -20,7 +20,7 @@ trait Clump[+T] {
 
   def withFilter[B >: T](f: B => Boolean): Clump[B] = new ClumpFilter(this, f)
 
-  def run = Future.Unit.flatMap(_ => result)
+  def get: Future[Option[T]] = Future.Unit.flatMap(_ => result)
 
   protected def result: Future[Option[T]]
 }
@@ -61,7 +61,7 @@ class ClumpFuture[T](future: Future[Option[T]]) extends Clump[T] {
 
 class ClumpJoin[A, B](a: Clump[A], b: Clump[B]) extends Clump[(A, B)] {
   lazy val result =
-    a.run.join(b.run).map {
+    a.get.join(b.get).map {
       case (Some(valueA), Some(valueB)) => Some(valueA, valueB)
       case other                        => None
     }
@@ -70,31 +70,31 @@ class ClumpJoin[A, B](a: Clump[A], b: Clump[B]) extends Clump[(A, B)] {
 class ClumpCollect[T](list: List[Clump[T]]) extends Clump[List[T]] {
   lazy val result =
     Future
-      .collect(list.map(_.run))
+      .collect(list.map(_.get))
       .map(_.flatten.toList)
       .map(Some(_))
 }
 
 class ClumpFetch[T, U](input: T, fetcher: ClumpFetcher[T, U]) extends Clump[U] {
-  lazy val result = fetcher.run(input)
+  lazy val result = fetcher.get(input)
 }
 
 class ClumpFlatMap[T, U](clump: Clump[T], f: T => Clump[U]) extends Clump[U] {
   lazy val result =
-    clump.run.flatMap {
-      case Some(value) => f(value).run
+    clump.get.flatMap {
+      case Some(value) => f(value).get
       case None        => Future.None
     }
 }
 
 class ClumpRescue[T](clump: Clump[T], rescue: Throwable => Clump[T]) extends Clump[T] {
   lazy val result =
-    clump.run.rescue {
-      case exception => rescue(exception).run
+    clump.get.rescue {
+      case exception => rescue(exception).get
     }
 }
 
 class ClumpFilter[T](clump: Clump[T], f: T => Boolean) extends Clump[T] {
   lazy val result =
-    clump.run.map(_.filter(f))
+    clump.get.map(_.filter(f))
 }
