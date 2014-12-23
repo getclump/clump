@@ -108,6 +108,32 @@ class ClumpExecutionSpec extends Spec {
         source2Fetches mustEqual List(Set(3, 4))
       }
 
+      "using a future clump as base" in new Context {
+        val clump =
+          for {
+            int <- Clump.future(Future.value(Some(1)))
+            collect1 <- Clump.collect(source1.get(int))
+            collect2 <- Clump.collect(source2.get(int))
+          } yield (collect1, collect2)
+
+        clumpResult(clump) mustEqual Some((List(10), List(10)))
+        source1Fetches mustEqual List(Set(1))
+        source2Fetches mustEqual List(Set(1))
+      }
+
+      "using nested flatmaps" in new Context {
+        val clump =
+          Clump.future(Future.value(Some(1))).flatMap { int =>
+            Clump.collect(source1.get(int + 1), source2.get(int + 2)).flatMap { ints =>
+              Clump.traverse(ints)(source1.get)
+            }
+          }
+
+        clumpResult(clump) mustEqual Some((List(200, 300)))
+        source1Fetches mustEqual List(Set(2), Set(20, 30))
+        source2Fetches mustEqual List(Set(3))
+      }
+
       "complex scenario" in new Context {
         val clump =
           for {
