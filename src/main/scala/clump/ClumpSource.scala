@@ -20,3 +20,13 @@ class ClumpSource[T, U](val fetch: Set[T] => Future[Map[T, U]], val maxBatchSize
     new ClumpFetch(input, fetcher)
   }
 }
+
+object ClumpSource {
+  def zip[T, U](fetch: List[T] => Future[List[U]], maxBatchSize: Int): ClumpSource[T, U] = {
+    val zip: List[T] => Future[Map[T, U]] = { inputs =>
+      fetch(inputs).map(inputs.zip(_).toMap)
+    }
+    val setToList: Set[T] => List[T] = _.toList
+    new ClumpSource(setToList.andThen(zip), maxBatchSize)
+  }
+}
