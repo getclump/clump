@@ -26,7 +26,7 @@ class IntegrationSpec extends Spec {
         } yield (tweet, user)
       }
 
-    Await.result(enrichedTweets.run) ==== Some(List(
+    Await.result(enrichedTweets.get) ==== Some(List(
       (Tweet("Tweet1", 10), User(10, "User10")),
       (Tweet("Tweet2", 20), User(20, "User20")),
       (Tweet("Tweet3", 30), User(30, "User30"))))
@@ -40,13 +40,13 @@ class IntegrationSpec extends Spec {
           enrichedLikes <- Clump.traverse(timeline.likeIds) { id =>
             for {
               like <- likes.get(id)
-              resources <- tracks.get(like.trackIds).join(users.get(like.userIds))
+              resources <- tracks.list(like.trackIds).join(users.list(like.userIds))
             } yield (like, resources._1, resources._2)
           }
         } yield (timeline, enrichedLikes)
       }
 
-    Await.result(enrichedTimelines.run) ==== Some(List(
+    Await.result(enrichedTimelines.get) ==== Some(List(
       (Timeline(1, List(10, 20)), List(
         (Like(10, List(100, 200), List(1000, 2000)), List(Track(100, "Track100"), Track(200, "Track200")), List(User(1000, "User1000"), User(2000, "User2000"))),
         (Like(20, List(200, 400), List(2000, 4000)), List(Track(200, "Track200"), Track(400, "Track400")), List(User(2000, "User2000"), User(4000, "User4000"))))),
@@ -63,7 +63,7 @@ class IntegrationSpec extends Spec {
           users.get(tweet.userId).map(user => (tweet, user)))
       }
 
-    Await.result(enrichedTweets.run) ==== Some(List(
+    Await.result(enrichedTweets.get) ==== Some(List(
       (Tweet("Tweet1", 10), User(10, "User10")),
       (Tweet("Tweet2", 20), User(20, "User20")),
       (Tweet("Tweet3", 30), User(30, "User30"))))

@@ -13,7 +13,7 @@ class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
       pending += input
     }
 
-  def run(input: T) =
+  def get(input: T) =
     fetched.getOrElse(input, flushAndGet(input))
 
   private def flushAndGet(input: T): Future[Option[U]] =

@@ -7,5 +7,5 @@ import com.twitter.util.Await
 trait Spec extends Specification with Mockito {
   
   def clumpResult[T](clump: Clump[T]) =
-    Await.result(clump.run)
+    Await.result(clump.get)
 }
