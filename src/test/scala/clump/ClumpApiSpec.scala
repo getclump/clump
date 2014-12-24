@@ -74,6 +74,10 @@ class ClumpApiSpec extends Spec {
       val source = Clump.sourceZip(fetch)
       clumpResult(source.get(1)) mustEqual Some("1")
     }
+
+    "allows to create an empty Clump (Clump.none)" in {
+      clumpResult(Clump.None) ==== None
+    }
   }
 
   "a Clump instance" >> {
@@ -125,9 +129,29 @@ class ClumpApiSpec extends Spec {
       (clump: Clump[List[A]]) must beAnInstanceOf[Clump[List[A]]]
     }
 
+    "result can never be None after clump.orElse" in {
+      clumpResult(Clump.None.orElse(1)) ==== Some(1)
+    }
+
     "can represent its result as a list (clump.list) when its type is List[T]" in {
       Await.result(Clump.value(List(1,2)).list) ==== List(1,2)
       // Clump.value(1).list doesn't compile
+    }
+
+    "can provide a result falling back to a default (clump.getOrElse)" in {
+      Await.result(Clump.value(None).getOrElse(1)) ==== 1
+    }
+
+    "has a utility method (clump.apply) for unwrapping optional result" in {
+      Clump.value(1).apply() ==== 1
+
+      try {
+        Clump.None.apply()
+        ko("expected NoSuchElementException to be thrown")
+      } catch {
+        case e: NoSuchElementException => ok
+        case e: Throwable => ko(s"expected NoSuchElementException but was $e")
+      }
     }
   }
 }

@@ -22,6 +22,13 @@ trait Clump[+T] {
   def withFilter[B >: T](f: B => Boolean): Clump[B] = new ClumpFilter(this, f)
 
   def list[B](implicit ev: T <:< List[B]): Future[List[B]] = get.map(_.toList.flatten)
+
+  def getOrElse[B >: T](default: => B): Future[B] = this.orElse(default).apply
+
+  def orElse[B >: T](default: => B): Clump[B] = new ClumpOrElse(this, default)
+
+  def apply: Future[T] = get.map(_.get)
+
   def get: Future[Option[T]] =
     context
       .flush(List(this))
@@ -38,6 +45,8 @@ object Clump {
 
   def value[T](value: T): Clump[T] =
     future(Future.value(Option(value)))
+
+  def None[T]: Clump[T] = value(scala.None)
 
   def value[T](value: Option[T]): Clump[T] =
     future(Future.value(value))
@@ -130,4 +139,13 @@ class ClumpFilter[T](clump: Clump[T], f: T => Boolean) extends Clump[T] {
   val downstream = Future.value(List())
   val result =
     clump.result.map(_.filter(f))
+}
+
+class ClumpOrElse[T](clump: Clump[T], default: => T) extends Clump[T] {
+  val upstream = List(clump)
+  val downstream = Future.value(List())
+  val result = clump.result.map {
+    case None => Some(default)
+    case some => some
+  }
 }
