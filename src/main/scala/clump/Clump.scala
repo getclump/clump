@@ -55,6 +55,9 @@ object Clump {
 
   def source[T, U](fetch: Set[T] => Future[Iterable[U]], maxBatchSize: Int = Int.MaxValue)(keyFn: U => T) =
     new ClumpSource(fetch, keyFn, maxBatchSize)
+
+  def sourceZip[T, U](fetch: List[T] => Future[List[U]], maxBatchSize: Int = Int.MaxValue) =
+    ClumpSource.zip(fetch, maxBatchSize)
 }
 
 class ClumpFuture[T](future: Future[Option[T]]) extends Clump[T] {
