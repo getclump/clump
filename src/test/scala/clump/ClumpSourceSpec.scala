@@ -31,6 +31,16 @@ class ClumpSourceSpec extends Spec {
     verifyNoMoreInteractions(repo)
   }
 
+  "provides failfast and fallbacks when fetching" in new Context {
+    val source = Clump.sourceFrom(repo.fetch)
+
+    when(repo.fetch(Set(1))).thenReturn(Future(Map[Int,Int]()))
+
+    clumpResult(source.get(1)) ==== None
+    clumpResult(source.getOrElse(1, 2)) ==== Some(2)
+    clumpResult(source(1)) must throwA[NoSuchElementException]
+  }
+
   "fetches multiple clumps" in new Context {
     val source = Clump.sourceFrom(repo.fetch)
 
