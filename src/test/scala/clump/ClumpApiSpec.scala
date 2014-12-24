@@ -115,5 +115,10 @@ class ClumpApiSpec extends Spec {
       val clump = Clump.traverse(List(new B, new C))(Clump.value(_))
       (clump: Clump[List[A]]) must beAnInstanceOf[Clump[List[A]]]
     }
+
+    "can represent its result as a list (clump.list) when its type is List[T]" in {
+      Await.result(Clump.value(List(1,2)).list) ==== List(1,2)
+      // Clump.value(1).list doesn't compile
+    }
   }
 }

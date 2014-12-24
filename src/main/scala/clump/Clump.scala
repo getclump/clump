@@ -20,6 +20,8 @@ trait Clump[+T] {
 
   def withFilter[B >: T](f: B => Boolean): Clump[B] = new ClumpFilter(this, f)
 
+  def list[B](implicit ev: T <:< List[B]): Future[List[B]] = get.map(_.toList.flatten)
+
   def get: Future[Option[T]] = Future.Unit.flatMap(_ => result)
 
   protected def result: Future[Option[T]]
