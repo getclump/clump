@@ -1,45 +1,47 @@
 package clump
 
 import com.twitter.util.Future
+import scala.collection.mutable.{ Map => MutableMap }
+import com.twitter.util._
 
 class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
 
-  private var pending = Set[T]()
-  private var fetched = Map[T, Future[Option[U]]]()
-
-  def append(input: T) =
-    synchronized {
-      retryFailures(input)
-      pending += input
-    }
+  private val fetches = MutableMap[T, Promise[Option[U]]]()
 
   def get(input: T) =
-    fetched.getOrElse(input, flushAndGet(input))
-
-  private def flushAndGet(input: T): Future[Option[U]] =
-    flush.flatMap { _ => fetched(input) }
-
-  private def flush =
     synchronized {
-      val toFetch = pending -- fetched.keys
-      val fetch = fetchInBatches(toFetch)
-      pending = Set()
-      fetch
+      retryFailedFetches(input)
+      fetches.getOrElseUpdate(input, Promise[Option[U]])
     }
 
-  private def fetchInBatches(toFetch: Set[T]) =
-    Future.collect {
-      toFetch.grouped(source.maxBatchSize).toList.map { batch =>
-        val results = source.fetch(batch)
-        for (input <- batch)
-          fetched += input -> results.map(_.get(input))
-        results
-      }
+  def flush =
+    synchronized {
+      Future.collect(flushInBatches).unit
     }
 
-  private def retryFailures(input: T) =
-    fetched.get(input).map { result =>
-      if (result.poll.forall(_.isThrow))
-        fetched -= input
+  private def flushInBatches =
+    pendingFetches
+      .grouped(source.maxBatchSize)
+      .toList
+      .map(fetchBatch)
+
+  private def fetchBatch(batch: Set[T]) = {
+    val results = source.fetch(batch)
+    for (input <- batch) {
+      val fetch = fetches(input)
+      val fetchResult = results.map(_.get(input))
+      fetchResult.proxyTo(fetch)
+    }
+    results
+  }
+
+  private def pendingFetches =
+    fetches.collect {
+      case (key, fetch) if (!fetch.poll.isDefined) => key
+    }.toSet
+
+  private def retryFailedFetches(input: T) =
+    fetches.get(input).flatMap(_.poll).collect {
+      case Throw(_) => fetches -= input
     }
 }

@@ -3,10 +3,11 @@ package clump
 import com.twitter.util.Future
 import com.twitter.util.Throw
 import com.twitter.util.Try
+import com.twitter.util.Return
 
 trait Clump[+T] {
 
-  private val forceContextInit = ClumpContext()
+  private val context = ClumpContext()
 
   def map[U](f: T => U) = flatMap(f.andThen(Clump.value(_)))
 
@@ -21,10 +22,16 @@ trait Clump[+T] {
   def withFilter[B >: T](f: B => Boolean): Clump[B] = new ClumpFilter(this, f)
 
   def list[B](implicit ev: T <:< List[B]): Future[List[B]] = get.map(_.toList.flatten)
+  def get: Future[Option[T]] =
+    context
+      .flush(List(this))
+      .flatMap { _ =>
+        result
+      }
 
-  def get: Future[Option[T]] = Future.Unit.flatMap(_ => result)
-
-  protected def result: Future[Option[T]]
+  protected[clump] def upstream: List[Clump[_]]
+  protected[clump] def downstream: Future[List[Clump[_]]]
+  protected[clump] def result: Future[Option[T]]
 }
 
 object Clump {
@@ -60,46 +67,67 @@ object Clump {
     ClumpSource.zip(fetch, maxBatchSize)
 }
 
-class ClumpFuture[T](future: Future[Option[T]]) extends Clump[T] {
-  lazy val result = future
+class ClumpFuture[T](val result: Future[Option[T]]) extends Clump[T] {
+  val upstream = List()
+  val downstream = result.liftToTry.map(_ => List())
+}
+
+class ClumpFetch[T, U](input: T, fetcher: ClumpFetcher[T, U]) extends Clump[U] {
+  val upstream = List()
+  val downstream = Future.value(List())
+  val result = fetcher.get(input)
 }
 
 class ClumpJoin[A, B](a: Clump[A], b: Clump[B]) extends Clump[(A, B)] {
-  lazy val result =
-    a.get.join(b.get).map {
-      case (Some(valueA), Some(valueB)) => Some(valueA, valueB)
-      case other                        => None
-    }
+  val upstream = List(a, b)
+  val downstream = Future.value(List())
+  val result =
+    a.result.join(b.result)
+      .map {
+        case (Some(valueA), Some(valueB)) => Some(valueA, valueB)
+        case other                        => None
+      }
 }
 
 class ClumpCollect[T](list: List[Clump[T]]) extends Clump[List[T]] {
-  lazy val result =
+  val upstream = list
+  val downstream = Future.value(List())
+  val result =
     Future
-      .collect(list.map(_.get))
+      .collect(list.map(_.result))
       .map(_.flatten.toList)
       .map(Some(_))
 }
 
-class ClumpFetch[T, U](input: T, fetcher: ClumpFetcher[T, U]) extends Clump[U] {
-  lazy val result = fetcher.get(input)
-}
-
 class ClumpFlatMap[T, U](clump: Clump[T], f: T => Clump[U]) extends Clump[U] {
-  lazy val result =
-    clump.get.flatMap {
-      case Some(value) => f(value).get
+  val upstream = List(clump)
+  val partial =
+    clump.result.map(_.map(f))
+  val downstream =
+    partial.map(_.toList)
+  val result =
+    partial.flatMap {
+      case Some(clump) => clump.result
       case None        => Future.None
     }
 }
 
 class ClumpRescue[T](clump: Clump[T], rescue: Throwable => Clump[T]) extends Clump[T] {
-  lazy val result =
-    clump.get.rescue {
-      case exception => rescue(exception).get
+  val upstream = List(clump)
+  val partial =
+    clump.result.liftToTry.map {
+      case Return(value)    => Clump.value(value)
+      case Throw(exception) => rescue(exception)
     }
+  val downstream =
+    partial.map(List(_))
+  val result =
+    partial.flatMap(_.result)
 }
 
 class ClumpFilter[T](clump: Clump[T], f: T => Boolean) extends Clump[T] {
-  lazy val result =
-    clump.get.map(_.filter(f))
+  val upstream = List(clump)
+  val downstream = Future.value(List())
+  val result =
+    clump.result.map(_.filter(f))
 }
