@@ -88,13 +88,23 @@ class ClumpApiSpec extends Spec {
         clumpResult(Clump.value(1).map(_ + 1)) mustEqual Some(2)
       }
 
-      "using a transformation that creates a new clump (clump.flatMap)" in {
-        clumpResult(Clump.value(1).flatMap(i => Clump.value(i + 1))) mustEqual Some(2)
+      "using a transformation that creates a new clump (clump.flatMap)" >> {
+        "both clumps are defined" in {
+          clumpResult(Clump.value(1).flatMap(i => Clump.value(i + 1))) mustEqual Some(2)
+        }
+        "initial clump is undefined" in {
+          clumpResult(Clump.value(None).flatMap(i => Clump.value(2))) mustEqual None
+        }
       }
     }
 
-    "can be joined with another clump and produce a new clump with the value of both (clump.join)" in {
-      clumpResult(Clump.value(1).join(Clump.value(2))) mustEqual Some(1, 2)
+    "can be joined with another clump and produce a new clump with the value of both (clump.join)" >> {
+      "both clumps are defined" in {
+        clumpResult(Clump.value(1).join(Clump.value(2))) mustEqual Some(1, 2)
+      }
+      "one of them is undefined" in {
+        clumpResult(Clump.value(1).join(Clump.value(None))) mustEqual None
+      }
     }
 
     "allows to recover from failures" >> {
@@ -107,12 +117,21 @@ class ClumpApiSpec extends Spec {
         clumpResult(clump) mustEqual Some(2)
       }
 
-      "using a function that recovers the failure using a new clump (clump.rescue)" in {
-        val clump =
-          Clump.exception(new IllegalStateException).rescue {
-            case e: IllegalStateException => Clump.value(2)
-          }
-        clumpResult(clump) mustEqual Some(2)
+      "using a function that recovers the failure using a new clump (clump.rescue)" >> {
+        "exception happens" in {
+          val clump =
+            Clump.exception(new IllegalStateException).rescue {
+              case e: IllegalStateException => Clump.value(2)
+            }
+          clumpResult(clump) mustEqual Some(2)
+        }
+        "exception doesn't happen" in {
+          val clump =
+            Clump.value(1).rescue {
+              case e: IllegalStateException => Clump.value(None)
+            }
+          clumpResult(clump) mustEqual Some(1)
+        }
       }
     }
 
@@ -120,7 +139,7 @@ class ClumpApiSpec extends Spec {
       clumpResult(Clump.value(1).withFilter(_ != 1)) mustEqual None
       clumpResult(Clump.value(1).withFilter(_ == 1)) mustEqual Some(1)
     }
-    
+
     "uses a covariant type parameter" in {
       trait A
       class B extends A
@@ -134,12 +153,18 @@ class ClumpApiSpec extends Spec {
     }
 
     "can represent its result as a list (clump.list) when its type is List[T]" in {
-      Await.result(Clump.value(List(1,2)).list) ==== List(1,2)
+      Await.result(Clump.value(List(1, 2)).list) ==== List(1, 2)
       // Clump.value(1).list doesn't compile
     }
 
-    "can provide a result falling back to a default (clump.getOrElse)" in {
-      Await.result(Clump.value(None).getOrElse(1)) ==== 1
+    "can provide a result falling back to a default (clump.getOrElse)" >> {
+      "initial clump is undefined" in {
+        Await.result(Clump.value(None).getOrElse(1)) ==== 1
+      }
+
+      "initial clump is defined" in {
+        Await.result(Clump.value(Some(2)).getOrElse(1)) ==== 2
+      }
     }
 
     "has a utility method (clump.apply) for unwrapping optional result" in {
@@ -150,7 +175,7 @@ class ClumpApiSpec extends Spec {
         ko("expected NoSuchElementException to be thrown")
       } catch {
         case e: NoSuchElementException => ok
-        case e: Throwable => ko(s"expected NoSuchElementException but was $e")
+        case e: Throwable              => ko(s"expected NoSuchElementException but was $e")
       }
     }
   }

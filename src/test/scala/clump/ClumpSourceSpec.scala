@@ -34,24 +34,40 @@ class ClumpSourceSpec extends Spec {
   "provides failfast and fallbacks when fetching" in new Context {
     val source = Clump.sourceFrom(repo.fetch)
 
-    when(repo.fetch(Set(1))).thenReturn(Future(Map[Int,Int]()))
+    when(repo.fetch(Set(1))).thenReturn(Future(Map[Int, Int]()))
 
     clumpResult(source.get(1)) ==== None
     clumpResult(source.getOrElse(1, 2)) ==== Some(2)
     clumpResult(source(1)) must throwA[NoSuchElementException]
   }
 
-  "fetches multiple clumps" in new Context {
-    val source = Clump.sourceFrom(repo.fetch)
+  "fetches multiple clumps" >> {
 
-    when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
+    "using list" in new Context {
+      val source = Clump.sourceFrom(repo.fetch)
 
-    val clump = source.list(List(1, 2))
+      when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
 
-    clumpResult(clump) mustEqual Some(List(10, 20))
+      val clump = source.list(List(1, 2))
 
-    verify(repo).fetch(Set(1, 2))
-    verifyNoMoreInteractions(repo)
+      clumpResult(clump) mustEqual Some(List(10, 20))
+
+      verify(repo).fetch(Set(1, 2))
+      verifyNoMoreInteractions(repo)
+    }
+
+    "using varargs" in new Context {
+      val source = Clump.sourceFrom(repo.fetch)
+
+      when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
+
+      val clump = source.list(1, 2)
+
+      clumpResult(clump) mustEqual Some(List(10, 20))
+
+      verify(repo).fetch(Set(1, 2))
+      verifyNoMoreInteractions(repo)
+    }
   }
 
   "can be used as a singleton" in new Context {
@@ -62,15 +78,13 @@ class ClumpSourceSpec extends Spec {
     val future =
       Future.collect {
         for (i <- 0 until 5) yield {
-          Future.Unit.flatMap { _ =>
-            source.list(List(1)).get
-          }
+          source.list(List(1)).get
         }
       }
 
     Await.result(future)
 
-    verify(repo, times(5)).fetch(Set(1))
+    verify(repo).fetch(Set(1))
     verifyNoMoreInteractions(repo)
   }
 }
