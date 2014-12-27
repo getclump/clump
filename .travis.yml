@@ -8,3 +8,4 @@ notifications:
   email:
     - fwbrasil@gmail.com
     - williamboxhall@gmail.com
+script: "sbt coveralls"
