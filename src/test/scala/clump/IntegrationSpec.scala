@@ -9,12 +9,14 @@ class IntegrationSpec extends Spec {
   val tweetRepository = new TweetRepository
   val userRepository = new UserRepository
   val zipUserRepository = new ZipUserRepository
+  val filteredUserRepository = new FilteredUserRepository
   val timelineRepository = new TimelineRepository
   val likeRepository = new LikeRepository
   val trackRepository = new TrackRepository
 
   val tweets = Clump.sourceFrom(tweetRepository.tweetsFor)
   val users = Clump.sourceFrom(userRepository.usersFor)
+  val filteredUsers = Clump.source(filteredUserRepository.usersFor) { _.userId }
   val zippedUsers = Clump.sourceZip(zipUserRepository.usersFor)
   val timelines = Clump.source(timelineRepository.timelinesFor) { _.timelineId }
   val likes = Clump.source(likeRepository.likesFor) { _.likeId }
@@ -98,6 +100,29 @@ class IntegrationSpec extends Spec {
       (Tweet("Tweet2", 20), User(20, "User20")),
       (Tweet("Tweet3", 30), User(30, "User30"))))
   }
+
+  "A Clump can have a partial result" in {
+    val onlyFullObjectGraph: Clump[List[(Tweet, User)]] = Clump.traverse(List(1L, 2L, 3L)) { tweetId =>
+      for {
+        tweet <- tweets.get(tweetId)
+        user <- filteredUsers.get(tweet.userId)
+      } yield (tweet, user)
+    }
+
+    Await.result(onlyFullObjectGraph.get) ==== Some(List((Tweet("Tweet2", 20), User(20, "User20"))))
+
+    val partialResponses: Clump[List[(Tweet, Option[User])]] = Clump.traverse(List(1L, 2L, 3L)) { tweetId =>
+      for {
+        tweet <- tweets.get(tweetId)
+        user <- filteredUsers.optional(tweet.userId)
+      } yield (tweet, user)
+    }
+
+    Await.result(partialResponses.get) ==== Some(List(
+      (Tweet("Tweet1", 10), None),
+      (Tweet("Tweet2", 20), Some(User(20, "User20"))),
+      (Tweet("Tweet3", 30), None)))
+  }
 }
 
 case class Tweet(body: String, userId: Long)
@@ -125,6 +150,12 @@ class UserRepository {
 class ZipUserRepository {
   def usersFor(ids: List[Long]): Future[List[User]] = {
     Future.value(ids.map(id => User(id, s"User$id")))
+  }
+}
+
+class FilteredUserRepository {
+  def usersFor(ids: Set[Long]): Future[Set[User]] = {
+    Future.value(ids.filter(_ % 20 == 0).map(id => User(id, s"User$id")))
   }
 }
 
