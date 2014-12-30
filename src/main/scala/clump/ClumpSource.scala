@@ -18,7 +18,7 @@ class ClumpSource[T, U](val fetch: Set[T] => Future[Map[T, U]], val maxBatchSize
     new ClumpFetch(input, ClumpContext().fetcherFor(this))
   
   def getOrElse(input: T, default: => U) =
-    get(input).orElse(default)
+    get(input).orElse(Clump.value(default))
 
   def apply(input: T): Clump[U] =
     get(input).orElse(throw new NoSuchElementException)

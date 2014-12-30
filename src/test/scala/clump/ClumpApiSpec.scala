@@ -149,7 +149,7 @@ class ClumpApiSpec extends Spec {
     }
 
     "result can never be None after clump.orElse" in {
-      clumpResult(Clump.None.orElse(1)) ==== Some(1)
+      clumpResult(Clump.None.orElse(Clump.value(1))) ==== Some(1)
     }
 
     "can represent its result as a list (clump.list) when its type is List[T]" in {

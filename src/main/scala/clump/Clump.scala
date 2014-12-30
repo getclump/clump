@@ -23,13 +23,13 @@ trait Clump[+T] {
 
   def list[B](implicit ev: T <:< List[B]): Future[List[B]] = get.map(_.toList.flatten)
 
-  def getOrElse[B >: T](default: => B): Future[B] = this.orElse(default).apply
-
-  def orElse[B >: T](default: => B): Clump[B] = new ClumpOrElse(this, default)
+  def orElse[B >: T](default: => Clump[B]): Clump[B] = new ClumpOrElse(this, default)
 
   def optional: Clump[Option[T]] = new ClumpOptional(this)
 
   def apply: Future[T] = get.map(_.get)
+
+  def getOrElse[B >: T](default: => B): Future[B] = get.map(_.getOrElse(default))
 
   def get: Future[Option[T]] =
     context
@@ -143,13 +143,17 @@ class ClumpFilter[T](clump: Clump[T], f: T => Boolean) extends Clump[T] {
     clump.result.map(_.filter(f))
 }
 
-class ClumpOrElse[T](clump: Clump[T], default: => T) extends Clump[T] {
+class ClumpOrElse[T](clump: Clump[T], default: => Clump[T]) extends Clump[T] {
   val upstream = List(clump)
-  val downstream = Future.value(List())
-  val result = clump.result.map {
-    case None => Some(default)
-    case some => some
-  }
+  val partial =
+    clump.result.map {
+      case Some(value) => Clump.value(value)
+      case None        => default
+    }
+  val downstream =
+    partial.map(List(_))
+  val result =
+    partial.flatMap(_.result)
 }
 
 class ClumpOptional[T](clump: Clump[T]) extends Clump[Option[T]] {
