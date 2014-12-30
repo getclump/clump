@@ -168,15 +168,8 @@ class ClumpApiSpec extends Spec {
     }
 
     "has a utility method (clump.apply) for unwrapping optional result" in {
-      Clump.value(1).apply() ==== 1
-
-      try {
-        Clump.None.apply()
-        ko("expected NoSuchElementException to be thrown")
-      } catch {
-        case e: NoSuchElementException => ok
-        case e: Throwable              => ko(s"expected NoSuchElementException but was $e")
-      }
+      Await.result(Clump.value(1).apply()) ==== 1
+      Await.result(Clump.value[Int](None)()) must throwA[NoSuchElementException]
     }
 
     "can be made optional (clump.optional) to avoid lossy joins" in {
