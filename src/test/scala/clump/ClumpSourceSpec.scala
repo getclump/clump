@@ -31,17 +31,6 @@ class ClumpSourceSpec extends Spec {
     verifyNoMoreInteractions(repo)
   }
 
-  "provides failfast, fallbacks and optional when fetching" in new Context {
-    val source = Clump.sourceFrom(repo.fetch)
-
-    when(repo.fetch(Set(1))).thenReturn(Future(Map[Int, Int]()))
-
-    clumpResult(source.get(1)) ==== None
-    clumpResult(source.getOrElse(1, 2)) ==== Some(2)
-    clumpResult(source(1)) must throwA[NoSuchElementException]
-    clumpResult(source.optional(1)) ==== Some(None)
-  }
-
   "fetches multiple clumps" >> {
 
     "using list" in new Context {
@@ -49,7 +38,7 @@ class ClumpSourceSpec extends Spec {
 
       when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
 
-      val clump = source.list(List(1, 2))
+      val clump = source.get(List(1, 2))
 
       clumpResult(clump) mustEqual Some(List(10, 20))
 
@@ -62,7 +51,7 @@ class ClumpSourceSpec extends Spec {
 
       when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
 
-      val clump = source.list(1, 2)
+      val clump = source.get(1, 2)
 
       clumpResult(clump) mustEqual Some(List(10, 20))
 
@@ -79,7 +68,7 @@ class ClumpSourceSpec extends Spec {
     val future =
       Future.collect {
         for (i <- 0 until 5) yield {
-          source.list(List(1)).get
+          source.get(List(1)).get
         }
       }
 
