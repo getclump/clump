@@ -29,7 +29,7 @@ trait Clump[+T] {
 
   def optional: Clump[Option[T]] = new ClumpOptional(this)
 
-  def apply: Future[T] = get.map(_.get)
+  def apply(): Future[T] = get.map(_.get)
 
   def get: Future[Option[T]] =
     context
