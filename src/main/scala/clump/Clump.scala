@@ -5,7 +5,7 @@ import com.twitter.util.Throw
 import com.twitter.util.Try
 import com.twitter.util.Return
 
-trait Clump[+T] {
+sealed trait Clump[+T] {
 
   private val context = ClumpContext()
 
