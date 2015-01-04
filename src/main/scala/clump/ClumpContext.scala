@@ -7,7 +7,7 @@ import com.twitter.util.Future
 import com.twitter.util.JavaTimer
 import com.twitter.util.TimeConversions._
 
-class ClumpContext {
+final class ClumpContext {
 
   private val fetchers =
     new HashMap[ClumpSource[_, _], ClumpFetcher[_, _]]()
