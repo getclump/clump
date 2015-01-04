@@ -148,8 +148,13 @@ class ClumpApiSpec extends Spec {
       (clump: Clump[List[A]]) must beAnInstanceOf[Clump[List[A]]]
     }
 
-    "result can never be None after clump.orElse" in {
-      clumpResult(Clump.None.orElse(1)) ==== Some(1)
+    "allows to defined a fallback value (clump.orElse)" >> {
+      "undefined" in {
+        clumpResult(Clump.None.orElse(Clump.value(1))) ==== Some(1)
+      }
+      "defined" in {
+        clumpResult(Clump.value(Some(1)).orElse(Clump.value(2))) ==== Some(1)
+      }
     }
 
     "can represent its result as a list (clump.list) when its type is List[T]" in {
