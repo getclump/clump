@@ -44,7 +44,7 @@ class IntegrationSpec extends Spec {
           enrichedLikes <- Clump.traverse(timeline.likeIds) { id =>
             for {
               like <- likes.get(id)
-              resources <- tracks.list(like.trackIds).join(users.list(like.userIds))
+              resources <- tracks.get(like.trackIds).join(users.get(like.userIds))
             } yield (like, resources._1, resources._2)
           }
         } yield (timeline, enrichedLikes)
@@ -114,7 +114,7 @@ class IntegrationSpec extends Spec {
     val partialResponses: Clump[List[(Tweet, Option[User])]] = Clump.traverse(List(1L, 2L, 3L)) { tweetId =>
       for {
         tweet <- tweets.get(tweetId)
-        user <- filteredUsers.optional(tweet.userId)
+        user <- filteredUsers.get(tweet.userId).optional
       } yield (tweet, user)
     }
 

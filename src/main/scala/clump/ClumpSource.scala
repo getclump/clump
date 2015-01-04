@@ -8,22 +8,14 @@ class ClumpSource[T, U](val fetch: Set[T] => Future[Map[T, U]], val maxBatchSize
     this(fetch.andThen(_.map(_.map(v => (keyFn(v), v)).toMap)), maxBatchSize)
   }
 
-  def list(inputs: T*): Clump[List[U]] =
-    list(inputs.toList)
+  def get(inputs: T*): Clump[List[U]] =
+    get(inputs.toList)
 
-  def list(inputs: List[T]): Clump[List[U]] =
+  def get(inputs: List[T]): Clump[List[U]] =
     Clump.collect(inputs.map(get))
 
   def get(input: T): Clump[U] =
     new ClumpFetch(input, ClumpContext().fetcherFor(this))
-  
-  def getOrElse(input: T, default: => U) =
-    get(input).orElse(Clump.value(default))
-
-  def apply(input: T): Clump[U] =
-    get(input).orElse(throw new NoSuchElementException)
-
-  def optional(input: T): Clump[Option[U]] = get(input).optional
 }
 
 object ClumpSource {
