@@ -68,14 +68,14 @@ object Clump {
   def collect[T](clumps: List[Clump[T]]): Clump[List[T]] =
     new ClumpCollect(clumps)
 
-  def sourceFrom[T, U](fetch: Set[T] => Future[Map[T, U]], maxBatchSize: Int = Int.MaxValue) =
-    new ClumpSource(fetch, maxBatchSize)
+  def sourceFrom[T, U](fetch: Set[T] => Future[Map[T, U]]) =
+    ClumpSource.from(fetch)
 
-  def source[T, U](fetch: Set[T] => Future[Iterable[U]], maxBatchSize: Int = Int.MaxValue)(keyFn: U => T) =
-    new ClumpSource(fetch, keyFn, maxBatchSize)
+  def source[T, U](fetch: Set[T] => Future[Iterable[U]])(keyExtractor: U => T) =
+    ClumpSource.apply(fetch, keyExtractor)
 
-  def sourceZip[T, U](fetch: List[T] => Future[List[U]], maxBatchSize: Int = Int.MaxValue) =
-    ClumpSource.zip(fetch, maxBatchSize)
+  def sourceZip[T, U](fetch: List[T] => Future[List[U]]) =
+    ClumpSource.zip(fetch)
 }
 
 class ClumpFuture[T](val result: Future[Option[T]]) extends Clump[T] {

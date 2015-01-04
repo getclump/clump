@@ -39,7 +39,7 @@ class ClumpFetcherSpec extends Spec {
   }
 
   "limits the batch size" in new Context {
-    val source = Clump.sourceFrom(repo.fetch, maxBatchSize = 2)
+    val source = Clump.sourceFrom(repo.fetch).maxBatchSize(2)
 
     when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
     when(repo.fetch(Set(3))).thenReturn(Future(Map(3 -> 30)))
