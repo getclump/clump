@@ -1,11 +1,11 @@
 package clump
 
 import com.twitter.util.Future
+import scala.collection.generic.CanBuildFrom
 
-case class ClumpSource[T, U] private (val fetch: Set[T] => Future[Map[T, U]], val maxBatchSize: Int = Int.MaxValue) {
-
-  def this(fetch: Set[T] => Future[Iterable[U]], keyExtractor: U => T) =
-    this(fetch.andThen(_.map(_.map(v => (keyExtractor(v), v)).toMap)))
+class ClumpSource[T, U] private (
+  val fetch: Set[T] => Future[Map[T, U]],
+  val maxBatchSize: Int = Int.MaxValue) {
 
   def get(inputs: T*): Clump[List[U]] =
     get(inputs.toList)
@@ -17,16 +17,16 @@ case class ClumpSource[T, U] private (val fetch: Set[T] => Future[Map[T, U]], va
     new ClumpFetch(input, ClumpContext().fetcherFor(this))
 
   def maxBatchSize(int: Int) =
-    this.copy(maxBatchSize = int)
+    new ClumpSource(fetch, maxBatchSize = int)
 }
 
 object ClumpSource {
 
-  def apply[T, U](fetch: Set[T] => Future[Iterable[U]], keyExtractor: U => T) =
-    new ClumpSource(fetch, keyExtractor)
+  def apply[T, U, C](fetch: C => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]) =
+    new ClumpSource(extractKeys(adaptInput(fetch), keyExtractor))
 
-  def from[T, U](fetch: Set[T] => Future[Map[T, U]]) =
-    new ClumpSource(fetch)
+  def from[T, U, C](fetch: C => Future[Map[T, U]])(implicit cbf: CanBuildFrom[Nothing, T, C]) =
+    new ClumpSource(adaptInput(fetch))
 
   def zip[T, U](fetch: List[T] => Future[List[U]]): ClumpSource[T, U] = {
     val zip: List[T] => Future[Map[T, U]] = { inputs =>
@@ -35,4 +35,10 @@ object ClumpSource {
     val setToList: Set[T] => List[T] = _.toList
     new ClumpSource(setToList.andThen(zip))
   }
+
+  private def extractKeys[T, U](fetch: Set[T] => Future[Iterable[U]], keyExtractor: U => T) =
+    fetch.andThen(_.map(_.map(v => (keyExtractor(v), v)).toMap))
+
+  private def adaptInput[T, C, R](fetch: C => Future[R])(implicit cbf: CanBuildFrom[Nothing, T, C]) =
+    (c: Set[T]) => fetch(cbf.apply().++=(c).result)
 }

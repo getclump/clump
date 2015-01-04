@@ -57,24 +57,6 @@ class ClumpApiSpec extends Spec {
       clumpResult(Clump.collect(clumps)) mustEqual Some(List(1, 2))
     }
 
-    "allows to create a clump source (Clump.sourceFrom)" in {
-      def fetch(inputs: Set[Int]) = Future.value(inputs.map(i => i -> i.toString).toMap)
-      val source = Clump.sourceFrom(fetch)
-      clumpResult(source.get(1)) mustEqual Some("1")
-    }
-
-    "allows to create a clump source with key function (Clump.source)" in {
-      def fetch(inputs: Set[Int]) = Future.value(inputs.map(_.toString))
-      val source = Clump.source(fetch)(_.toInt)
-      clumpResult(source.get(1)) mustEqual Some("1")
-    }
-
-    "allows to create a clump source with zip as the key function (Clump.sourceZip)" in {
-      def fetch(inputs: List[Int]) = Future.value(inputs.map(_.toString))
-      val source = Clump.sourceZip(fetch)
-      clumpResult(source.get(1)) mustEqual Some("1")
-    }
-
     "allows to create an empty Clump (Clump.none)" in {
       clumpResult(Clump.None) ==== None
     }
