@@ -36,12 +36,12 @@ class ClumpSourceSpec extends Spec {
   "allows to create a clump source with key function (ClumpSource.apply)" >> {
     "set input" in {
       def fetch(inputs: Set[Int]) = Future.value(inputs.map(_.toString))
-      val source = ClumpSource.apply(fetch)(_.toInt)
+      val source = ClumpSource(fetch)(_.toInt)
       clumpResult(source.get(1)) mustEqual Some("1")
     }
     "seq input" in {
       def fetch(inputs: Seq[Int]) = Future.value(inputs.map(_.toString))
-      val source = ClumpSource.apply(fetch)(_.toInt)
+      val source = ClumpSource(fetch)(_.toInt)
       clumpResult(source.get(1)) mustEqual Some("1")
     }
   }

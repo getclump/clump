@@ -16,9 +16,9 @@ class IntegrationSpec extends Spec {
 
   val tweets = ClumpSource.from(tweetRepository.tweetsFor)
   val users = ClumpSource.from(userRepository.usersFor)
-  val filteredUsers = ClumpSource.apply(filteredUserRepository.usersFor) { _.userId }
+  val filteredUsers = ClumpSource(filteredUserRepository.usersFor) { _.userId }
   val zippedUsers = ClumpSource.zip(zipUserRepository.usersFor)
-  val timelines = ClumpSource.apply(timelineRepository.timelinesFor) { _.timelineId }
+  val timelines = ClumpSource(timelineRepository.timelinesFor) { _.timelineId }
   val likes = ClumpSource(likeRepository.likesFor) { _.likeId }
   val tracks = ClumpSource(trackRepository.tracksFor) { _.trackId }
 
