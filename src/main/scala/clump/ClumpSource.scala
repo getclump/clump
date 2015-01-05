@@ -29,16 +29,23 @@ object ClumpSource {
     new ClumpSource(adaptInput(fetch))
 
   def zip[T, U](fetch: List[T] => Future[List[U]]): ClumpSource[T, U] = {
+    new ClumpSource(zipped(fetch))
+  }
+
+  private def zipped[T, U](fetch: List[T] => Future[List[U]]) = {
     val zip: List[T] => Future[Map[T, U]] = { inputs =>
       fetch(inputs).map(inputs.zip(_).toMap)
     }
     val setToList: Set[T] => List[T] = _.toList
-    new ClumpSource(setToList.andThen(zip))
+    setToList.andThen(zip)
   }
 
   private def extractKeys[T, U](fetch: Set[T] => Future[Iterable[U]], keyExtractor: U => T) =
-    fetch.andThen(_.map(_.map(v => (keyExtractor(v), v)).toMap))
+    fetch.andThen(_.map(resultsToKeys(keyExtractor, _)))
+
+  private def resultsToKeys[U, T](keyExtractor: (U) => T, results: Iterable[U]) =
+    results.map(v => (keyExtractor(v), v)).toMap
 
   private def adaptInput[T, C, R](fetch: C => Future[R])(implicit cbf: CanBuildFrom[Nothing, T, C]) =
-    (c: Set[T]) => fetch(cbf.apply().++=(c).result)
+    (c: Set[T]) => fetch(cbf.apply().++=(c).result())
 }
