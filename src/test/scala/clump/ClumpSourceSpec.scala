@@ -52,6 +52,38 @@ class ClumpSourceSpec extends Spec {
     clumpResult(source.get(1)) mustEqual Some("1")
   }
 
+  "allows to create a clump source from various input/ouput type fetch functions (Clump.source)" in {
+    def setToSet: Set[Int] => Future[Set[String]] = { inputs => Future.value(inputs.map(_.toString)) }
+    def listToList: List[Int] => Future[List[String]] = { inputs => Future.value(inputs.map(_.toString)) }
+    def iterableToIterable: Iterable[Int] => Future[Iterable[String]] = { inputs => Future.value(inputs.map(_.toString)) }
+    def setToList: Set[Int] => Future[List[String]] = { inputs => Future.value(inputs.map(_.toString).toList) }
+    def listToSet: List[Int] => Future[Set[String]] = { inputs => Future.value(inputs.map(_.toString).toSet) }
+    def setToIterable: Set[Int] => Future[Iterable[String]] = { inputs => Future.value(inputs.map(_.toString)) }
+    def listToIterable: List[Int] => Future[Iterable[String]] = { inputs => Future.value(inputs.map(_.toString)) }
+    def iterableToList: Iterable[Int] => Future[List[String]] = { inputs => Future.value(inputs.map(_.toString).toList) }
+    def iterableToSet: Iterable[Int] => Future[List[String]] = { inputs => Future.value(inputs.map(_.toString).toList) }
+
+    ClumpSource(setToSet) _
+    ClumpSource(listToList) _
+    ClumpSource(iterableToIterable) _
+    ClumpSource(setToList) _
+    ClumpSource(listToSet) _
+    ClumpSource(setToIterable) _
+    ClumpSource(listToIterable) _
+    ClumpSource(iterableToList) _
+    ClumpSource(iterableToSet) _
+
+    def setToMap: Set[Int] => Future[Map[Int, String]] = { inputs => Future.value(inputs.map(input => (input, input.toString)).toMap) }
+    def listToMap: List[Int] => Future[Map[Int, String]] = { inputs => Future.value(inputs.map(input => (input, input.toString)).toMap) }
+    def iterableToMap: Iterable[Int] => Future[Map[Int, String]] = { inputs => Future.value(inputs.map(input => (input, input.toString)).toMap) }
+
+    ClumpSource.from(setToMap) _
+    ClumpSource.from(listToMap) _
+    ClumpSource.from(iterableToMap) _
+
+    ok
+  }
+
   "fetches an individual clump" in new Context {
     val source = Clump.sourceFrom(repo.fetch)
 
