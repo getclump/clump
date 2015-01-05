@@ -5,6 +5,8 @@ import com.twitter.util.Throw
 import com.twitter.util.Try
 import com.twitter.util.Return
 
+import scala.collection.generic.CanBuildFrom
+
 sealed trait Clump[+T] {
 
   private val context = ClumpContext()
@@ -45,28 +47,30 @@ sealed trait Clump[+T] {
 
 object Clump {
 
-  def value[T](value: T): Clump[T] =
-    future(Future.value(Option(value)))
-
   def None[T]: Clump[T] = value(scala.None)
 
-  def value[T](value: Option[T]): Clump[T] =
-    future(Future.value(value))
+  def value[T](value: T): Clump[T] = future(Future.value(Option(value)))
 
-  def exception[T](exception: Throwable): Clump[T] =
-    future(Future.exception(exception))
+  def value[T](value: Option[T]): Clump[T] = future(Future.value(value))
 
-  def future[T](future: Future[Option[T]]): Clump[T] =
-    new ClumpFuture(future)
+  def exception[T](exception: Throwable): Clump[T] = future(Future.exception(exception))
 
-  def traverse[T, U](inputs: List[T])(f: T => Clump[U]) =
-    collect(inputs.map(f))
+  def collect[T](clumps: Clump[T]*): Clump[List[T]] = collect(clumps.toList)
 
-  def collect[T](clumps: Clump[T]*): Clump[List[T]] =
-    collect(clumps.toList)
+  def traverse[T, U](inputs: List[T])(f: T => Clump[U]) = collect(inputs.map(f))
 
-  def collect[T](clumps: List[Clump[T]]): Clump[List[T]] =
-    new ClumpCollect(clumps)
+  def future[T](future: Future[Option[T]]): Clump[T] = new ClumpFuture(future)
+
+  def collect[T](clumps: List[Clump[T]]): Clump[List[T]] = new ClumpCollect(clumps)
+
+  def sourceFrom[T, U, C](fetch: C => Future[Map[T, U]])(implicit cbf: CanBuildFrom[Nothing, T, C]) =
+    ClumpSource.from(fetch)
+
+  def source[T, U, C](fetch: C => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]) =
+    ClumpSource(fetch)(keyExtractor)
+
+  def sourceZip[T, U](fetch: List[T] => Future[List[U]]): ClumpSource[T, U] =
+    ClumpSource.zip(fetch)
 }
 
 class ClumpFuture[T](val result: Future[Option[T]]) extends Clump[T] {

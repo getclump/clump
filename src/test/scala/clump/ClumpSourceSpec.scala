@@ -23,12 +23,12 @@ class ClumpSourceSpec extends Spec {
   "allows to create a clump source (ClumpSource.from)" >> {
     "set input" in {
       def fetch(inputs: Set[Int]) = Future.value(inputs.map(i => i -> i.toString).toMap)
-      val source = ClumpSource.from(fetch)
+      val source = Clump.sourceFrom(fetch)
       clumpResult(source.get(1)) mustEqual Some("1")
     }
     "list input" in {
       def fetch(inputs: List[Int]) = Future.value(inputs.map(i => i -> i.toString).toMap)
-      val source = ClumpSource.from(fetch)
+      val source = Clump.sourceFrom(fetch)
       clumpResult(source.get(1)) mustEqual Some("1")
     }
   }
@@ -36,24 +36,24 @@ class ClumpSourceSpec extends Spec {
   "allows to create a clump source with key function (ClumpSource.apply)" >> {
     "set input" in {
       def fetch(inputs: Set[Int]) = Future.value(inputs.map(_.toString))
-      val source = ClumpSource(fetch)(_.toInt)
+      val source = Clump.source(fetch)(_.toInt)
       clumpResult(source.get(1)) mustEqual Some("1")
     }
     "seq input" in {
       def fetch(inputs: Seq[Int]) = Future.value(inputs.map(_.toString))
-      val source = ClumpSource(fetch)(_.toInt)
+      val source = Clump.source(fetch)(_.toInt)
       clumpResult(source.get(1)) mustEqual Some("1")
     }
   }
 
   "allows to create a clump source with zip as the key function (ClumpSource.zip)" in {
     def fetch(inputs: List[Int]) = Future.value(inputs.map(_.toString))
-    val source = ClumpSource.zip(fetch)
+    val source = Clump.sourceZip(fetch)
     clumpResult(source.get(1)) mustEqual Some("1")
   }
 
   "fetches an individual clump" in new Context {
-    val source = ClumpSource.from(repo.fetch)
+    val source = Clump.sourceFrom(repo.fetch)
 
     when(repo.fetch(Set(1))).thenReturn(Future(Map(1 -> 2)))
 
@@ -66,7 +66,7 @@ class ClumpSourceSpec extends Spec {
   "fetches multiple clumps" >> {
 
     "using list" in new Context {
-      val source = ClumpSource.from(repo.fetch)
+      val source = Clump.sourceFrom(repo.fetch)
 
       when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
 
@@ -79,7 +79,7 @@ class ClumpSourceSpec extends Spec {
     }
 
     "using varargs" in new Context {
-      val source = ClumpSource.from(repo.fetch)
+      val source = Clump.sourceFrom(repo.fetch)
 
       when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
 
@@ -93,7 +93,7 @@ class ClumpSourceSpec extends Spec {
   }
 
   "can be used as a singleton" in new Context {
-    val source = ClumpSource.from(repo.fetch)
+    val source = Clump.sourceFrom(repo.fetch)
 
     when(repo.fetch(Set(1))).thenReturn(Future(Map(1 -> 2)))
 
