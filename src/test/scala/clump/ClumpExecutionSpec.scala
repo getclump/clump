@@ -21,8 +21,8 @@ class ClumpExecutionSpec extends Spec {
       Future.value(inputs.map(i => i -> i * 10).toMap)
     }
 
-    val source1 = ClumpSource.from((i: Set[Int]) => fetchFunction(source1Fetches, i))
-    val source2 = ClumpSource.from((i: Set[Int]) => fetchFunction(source2Fetches, i))
+    val source1 = Clump.sourceFrom((i: Set[Int]) => fetchFunction(source1Fetches, i))
+    val source2 = Clump.sourceFrom((i: Set[Int]) => fetchFunction(source2Fetches, i))
   }
 
   "batches requests" >> {
