@@ -52,7 +52,7 @@ class ClumpSourceSpec extends Spec {
     clumpResult(source.get(1)) mustEqual Some("1")
   }
 
-  "allows to create a clump source from various input/ouput type fetch functions (Clump.source)" in {
+  "allows to create a clump source from various input/ouput type fetch functions (ClumpSource.apply)" in {
     def setToSet: Set[Int] => Future[Set[String]] = { inputs => Future.value(inputs.map(_.toString)) }
     def listToList: List[Int] => Future[List[String]] = { inputs => Future.value(inputs.map(_.toString)) }
     def iterableToIterable: Iterable[Int] => Future[Iterable[String]] = { inputs => Future.value(inputs.map(_.toString)) }
@@ -62,26 +62,35 @@ class ClumpSourceSpec extends Spec {
     def listToIterable: List[Int] => Future[Iterable[String]] = { inputs => Future.value(inputs.map(_.toString)) }
     def iterableToList: Iterable[Int] => Future[List[String]] = { inputs => Future.value(inputs.map(_.toString).toList) }
     def iterableToSet: Iterable[Int] => Future[List[String]] = { inputs => Future.value(inputs.map(_.toString).toList) }
+    
+    def testSource(source: ClumpSource[Int, String]) =
+      clumpResult(source.get(1, 2)) mustEqual Some(List("1", "2"))
+    
+    def extractId(string: String) = string.toInt
 
-    ClumpSource(setToSet) _
-    ClumpSource(listToList) _
-    ClumpSource(iterableToIterable) _
-    ClumpSource(setToList) _
-    ClumpSource(listToSet) _
-    ClumpSource(setToIterable) _
-    ClumpSource(listToIterable) _
-    ClumpSource(iterableToList) _
-    ClumpSource(iterableToSet) _
+    testSource(ClumpSource(setToSet)(extractId))
+    testSource(ClumpSource(listToList)(extractId))
+    testSource(ClumpSource(iterableToIterable)(extractId))
+    testSource(ClumpSource(setToList)(extractId))
+    testSource(ClumpSource(listToSet)(extractId))
+    testSource(ClumpSource(setToIterable)(extractId))
+    testSource(ClumpSource(listToIterable)(extractId))
+    testSource(ClumpSource(iterableToList)(extractId))
+    testSource(ClumpSource(iterableToSet)(extractId))
+  }
+  
+  "allows to create a clump source from various input/ouput type fetch functions (ClumpSource.from)" in {
 
     def setToMap: Set[Int] => Future[Map[Int, String]] = { inputs => Future.value(inputs.map(input => (input, input.toString)).toMap) }
     def listToMap: List[Int] => Future[Map[Int, String]] = { inputs => Future.value(inputs.map(input => (input, input.toString)).toMap) }
     def iterableToMap: Iterable[Int] => Future[Map[Int, String]] = { inputs => Future.value(inputs.map(input => (input, input.toString)).toMap) }
+    
+    def testSource(source: ClumpSource[Int, String]) =
+      clumpResult(source.get(1, 2)) mustEqual Some(List("1", "2"))
 
-    ClumpSource.from(setToMap) _
-    ClumpSource.from(listToMap) _
-    ClumpSource.from(iterableToMap) _
-
-    ok
+    testSource(ClumpSource.from(setToMap))
+    testSource(ClumpSource.from(listToMap))
+    testSource(ClumpSource.from(iterableToMap))
   }
 
   "fetches an individual clump" in new Context {
