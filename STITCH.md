@@ -1,7 +1,7 @@
 Important
 =========
 
-This document is based on suppositions about the Twitter's Stitch library, since it was announced[[1]](https://www.youtube.com/watch?v=VVpmMfT8aYw)[[2]](https://www.youtube.com/watch?v=bmIxIslimVY), but isn't open sourced yet.
+This document is based on suppositions about the Twitter's Stitch library, since it was announced[[1]](https://www.youtube.com/watch?v=VVpmMfT8aYw)[[2]](https://www.youtube.com/watch?v=bmIxIslimVY) but isn't open sourced yet.
 
 Introduction
 ============
@@ -20,7 +20,7 @@ case object FetchTracks extends SeqGroup[Id, Track] {
 }
 ```
 
-For each ```Id``` input, the ```SeqGroup.run``` must provide one ```Track``` instance. The signature doesn't represent well the cases where some ```Track``` instances may be missing from the ```tracksService```'s response. As an alternative, Stitch allows to define the response as optional:
+For each ```Id``` input, the ```SeqGroup.run``` must provide one ```Track``` instance. The signature doesn't effectively represent the cases where some ```Track``` instances may be missing from the ```tracksService```'s response. As an alternative, Stitch allows to define the response as optional:
 
 ```scala
 case object FetchTracks extends SeqGroup[Id, Option[Track] {
@@ -29,7 +29,7 @@ case object FetchTracks extends SeqGroup[Id, Option[Track] {
 }
 ```
 
-Basically, we can say that the Stitch's API is optimized for non-optional fetches. In the other hand, Clump is optimized for optional fetches:
+Basically, we can say that the Stitch's API is optimized for non-optional fetches. On the other hand, Clump is optimized for optional fetches:
 
 ```scala
 val tracksSource = Clump.source(tracksService.fetch)(_.trackId)
@@ -47,7 +47,7 @@ val result: Future[Option[Track]] = clump.get
 2. Composition
 ==============
 
-Given the optimization to deal with optional fetches, the ```Clump``` compositions is also different from Stitch. They have semantics similar to relational database's joins, where not found joined elements make the tuple be filtered-out.
+Given the optimization to deal with optional fetches, the ```Clump``` compositions is also different from Stitch. They have semantics similar to the relational database's joins, where not found joined elements make the tuple be filtered-out.
 
 ```scala
 val clump: Clump[(Track, User)]
@@ -57,7 +57,7 @@ val clump: Clump[(Track, User)]
 	} yield (track, user)
 ```
 
-In this example, if the track's creator isn't found the final result is None.
+In this example, if the track's creator isn't found, the final result will be None.
 
 ```scala
 val future: Future[Option[(Track, User)]] = clump.get
@@ -104,16 +104,16 @@ case object FetchTracks extends SeqGroup[Id, Track] {
 
 If ```tracksService.fetch``` matches the ```run``` signature, the ```SeqGroup``` implementation is straightforward. If that isn't the case, the user must implement the input/output transformations.
 
-Clump has some built-in transformations to ease some common use cases.
+Clump has built-in transformations to ease some common use cases.
 
-If the fetch function returns a collection, it is possible to define a ```keyExtractor``` function to determine which is the input key for each output:
+If the fetch function returns a collection, it is possible to define a ```keyExtractor``` function to determine which one is the input key for each output:
 
 ```scala
 val fetch: (List[Id]) => Future[List[Track]] = tracksService.fetch _
 val tracksSource = Clump.source(fetch)(_.trackId)
 ```
 
-Some services can return a ```Map[Input, Output]```, it is possible to use them directly with ```Clump.sourceFrom```:
+Some services can return a ```Map[Input, Output]```. It is possible to use them directly with ```Clump.sourceFrom```:
 
 ```scala
 val fetch: (List[Id]) => Future[Map[Id, User]] = usersService.fetch _
@@ -133,7 +133,7 @@ val playlistsSource = Clump.sourceZip(fetch)
 
 It is common to have an object graph where the same resource is used in multiple places. For instance, many items of a tracks list can have the same creator.
 
-Each clump execution triggered by ```clump.get``` has an implicit cache that can avoid fetching multiple times the same resource. This mechanism seems to be not present in Stitch.
+Each clump execution triggered by ```clump.get``` has an implicit cache that can avoid fetching the same resource multiple times. This mechanism seems to be not present in Stitch.
 
 6. Execution model
 ==================
@@ -145,7 +145,7 @@ Clump has a simpler execution model that favors parallelism. Basically, it uses 
 1. Find the "roots" of the composition
 2. Expand the composition starting from the roots and register the pending fetches
 3. Flush all pending fetches in parallel for each source
-4. If there are nested structures, go back to 2 using them as the roots, if not return the clump value.
+4. If there are nested structures, go back to 2 using them as the roots. If not, return the clump's value.
 
 7. Nested flatmaps
 ==================
