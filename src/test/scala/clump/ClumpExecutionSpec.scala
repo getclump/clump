@@ -64,11 +64,15 @@ class ClumpExecutionSpec extends Spec {
     "for composition branches with different latencies" in new Context {
       implicit val timer = new JavaTimer
       val clump1 =
-        Clump.future(Future.value(Some(1)))
-          .flatMap(source1.get)
+        Clump.value(1).flatMap { int =>
+          Clump.future(Future.value(Some(int)))
+            .flatMap(source1.get)
+        }
       val clump2 =
-        Clump.future(Future.value(Some(2)).delayed(100 millis))
-          .flatMap(source1.get)
+        Clump.value(2).flatMap { int =>
+          Clump.future(Future.value(Some(int)).delayed(100 millis))
+            .flatMap(source1.get)
+        }
 
       val clump = Clump.collect(clump1, clump2)
 
