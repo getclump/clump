@@ -11,13 +11,13 @@ sealed trait Clump[+T] {
 
   private val context = ClumpContext()
 
-  def map[U](f: T => U) = flatMap(f.andThen(Clump.value(_)))
+  def map[U](f: T => U): Clump[U] = new ClumpMap(this, f)
 
   def flatMap[U](f: T => Clump[U]): Clump[U] = new ClumpFlatMap(this, f)
 
   def join[U](other: Clump[U]): Clump[(T, U)] = new ClumpJoin(this, other)
 
-  def handle[B >: T](f: Throwable => B): Clump[B] = rescue[B](f.andThen(Clump.value(_)))
+  def handle[B >: T](f: Throwable => B): Clump[B] = new ClumpHandle(this, f)
 
   def rescue[B >: T](f: Throwable => Clump[B]): Clump[B] = new ClumpRescue(this, f)
 
@@ -78,7 +78,7 @@ class ClumpFuture[T](val result: Future[Option[T]]) extends Clump[T] {
   val downstream = result.liftToTry.map(_ => List())
 }
 
-class ClumpFetch[T, U](input: T, fetcher: ClumpFetcher[T, U]) extends Clump[U] {
+class ClumpFetch[T, U](input: T, val fetcher: ClumpFetcher[T, U]) extends Clump[U] {
   val upstream = List()
   val downstream = Future.value(List())
   val result = fetcher.get(input)
@@ -105,6 +105,13 @@ class ClumpCollect[T](list: List[Clump[T]]) extends Clump[List[T]] {
       .map(Some(_))
 }
 
+class ClumpMap[T, U](clump: Clump[T], f: T => U) extends Clump[U] {
+  val upstream = List(clump)
+  val downstream = Future.value(List())
+  val result =
+    clump.result.map(_.map(f))
+}
+
 class ClumpFlatMap[T, U](clump: Clump[T], f: T => Clump[U]) extends Clump[U] {
   val upstream = List(clump)
   val partial =
@@ -115,6 +122,15 @@ class ClumpFlatMap[T, U](clump: Clump[T], f: T => Clump[U]) extends Clump[U] {
     partial.flatMap {
       case Some(clump) => clump.result
       case None        => Future.None
+    }
+}
+
+class ClumpHandle[T](clump: Clump[T], f: Throwable => T) extends Clump[T] {
+  val upstream = List(clump)
+  val downstream = Future.value(List())
+  val result =
+    clump.result.handle {
+      case exception => Option(f(exception))
     }
 }
 

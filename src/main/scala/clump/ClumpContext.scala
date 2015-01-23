@@ -25,7 +25,7 @@ final class ClumpContext {
       case clumps =>
         flushUpstream(clumps).flatMap { _ =>
           flushDownstream(clumps).flatMap { _ =>
-            flushFetchers
+            flushFetches(clumps).unit
           }
         }
     }
@@ -38,8 +38,13 @@ final class ClumpContext {
       flush(down.flatten.toList)
     }
 
-  private def flushFetchers =
-    Future.collect(fetchers.values.map(_.flush).toList).unit
+  private def flushFetches(clumps: List[Clump[_]]) =
+    Future.collect(fetchersFor(clumps).map(_.flush))
+
+  private def fetchersFor(clumps: List[Clump[_]]) =
+    clumps.collect {
+      case clump: ClumpFetch[_, _] => clump.fetcher
+    }.distinct
 }
 
 object ClumpContext {

@@ -8,6 +8,8 @@ import org.specs2.specification.Scope
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 import com.twitter.util.Promise
+import com.twitter.util.JavaTimer
+import com.twitter.util.TimeConversions._
 
 @RunWith(classOf[JUnitRunner])
 class ClumpExecutionSpec extends Spec {
@@ -57,6 +59,25 @@ class ClumpExecutionSpec extends Spec {
       clumpResult(Clump.collect(clump1, clump2)) mustEqual Some(List(100, 200))
       source1Fetches mustEqual List(Set(1, 2))
       source2Fetches mustEqual List(Set(20, 10))
+    }
+
+    "for composition branches with different latencies" in new Context {
+      implicit val timer = new JavaTimer
+      val clump1 =
+        Clump.value(1).flatMap { int =>
+          Clump.future(Future.value(Some(int)))
+            .flatMap(source1.get)
+        }
+      val clump2 =
+        Clump.value(2).flatMap { int =>
+          Clump.future(Future.value(Some(int)).delayed(100 millis))
+            .flatMap(source1.get)
+        }
+
+      val clump = Clump.collect(clump1, clump2)
+
+      clumpResult(clump) mustEqual Some((List(10, 20)))
+      source1Fetches mustEqual List(Set(1, 2))
     }
 
     "for clumps composed using for comprehension" >> {
@@ -119,19 +140,6 @@ class ClumpExecutionSpec extends Spec {
         clumpResult(clump) mustEqual Some((List(10), List(10)))
         source1Fetches mustEqual List(Set(1))
         source2Fetches mustEqual List(Set(1))
-      }
-
-      "using nested flatmaps" in new Context {
-        val clump =
-          Clump.future(Future.value(Some(1))).flatMap { int =>
-            Clump.collect(source1.get(int + 1), source2.get(int + 2)).flatMap { ints =>
-              Clump.traverse(ints)(source1.get)
-            }
-          }
-
-        clumpResult(clump) mustEqual Some((List(200, 300)))
-        source1Fetches mustEqual List(Set(2), Set(20, 30))
-        source2Fetches mustEqual List(Set(3))
       }
 
       "complex scenario" in new Context {
