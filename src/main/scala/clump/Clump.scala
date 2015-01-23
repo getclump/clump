@@ -17,9 +17,9 @@ sealed trait Clump[+T] {
 
   def join[U](other: Clump[U]): Clump[(T, U)] = new ClumpJoin(this, other)
 
-  def handle[B >: T](f: Throwable => B): Clump[B] = new ClumpHandle(this, f)
+  def handle[B >: T](f: PartialFunction[Throwable, Option[B]]): Clump[B] = new ClumpHandle(this, f)
 
-  def rescue[B >: T](f: Throwable => Clump[B]): Clump[B] = new ClumpRescue(this, f)
+  def rescue[B >: T](f: PartialFunction[Throwable, Clump[B]]): Clump[B] = new ClumpRescue(this, f)
 
   def withFilter[B >: T](f: B => Boolean): Clump[B] = new ClumpFilter(this, f)
 
@@ -125,21 +125,20 @@ class ClumpFlatMap[T, U](clump: Clump[T], f: T => Clump[U]) extends Clump[U] {
     }
 }
 
-class ClumpHandle[T](clump: Clump[T], f: Throwable => T) extends Clump[T] {
+class ClumpHandle[T](clump: Clump[T], f: PartialFunction[Throwable, Option[T]]) extends Clump[T] {
   val upstream = List(clump)
   val downstream = Future.value(List())
   val result =
-    clump.result.handle {
-      case exception => Option(f(exception))
-    }
+    clump.result.handle(f)
 }
 
-class ClumpRescue[T](clump: Clump[T], rescue: Throwable => Clump[T]) extends Clump[T] {
+class ClumpRescue[T](clump: Clump[T], rescue: PartialFunction[Throwable, Clump[T]]) extends Clump[T] {
   val upstream = List(clump)
   val partial =
     clump.result.liftToTry.map {
-      case Return(value)    => Clump.value(value)
-      case Throw(exception) => rescue(exception)
+      case Throw(exception) if (rescue.isDefinedAt(exception)) => rescue(exception)
+      case Throw(exception)                                    => Clump.exception(exception)
+      case Return(value)                                       => Clump.value(value)
     }
   val downstream =
     partial.map(List(_))
