@@ -24,8 +24,8 @@ final class ClumpContext {
       case Nil => Future.Unit
       case clumps =>
         flushUpstream(clumps).flatMap { _ =>
-          flushDownstream(clumps).flatMap { _ =>
-            flushFetches(clumps).unit
+          flushFetches(clumps).flatMap { _ =>
+            flushDownstream(clumps)
           }
         }
     }
