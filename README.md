@@ -1,6 +1,6 @@
 ![Clump](clump.png) Clump
 =========================
-Library to ease the batching of external requests
+A Library for expressive and efficient service composition
 
 [![Build Status](https://secure.travis-ci.org/fwbrasil/clump.png)](http://travis-ci.org/fwbrasil/clump)
 [![Coverage Status](https://coveralls.io/repos/fwbrasil/clump/badge.png)](https://coveralls.io/r/fwbrasil/clump)
@@ -24,6 +24,28 @@ Library to ease the batching of external requests
 * [License](#license)
 
 # Introduction #
+
+## Summary ##
+
+Clump addresses the problem of knitting together data from multiple sources in an elegant and efficient way.
+
+In a typical microservice-powered system, it is common to find awkward wrangling code to facilitate manually bulk-fetching
+dependent resources. Worse, this problem of batching is often accidentally overlooked, resulting in **n** calls to a micro-service instead of **1**.
+
+Clump removes the need for the developer to even think about bulk-fetching, batching and retries, providing a powerful and composable interface for aggregating resources.
+
+For example:
+```scala
+    val goodTracks: Clump[List[CreatorTrack]] = Clump.traverse(trackIds) { trackId =>
+        for {
+          Track(title, creatorId, duration, rating, _) <- tracks.get(trackId) if (rating >= 4)
+          User(name, _, _) <- users.get(creatorId)
+        } yield {
+          CreatorTrack(name, title, duration)
+        }
+      }
+    val efficientlyFetched: Future[List[CreatorTrack]] = goodTracks.list
+```
 
 ## Problem ##
 
@@ -77,7 +99,7 @@ This structure can also be part of a bigger structure that includes the user's d
 
 ## Solution ##
 
-The complexity comes mainly from declaring together **what** needs to be fetched and **how** it should be fetched. Clump offers an embedded Domain-Specific Language (DSL) that allows to declare **what** needs to be fetched and an execution model that determines **how** the resources should be fetched.
+The complexity comes mainly from declaring together **what** needs to be fetched and **how** it should be fetched. Clump offers an embedded Domain-Specific Language (DSL) that allows declaration of **what** needs to be fetched and an execution model that determines **how** the resources should be fetched.
 
 The execution model applies three main optimizations:
 
@@ -85,9 +107,9 @@ The execution model applies three main optimizations:
 2. Fetch from the multiple sources in parallel;
 3. Avoid fetching the same resource multiple times by using a cache.
 
-The DSL is based on a monadic interface similar to ```Future```. It is a Free Monad, that produces a nested series of transformations without starting the actual execution. This is the characteristic that allows to trigger the execution separately from the definition of what needs to be fetched.
+The DSL is based on a monadic interface similar to ```Future```. It is a Free Monad, that produces a nested series of transformations without starting the actual execution. This is the characteristic that allows triggering of the execution separately from the definition of what needs to be fetched.
 
-The execution model leverages on Applicative Functors, that allows to express the independence of computations. It exposes only ```join``` to the user but makes use of other applicative operations internally. This means that even without the user specifying what is independent, the execution model can apply optimizations.
+The execution model leverages on Applicative Functors to express the independence of computations. It exposes only ```join``` to the user but makes use of other applicative operations internally. This means that even without the user specifying what is independent, the execution model can apply optimizations.
 
 # Getting started #
 
@@ -175,21 +197,21 @@ Sources represent the remote systems' batched interfaces. Clump offers some meth
 
   **Important**: The source instances must be singletons within a Clump execution. If there are multiple instances for the same source, the batching of requests doesn't work.
 
-The ```Clump.source``` method allows to pass a function that can return less elements than requested. The output can also be in a different order than the inputs, since the last parameter is a function that allows Clump to determine which is the input for each output.
+The ```Clump.source``` method accepts a function that may return less elements than requested. The output can also be in a different order than the inputs, since the last parameter is a function that allows Clump to determine which is the input for each output.
 
 ```scala
 val fetch: List[Int] => Future[List[User]] = usersService.fetch _
 val usersSource = Clump.source(fetch)(_.id)
 ```
 
-The ```Clump.sourceFrom``` method allows to use functions that return a ```Map``` with the values for the found inputs.
+The ```Clump.sourceFrom``` method accepts a function that return a ```Map``` with the values for the found inputs.
 
 ```scala
 val fetch: List[Int] => Future[Map[Int, User]] = usersService.fetch _
 val usersSource = Clump.sourceFrom(fetch)
 ```
 
-The ```Clump.sourceZip``` methods allows to pass functions that produce a list of outputs for each provided input. The result must keep the same order as the inputs list.
+The ```Clump.sourceZip``` methods accepts a function that produces a list of outputs for each provided input. The result must keep the same order as the inputs list.
 
 ```scala
 val fetch: List[Int] => Future[List[User]] = usersService.fetch _
@@ -259,7 +281,7 @@ val clump: Clump[(Track, User)] =
   }
 ```
 
-The ```join``` method allows to produce a Clump that has a tuple with the values of two Clump instances:
+The ```join``` method produces a Clump that has a tuple with the values of two Clump instances:
 
 ```scala
 val clump: Clump[(User, List[Track])] =
@@ -269,7 +291,7 @@ val clump: Clump[(User, List[Track])] =
 There are also methods to deal with collections. Use ```collect``` to transform a list of Clump instances into a single Clump:
 
 ```scala
-val usersClumps: List[Clump[User]] = usersIds.map(usersSource.get(_))
+val userClumps: List[Clump[User]] = usersIds.map(usersSource.get(_))
 val usersClump: Clump[List[User]] = Clump.collect(usersClump)
 ```
 
@@ -368,7 +390,7 @@ val clump: Clump[(Track, Option[User])]
 
 ## Filtering ##
 
-The behavior introduced by the optional fetches compositions allows to define filtering conditions:
+The behavior introduced by the optional fetch compositions allows defining of filtering conditions:
 
 ```scala
 val clump: Clump[(Track, User)]
@@ -402,7 +424,7 @@ val clump: Clump[User] =
     }
 ```
 
-Clump retries failed fetches if they are requested again. This allows to define per-input retries, where the failed keys are retried using batched requests:
+Clump retries failed fetches if they are requested again. This allows definition of per-input retries, where the failed keys are retried using batched requests:
 
 ```scala
 def trackWithRetries(trackId: Int, tries: Int = 10): Clump[Track] =
@@ -536,7 +558,9 @@ The [context flush](/src/main/scala/clump/ClumpContext.scala#L22) is a recursive
 * If there are Clump instances to be fetched
   * [Flush](/src/main/scala/clump/ClumpContext.scala#L33) all the upstream instances of the current clumps;
   * [Flush](/src/main/scala/clump/ClumpContext.scala#L28) performs all the fetches among the current Clump instances being executed.
-  * [Flush](/src/main/scala/clump/ClumpContext.scala#L36) all the downstream instances, since the pre-requisite to run the downstream is fulfilled (upstream already flushed). Not that the difference from the ```upstream``` flush is due the fact that ```downstream``` returns a future, but the semantic is the same.
+  * [Flush](/src/main/scala/clump/ClumpContext.scala#L36) all the downstream instances, since the pre-requisite to run the downstream is fulfilled (upstream already flushed). Note that the difference from the ```upstream``` flush is due the fact that ```downstream``` returns a future, but the semantic is the same.
+
+You could consider this a depth-first, upstream-first traversal of the Clump graph.
 
 In case you are wondering why we need this upstream mechanism since we have the Clump instance at hand and could start the execution from it: actually the instance used to trigger the execution isn't the "root" of the composition. For instance:
 
@@ -598,7 +622,7 @@ Note that this example has only one Clump instance per flush phase, but normally
 
 # Known limitations #
 
-The execution model is capable of batching requests that are in the same level of the composition. For instance, this example produces only fetch from ```usersSource```:
+The execution model is capable of batching requests that are in the same level of the composition. For instance, this example produces only one fetch from ```usersSource```:
 
 ```scala
 val clump: Clump[List[EnrichedTrack]] =
