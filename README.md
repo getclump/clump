@@ -36,12 +36,13 @@ Clump removes the need for the developer to even think about bulk-fetching, batc
 
 For example:
 ```scala
-    val goodTracks: Clump[List[CreatorTrack]] = Clump.traverse(trackIds) { trackId =>
+    val goodTracks: Clump[List[CreatorTrack]] = 
+      Clump.traverse(trackIds) { trackId =>
         for {
-          Track(title, creatorId, duration, rating, _) <- tracks.get(trackId) if (rating >= 4)
-          User(name, _, _) <- users.get(creatorId)
+          track <- tracks.get(trackId) if (track.rating >= 4)
+          user <- users.get(creatorId)
         } yield {
-          CreatorTrack(name, title, duration)
+          EnrichedTrack(track, user)
         }
       }
     val efficientlyFetched: Future[List[CreatorTrack]] = goodTracks.list
@@ -291,14 +292,14 @@ val clump: Clump[(User, List[Track])] =
 There are also methods to deal with collections. Use ```collect``` to transform a list of Clump instances into a single Clump:
 
 ```scala
-val userClumps: List[Clump[User]] = usersIds.map(usersSource.get(_))
+val userClumps: List[Clump[User]] = userIds.map(usersSource.get(_))
 val usersClump: Clump[List[User]] = Clump.collect(usersClump)
 ```
 
 Instead of ```map``` and then ```collect```, it is possible to use the shortcut ```traverse```:
 
 ```scala
-val usersClump: Clump[List[User]] = Clump.traverse(usersIds)(usersSource.get(_))
+val usersClump: Clump[List[User]] = Clump.traverse(userIds)(usersSource.get(_))
 ```
 
 It is possible to use for-comprehensions as syntactic sugar to avoid having to write the compositions:
@@ -344,7 +345,7 @@ val user2: Future[EnrichedTrack] = trackClump() // syntactic sugar
 When a Clump instance has a List, it is possible to use the ```list``` method. It returns an empty list if the result is ```None```:
 
 ```scala
-val usersClump: Clump[List[User]] = Clump.traverse(usersIds)(usersSource.get(_))
+val usersClump: Clump[List[User]] = Clump.traverse(userIds)(usersSource.get(_))
 val users: Future[List[User]] = usersClump.list
 ```
 
@@ -436,7 +437,7 @@ def trackWithRetries(trackId: Int, tries: Int = 10): Clump[Track] =
     }
 
 val tracks: Clump[List[Track]] = 
-    Clump.traverse(tracksIds)(trackWithRetries(_))
+    Clump.traverse(trackIds)(trackWithRetries(_))
 ```
 
 # Internals #
@@ -462,7 +463,7 @@ val usersSource = Clump.source(usersService.fetch)(_.id)
 val tracksSource = Clump.source(tracksService.fetch)(_.id)
 
 val clump: Clump[List[EnrichedTrack]] =
-    Clump.traverse(tracksIds) { trackId =>
+    Clump.traverse(trackIds) { trackId =>
       for {
         track <- tracksSource.get(trackId)
         user <- usersSource.get(track.creatorId)
@@ -487,7 +488,7 @@ The ```ClumpSource``` instances are created using one of the shortcuts that the 
 
 ```scala
 val clump: Clump[List[EnrichedTrack]] =
-    Clump.traverse(tracksIds) { trackId =>
+    Clump.traverse(trackIds) { trackId =>
       ...
     }
 ```
@@ -626,7 +627,7 @@ The execution model is capable of batching requests that are in the same level o
 
 ```scala
 val clump: Clump[List[EnrichedTrack]] =
-    Clump.traverse(tracksIds) { trackId =>
+    Clump.traverse(trackIds) { trackId =>
       for {
         track <- tracksSource.get(trackId)
         user <- usersSource.get(track.creatorId)
