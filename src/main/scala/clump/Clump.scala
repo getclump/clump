@@ -16,22 +16,25 @@ sealed trait Clump[+T] {
   def flatMap[U](f: T => Clump[U]): Clump[U] = new ClumpFlatMap(this, f)
 
   def join[U](other: Clump[U]): Clump[(T, U)] = new ClumpJoin(this, other)
+  
 
   def handle[B >: T](f: PartialFunction[Throwable, Option[B]]): Clump[B] = new ClumpHandle(this, f)
 
   def rescue[B >: T](f: PartialFunction[Throwable, Clump[B]]): Clump[B] = new ClumpRescue(this, f)
+  
 
   def withFilter[B >: T](f: B => Boolean): Clump[B] = new ClumpFilter(this, f)
-
-  def list[B](implicit ev: T <:< List[B]): Future[List[B]] = get.map(_.toList.flatten)
 
   def orElse[B >: T](default: => Clump[B]): Clump[B] = new ClumpOrElse(this, default)
 
   def optional: Clump[Option[T]] = new ClumpOptional(this)
+  
 
   def apply(): Future[T] = get.map(_.get)
 
   def getOrElse[B >: T](default: => B): Future[B] = get.map(_.getOrElse(default))
+  
+  def list[B](implicit ev: T <:< List[B]): Future[List[B]] = get.map(_.toList.flatten)
 
   def get: Future[Option[T]] =
     context
@@ -54,14 +57,16 @@ object Clump {
   def value[T](value: Option[T]): Clump[T] = future(Future.value(value))
 
   def exception[T](exception: Throwable): Clump[T] = future(Future.exception(exception))
+  
+  def future[T](future: Future[Option[T]]): Clump[T] = new ClumpFuture(future)
+  
 
   def collect[T](clumps: Clump[T]*): Clump[List[T]] = collect(clumps.toList)
 
   def traverse[T, U](inputs: List[T])(f: T => Clump[U]) = collect(inputs.map(f))
 
-  def future[T](future: Future[Option[T]]): Clump[T] = new ClumpFuture(future)
-
   def collect[T](clumps: List[Clump[T]]): Clump[List[T]] = new ClumpCollect(clumps)
+  
 
   def sourceFrom[T, U, C](fetch: C => Future[Map[T, U]])(implicit cbf: CanBuildFrom[Nothing, T, C]) =
     ClumpSource.from(fetch)
