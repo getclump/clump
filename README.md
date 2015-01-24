@@ -1,6 +1,6 @@
 ![Clump](clump.png) Clump
 =========================
-Library to ease the batching of external requests
+A Library for expressive and efficient service composition
 
 [![Build Status](https://secure.travis-ci.org/fwbrasil/clump.png)](http://travis-ci.org/fwbrasil/clump)
 [![Coverage Status](https://coveralls.io/repos/fwbrasil/clump/badge.png)](https://coveralls.io/r/fwbrasil/clump)
@@ -24,6 +24,28 @@ Library to ease the batching of external requests
 * [License](#license)
 
 # Introduction #
+
+## Summary ##
+
+Clump addresses the problem of knitting together data from multiple sources in an elegant and efficient way.
+
+In a typical microservice-powered system, it is common to find awkward wrangling code to facilitate manually bulk-fetching
+dependent resources. Worse, this problem of batching is often accidentally overlooked, resulting in **n** calls to a micro-service instead of **1**.
+
+Clump removes the need for the developer to even think about bulk-fetching, batching and retries, providing a powerful and composable interface for aggregating resources.
+
+For example:
+```scala
+    val goodTracks: Clump[List[CreatorTrack]] = Clump.traverse(trackIds) { trackId =>
+        for {
+          Track(title, creatorId, duration, rating, _) <- tracks.get(trackId) if (rating >= 4)
+          User(name, _, _) <- users.get(creatorId)
+        } yield {
+          CreatorTrack(name, title, duration)
+        }
+      }
+    val efficientlyFetched: Future[List[CreatorTrack]] = goodTracks.list
+```
 
 ## Problem ##
 
