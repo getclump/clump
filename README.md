@@ -17,6 +17,7 @@ A Library for expressive and efficient service composition
   * [Composition behavior](#composition-behavior)
   * [Filtering](#filtering)
   * [Exception handling](#exception-handling)
+  * [Scala Futures](#scala-futures)
 * [Internals](#internals)
 * [Known limitations](#known-limitations)
 * [Acknowledgments](#acknowledgments)
@@ -439,6 +440,19 @@ def trackWithRetries(trackId: Int, tries: Int = 10): Clump[Track] =
 val tracks: Clump[List[Track]] = 
     Clump.traverse(trackIds)(trackWithRetries(_))
 ```
+
+# Scala Futures #
+
+Clump uses Twitter Futures by default, but is is possible to use Scala Futures by importing the ```FutureBridge```:
+
+```scala
+import clump.FutureBridge._
+
+val userClump: Clump[User] = ...
+val future: scala.concurrent.Future[User] = userClump.get
+```
+
+It provides bidirectional implicit conversions. 
 
 # Internals #
 
