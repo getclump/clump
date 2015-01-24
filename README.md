@@ -94,7 +94,7 @@ The execution model leverages on Applicative Functors, that allows to express th
 
 To use clump, just add the dependency to the project's build configuration.
 
-__Important__: Change ```x.x.x``` with the latest version listed by the [release page](https://github.com/fwbrasil/clump/releases)
+__Important__: Change ```x.x.x``` with the latest version listed by the [CHANGELOG.md](/CHANGELOG.md) file.
 
 SBT
 
