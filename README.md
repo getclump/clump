@@ -40,9 +40,9 @@ For example:
       Clump.traverse(trackIds) { trackId =>
         for {
           track <- tracks.get(trackId) if (track.rating >= 4)
-          user <- users.get(creatorId)
+          user <- users.get(track.creatorId)
         } yield {
-          EnrichedTrack(track, user)
+          CreatorTrack(track, user)
         }
       }
     val efficientlyFetched: Future[List[CreatorTrack]] = goodTracks.list
