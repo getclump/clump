@@ -4,7 +4,7 @@ import com.twitter.util.Future
 import scala.collection.mutable.{ Map => MutableMap }
 import com.twitter.util._
 
-final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
+private[clump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
 
   private val fetches = MutableMap[T, Promise[Option[U]]]()
 
