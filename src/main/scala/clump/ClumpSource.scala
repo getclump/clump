@@ -3,7 +3,9 @@ package clump
 import com.twitter.util.Future
 import scala.collection.generic.CanBuildFrom
 
-class ClumpSource[T, U] private (val fetch: Set[T] => Future[Map[T, U]], val maxBatchSize: Int = Int.MaxValue) {
+class ClumpSource[T, U] private (val fetch: Set[T] => Future[Map[T, U]],
+                                 val maxBatchSize: Int = Int.MaxValue,
+                                 val _maxRetries: PartialFunction[Throwable, Int] = PartialFunction.empty) {
 
   def get(inputs: T*): Clump[List[U]] = get(inputs.toList)
 
@@ -11,7 +13,9 @@ class ClumpSource[T, U] private (val fetch: Set[T] => Future[Map[T, U]], val max
 
   def get(input: T): Clump[U] = new ClumpFetch(input, ClumpContext().fetcherFor(this))
 
-  def maxBatchSize(size: Int): ClumpSource[T, U] = new ClumpSource(fetch, size)
+  def maxBatchSize(size: Int): ClumpSource[T, U] = new ClumpSource(fetch, size, _maxRetries)
+
+  def maxRetries(retries: PartialFunction[Throwable, Int]): ClumpSource[T, U] = new ClumpSource(fetch, maxBatchSize, retries)
 }
 
 private[clump] object ClumpSource {

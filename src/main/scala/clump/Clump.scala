@@ -9,8 +9,10 @@ import scala.collection.generic.CanBuildFrom
 
 sealed trait Clump[+T] {
 
+  
   private val context = ClumpContext()
 
+  
   def map[U](f: T => U): Clump[U] = new ClumpMap(this, f)
 
   def flatMap[U](f: T => Clump[U]): Clump[U] = new ClumpFlatMap(this, f)
@@ -42,6 +44,7 @@ sealed trait Clump[+T] {
       .flatMap { _ =>
         result
       }
+  
 
   protected[clump] def upstream: List[Clump[_]]
   protected[clump] def downstream: Future[List[Clump[_]]]
@@ -50,6 +53,7 @@ sealed trait Clump[+T] {
 
 object Clump {
 
+  
   def None[T]: Clump[T] = value(scala.None)
 
   def value[T](value: T): Clump[T] = future(Future.value(Option(value)))
