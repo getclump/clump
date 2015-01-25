@@ -410,7 +410,7 @@ The ```handle``` method defines a fallback value given an exception:
 
 ```scala
 val clump: Clump[User] =
-    usersService.get(userId).rescue {
+    usersService.get(userId).handle {
       case _: SomeException =>
         defaultUser
     }
