@@ -25,8 +25,8 @@ class IntegrationSpec extends Spec {
   "A Clump should batch calls to services" in {
     val enrichedTweets = Clump.traverse(List(1L, 2L, 3L)) { tweetId =>
         for {
-          tweet <- tweets.get(tweetId)
-          user <- users.get(tweet.userId)
+          tweet <- tweets(tweetId)
+          user <- users(tweet.userId)
         } yield (tweet, user)
       }
 
@@ -40,11 +40,11 @@ class IntegrationSpec extends Spec {
     val timelineIds = List(1, 3)
     val enrichedTimelines = Clump.traverse(timelineIds) { id =>
         for {
-          timeline <- timelines.get(id)
+          timeline <- timelines(id)
           enrichedLikes <- Clump.traverse(timeline.likeIds) { id =>
             for {
-              like <- likes.get(id)
-              resources <- tracks.get(like.trackIds).join(users.get(like.userIds))
+              like <- likes(id)
+              resources <- tracks.list(like.trackIds).join(users.list(like.userIds))
             } yield (like, resources._1, resources._2)
           }
         } yield (timeline, enrichedLikes)
@@ -63,8 +63,8 @@ class IntegrationSpec extends Spec {
     val tweetIds = List(1L, 2L, 3L)
     val enrichedTweets: Clump[List[(Tweet, User)]] =
       Clump.traverse(tweetIds) { tweetId =>
-        tweets.get(tweetId).flatMap(tweet =>
-          users.get(tweet.userId).map(user => (tweet, user)))
+        tweets(tweetId).flatMap(tweet =>
+          users(tweet.userId).map(user => (tweet, user)))
       }
 
     Await.result(enrichedTweets.get) ==== Some(List(
@@ -76,8 +76,8 @@ class IntegrationSpec extends Spec {
   "it should allow unwrapping Clumped lists with clump.list" in {
     val enrichedTweets: Clump[List[(Tweet, User)]] = Clump.traverse(List(1L, 2L, 3L)) { tweetId =>
       for {
-        tweet <- tweets.get(tweetId)
-        user <- users.get(tweet.userId)
+        tweet <- tweets(tweetId)
+        user <- users(tweet.userId)
       } yield (tweet, user)
     }
 
@@ -90,8 +90,8 @@ class IntegrationSpec extends Spec {
   "it should work with Clump.sourceZip" in {
     val enrichedTweets = Clump.traverse(List(1L, 2L, 3L)) { tweetId =>
       for {
-        tweet <- tweets.get(tweetId)
-        user <- zippedUsers.get(tweet.userId)
+        tweet <- tweets(tweetId)
+        user <- zippedUsers(tweet.userId)
       } yield (tweet, user)
     }
 
@@ -104,8 +104,8 @@ class IntegrationSpec extends Spec {
   "A Clump can have a partial result" in {
     val onlyFullObjectGraph: Clump[List[(Tweet, User)]] = Clump.traverse(List(1L, 2L, 3L)) { tweetId =>
       for {
-        tweet <- tweets.get(tweetId)
-        user <- filteredUsers.get(tweet.userId)
+        tweet <- tweets(tweetId)
+        user <- filteredUsers(tweet.userId)
       } yield (tweet, user)
     }
 
@@ -113,8 +113,8 @@ class IntegrationSpec extends Spec {
 
     val partialResponses: Clump[List[(Tweet, Option[User])]] = Clump.traverse(List(1L, 2L, 3L)) { tweetId =>
       for {
-        tweet <- tweets.get(tweetId)
-        user <- filteredUsers.get(tweet.userId).optional
+        tweet <- tweets(tweetId)
+        user <- filteredUsers.get(tweet.userId)
       } yield (tweet, user)
     }
 
