@@ -1,13 +1,10 @@
 package clump
 
-import com.twitter.util.Local
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.SynchronizedMap
-import com.twitter.util.Future
-import com.twitter.util.JavaTimer
-import com.twitter.util.TimeConversions._
+import com.twitter.util.{Future, Local}
 
-final class ClumpContext {
+import scala.collection.mutable.HashMap
+
+private[clump] final class ClumpContext {
 
   private val fetchers =
     new HashMap[ClumpSource[_, _], ClumpFetcher[_, _]]()
@@ -47,7 +44,7 @@ final class ClumpContext {
     }.distinct
 }
 
-object ClumpContext {
+private[clump] object ClumpContext {
 
   private val local = new Local[ClumpContext]
 

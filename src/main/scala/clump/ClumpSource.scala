@@ -14,7 +14,7 @@ class ClumpSource[T, U] private (val fetch: Set[T] => Future[Map[T, U]], val max
   def maxBatchSize(size: Int): ClumpSource[T, U] = new ClumpSource(fetch, size)
 }
 
-object ClumpSource {
+private[clump] object ClumpSource {
 
   def apply[T, U, C](fetch: C => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]) =
     new ClumpSource(extractKeys(adaptInput(fetch), keyExtractor))
