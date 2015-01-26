@@ -66,4 +66,38 @@ class ClumpFetcherSpec extends Spec {
     verify(repo, times(2)).fetch(Set(1))
     verifyNoMoreInteractions(repo)
   }
+
+  "retries failed fetches automatically" >> {
+    "success (below the retries limit)" in new Context {
+      val source =
+        Clump.sourceFrom(repo.fetch).maxRetries {
+          case e: IllegalStateException => 1
+        }
+
+      when(repo.fetch(Set(1)))
+        .thenReturn(Future.exception(new IllegalStateException))
+        .thenReturn(Future(Map(1 -> 10)))
+
+      clumpResult(source.get(1)) mustEqual Some(10)
+
+      verify(repo, times(2)).fetch(Set(1))
+      verifyNoMoreInteractions(repo)
+    }
+
+    "failure (above the retries limit)" in new Context {
+      val source =
+        Clump.sourceFrom(repo.fetch).maxRetries {
+          case e: IllegalStateException => 1
+        }
+
+      when(repo.fetch(Set(1)))
+        .thenReturn(Future.exception(new IllegalStateException))
+        .thenReturn(Future.exception(new IllegalStateException))
+
+      clumpResult(source.get(1)) must throwA[IllegalStateException]
+
+      verify(repo, times(2)).fetch(Set(1))
+      verifyNoMoreInteractions(repo)
+    }
+  }
 }

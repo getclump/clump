@@ -19,6 +19,7 @@ private[clump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
       Future.collect(flushInBatches).unit
     }
 
+
   private def flushInBatches =
     pendingFetches
       .grouped(source.maxBatchSize)
@@ -26,7 +27,7 @@ private[clump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
       .map(fetchBatch)
 
   private def fetchBatch(batch: Set[T]) = {
-    val results = source.fetch(batch)
+    val results = fetchWithRetries(batch, 0)
     for (input <- batch) {
       val fetch = fetches(input)
       val fetchResult = results.map(_.get(input))
@@ -34,6 +35,15 @@ private[clump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
     }
     results
   }
+
+  private def fetchWithRetries(batch: Set[T], retries: Int): Future[Map[T, U]] =
+    source.fetch(batch).rescue {
+      case exception if (maxRetries(exception) > retries) =>
+        fetchWithRetries(batch, retries + 1)
+    }
+
+  private def maxRetries(exception: Throwable) =
+    source._maxRetries.lift(exception).getOrElse(0)
 
   private def pendingFetches =
     fetches.collect {
