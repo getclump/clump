@@ -1,6 +1,6 @@
 ![Clump](clump.png) Clump
 =========================
-A Library for expressive and efficient service composition
+A library for expressive and efficient service composition
 
 [![Build Status](https://secure.travis-ci.org/fwbrasil/clump.png)](http://travis-ci.org/fwbrasil/clump)
 [![Coverage Status](https://coveralls.io/repos/fwbrasil/clump/badge.png)](https://coveralls.io/r/fwbrasil/clump)
