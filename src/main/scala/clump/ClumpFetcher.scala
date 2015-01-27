@@ -10,7 +10,6 @@ private[clump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
 
   def get(input: T) =
     synchronized {
-      retryFailedFetches(input)
       fetches.getOrElseUpdate(input, Promise[Option[U]])
     }
 
@@ -49,9 +48,4 @@ private[clump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
     fetches.collect {
       case (key, fetch) if (!fetch.poll.isDefined) => key
     }.toSet
-
-  private def retryFailedFetches(input: T) =
-    fetches.get(input).flatMap(_.poll).collect {
-      case Throw(_) => fetches -= input
-    }
 }
