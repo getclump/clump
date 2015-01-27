@@ -226,6 +226,15 @@ Some services have a limitation on how many resources can be fetched in a single
 val usersSource = Clump.sourceZip(fetch).maxBatchSize(100)
 ```
 
+The source instance can be also configured to automatically retry failed fetches by using the ```maxRetries``` method. It receives a partial function that defines the number of retries for each type of exception. The default number of retries is zero.
+
+```scala
+val usersSource = 
+    Clump.sourceZip(fetch).maxRetries {
+      case e: SomeException => 10
+    }
+```
+
 ## Constants ##
 
 It is possible to create Clump instances based on values.
