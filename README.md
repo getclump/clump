@@ -433,21 +433,6 @@ val clump: Clump[User] =
     }
 ```
 
-Clump retries failed fetches if they are requested again. This allows definition of per-input retries, where the failed keys are retried using batched requests:
-
-```scala
-def trackWithRetries(trackId: Int, tries: Int = 10): Clump[Track] =
-    tracksSource.get(trackId).rescue {
-      case _: RetriableException if(tries > 0) =>
-        trackWithRetries(trackId, tries - 1)
-      case notRetriable =>
-        Clump.exception(notRetriable)
-    }
-
-val tracks: Clump[List[Track]] = 
-    Clump.traverse(trackIds)(trackWithRetries(_))
-```
-
 # Scala Futures #
 
 Clump uses Twitter Futures by default, but is is possible to use Scala Futures by importing the ```FutureBridge```:
@@ -598,7 +583,6 @@ val clump: Clump[EnrichedTrack] =
 The clump instance will be a ```ClumpFlatMap```, not the ```ClumpFetch``` created by the ```tracksSource.get(trackId)``` call. This is the AST behind the clump instance:
 
 ```
-
                                    +----------> Empty                    
                                    |Up                                   
                             +------+-----+                               
