@@ -37,16 +37,16 @@ Clump removes the need for the developer to even think about bulk-fetching, batc
 
 For example:
 ```scala
-    val goodTracks: Clump[List[CreatorTrack]] = 
-      Clump.traverse(trackIds) { trackId =>
-        for {
-          track <- tracks.get(trackId) if (track.rating >= 4)
-          user <- users.get(track.creatorId)
-        } yield {
-          CreatorTrack(track, user)
-        }
-      }
-    val efficientlyFetched: Future[List[CreatorTrack]] = goodTracks.list
+val goodTracks: Clump[List[CreatorTrack]] = 
+  Clump.traverse(trackIds) { trackId =>
+    for {
+      track <- tracks.get(trackId) if (track.rating >= 4)
+      user <- users.get(track.creatorId)
+    } yield {
+      CreatorTrack(track, user)
+    }
+  }
+val efficientlyFetched: Future[List[CreatorTrack]] = goodTracks.list
 ```
 
 ## Problem ##
@@ -72,7 +72,6 @@ tracksService.get(trackIds).flatMap { tracks =>
 This example has only one level of nested resources. In a complex system, it is common to have several levels:
 
 ```
-
 • timeline
   • track post
     • track
@@ -144,45 +143,44 @@ Maven
 Example usage of Clump:
 
 ```scala
-   
-  import clump.Clump
+import clump.Clump
 
-  // Creates sources using the batched interfaces
-  val tracksSource = Clump.source(tracksService.fetch)(_.id)
-  val usersSource = Clump.source(usersService.fetch)(_.id)
+// Creates sources using the batched interfaces
+val tracksSource = Clump.source(tracksService.fetch)(_.id)
+val usersSource = Clump.source(usersService.fetch)(_.id)
 
-  def renderTrackPosts(userId: Long) = {
+def renderTrackPosts(userId: Long) = {
 
-    // Defines the clump
-    val clump: Clump[List[EnrichedTrack]] = enrichedTrackPosts(userId)
+  // Defines the clump
+  val clump: Clump[List[EnrichedTrack]] = enrichedTrackPosts(userId)
 
-    // Triggers execution
-    val future: Future[Option[List[EnrichedTrack]]] = clump.get
+  // Triggers execution
+  val future: Future[Option[List[EnrichedTrack]]] = clump.get
 
-    // Renders the response
-    future.map {
-      case Some(trackPosts) => render.json(trackPosts)
-      case None             => render.notFound
-    }
+  // Renders the response
+  future.map {
+    case Some(trackPosts) => render.json(trackPosts)
+    case None             => render.notFound
+  }
+}
+
+// Composes a clump with the user's track posts
+def enrichedTrackPosts(userId: Long) =
+  for {
+    trackPosts <- Clump.future(timelineService.fetchTrackPosts(userId))
+    enrichedTracks <- Clump.traverse(trackPosts)(enrichedTrack(_))
+  } yield {
+    enrichedTracks
   }
 
-  // Composes a clump with the user's track posts
-  def enrichedTrackPosts(userId: Long) =
-    for {
-      trackPosts <- Clump.future(timelineService.fetchTrackPosts(userId))
-      enrichedTracks <- Clump.traverse(trackPosts)(enrichedTrack(_))
-    } yield {
-      enrichedTracks
-    }
-
-  // Composes an enriched track clump
-  def enrichedTrack(trackId: Long) =
-    for {
-      track <- tracksSource.get(trackId)
-      creator <- usersSource.get(track.creatorId)
-    } yield {
-      new EnrichedTrack(track, creator)
-    }
+// Composes an enriched track clump
+def enrichedTrack(trackId: Long) =
+  for {
+    track <- tracksSource.get(trackId)
+    creator <- usersSource.get(track.creatorId)
+  } yield {
+    new EnrichedTrack(track, creator)
+  }
 ```
 
 The usage of ```renderTrackPosts``` produces only three remote procedure calls:
