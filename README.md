@@ -195,8 +195,6 @@ The final result can be ```notFound``` because the user can be found or not.
 
 Sources represent the remote systems' batched interfaces. Clump offers some methods to create sources using different strategies.
 
-  **Important**: The source instances must be singletons within a Clump execution. If there are multiple instances for the same source, the batching of requests doesn't work.
-
 The ```Clump.source``` method accepts a function that may return less elements than requested. The output can also be in a different order than the inputs, since the last parameter is a function that allows Clump to determine which is the input for each output.
 
 ```scala
@@ -488,7 +486,7 @@ val usersSource = Clump.source(usersService.fetch)(_.id)
 val tracksSource = Clump.source(tracksService.fetch)(_.id)
 ```
 
-The ```ClumpSource``` instances are created using one of the shortcuts that the ```Clump``` object [provides](/src/main/scala/clump/Clump.scala#L69). They don't hold any state and allow to create Clump instances representing the [fetch](/src/main/scala/clump/ClumpSource.scala#L12). Clump uses the source instance's identity to group requests and perform batched fetches, so it is really important that each source has only one instance within a clump composition and execution.
+The ```ClumpSource``` instances are created using one of the shortcuts that the ```Clump``` object [provides](/src/main/scala/clump/Clump.scala#L69). They don't hold any state and allow to create Clump instances representing the [fetch](/src/main/scala/clump/ClumpSource.scala#L12). Clump uses the fetch function's [identity](/src/main/scala/clump/FunctionIdentity.scala) to group requests and perform batched fetches, so it is possible to have multiple instances of the same source within a clump composition and execution.
 
 ## Composition
 

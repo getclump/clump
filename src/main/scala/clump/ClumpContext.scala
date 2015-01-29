@@ -7,12 +7,12 @@ import scala.collection.mutable.HashMap
 private[clump] final class ClumpContext {
 
   private val fetchers =
-    new HashMap[ClumpSource[_, _], ClumpFetcher[_, _]]()
+    new HashMap[FunctionIdentity, ClumpFetcher[_, _]]()
 
   def fetcherFor[T, U](source: ClumpSource[T, U]) =
     synchronized {
       fetchers
-        .getOrElseUpdate(source, new ClumpFetcher(source))
+        .getOrElseUpdate(source.functionIdentity, new ClumpFetcher(source))
         .asInstanceOf[ClumpFetcher[T, U]]
     }
 
