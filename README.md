@@ -69,6 +69,18 @@ tracksService.get(trackIds).flatMap { tracks =>
 }
 ```
 
+The same composition using Clump:
+
+```scala
+Clump.travese(trackIds) { trackId =>
+  trackSource.get(trackId).flatMap { track =>
+    userSource.get(track.creator).map { user =>
+      new EnrichedTrack(track, user)
+    }
+  }
+}
+```
+
 This example has only one level of nested resources. In a complex system, it is common to have several levels:
 
 ```
