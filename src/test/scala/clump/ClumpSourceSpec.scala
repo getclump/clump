@@ -15,6 +15,7 @@ class ClumpSourceSpec extends Spec {
   trait Context extends Scope {
     trait TestRepository {
       def fetch(inputs: Set[Int]): Future[Map[Int, Int]]
+      def fetchWithScope(fromScope: Int, inputs: Set[Int]): Future[Map[Int, Int]]
     }
 
     val repo = smartMock[TestRepository]
@@ -62,10 +63,10 @@ class ClumpSourceSpec extends Spec {
     def listToIterable: List[Int] => Future[Iterable[String]] = { inputs => Future.value(inputs.map(_.toString)) }
     def iterableToList: Iterable[Int] => Future[List[String]] = { inputs => Future.value(inputs.map(_.toString).toList) }
     def iterableToSet: Iterable[Int] => Future[List[String]] = { inputs => Future.value(inputs.map(_.toString).toList) }
-    
+
     def testSource(source: ClumpSource[Int, String]) =
       clumpResult(source.get(1, 2)) mustEqual Some(List("1", "2"))
-    
+
     def extractId(string: String) = string.toInt
 
     testSource(ClumpSource(setToSet)(extractId))
@@ -78,13 +79,13 @@ class ClumpSourceSpec extends Spec {
     testSource(ClumpSource(iterableToList)(extractId))
     testSource(ClumpSource(iterableToSet)(extractId))
   }
-  
+
   "allows to create a clump source from various input/ouput type fetch functions (ClumpSource.from)" in {
 
     def setToMap: Set[Int] => Future[Map[Int, String]] = { inputs => Future.value(inputs.map(input => (input, input.toString)).toMap) }
     def listToMap: List[Int] => Future[Map[Int, String]] = { inputs => Future.value(inputs.map(input => (input, input.toString)).toMap) }
     def iterableToMap: Iterable[Int] => Future[Map[Int, String]] = { inputs => Future.value(inputs.map(input => (input, input.toString)).toMap) }
-    
+
     def testSource(source: ClumpSource[Int, String]) =
       clumpResult(source.get(1, 2)) mustEqual Some(List("1", "2"))
 
@@ -133,21 +134,42 @@ class ClumpSourceSpec extends Spec {
     }
   }
 
-  "can be used as a singleton" in new Context {
-    val source = Clump.sourceFrom(repo.fetch)
+  "can be used as a non-singleton" >> {
+    "without values from the outer scope" in new Context {
+      def source = Clump.sourceFrom(repo.fetch)
 
-    when(repo.fetch(Set(1))).thenReturn(Future(Map(1 -> 2)))
+      when(repo.fetch(Set(1))).thenReturn(Future(Map(1 -> 2)))
 
-    val future =
-      Future.collect {
-        for (i <- 0 until 5) yield {
-          source.get(List(1)).get
+      val future =
+        Future.collect {
+          for (i <- 0 until 5) yield {
+            source.get(List(1)).get
+          }
         }
-      }
 
-    Await.result(future)
+      Await.result(future)
 
-    verify(repo).fetch(Set(1))
-    verifyNoMoreInteractions(repo)
+      verify(repo).fetch(Set(1))
+      verifyNoMoreInteractions(repo)
+    }
+
+    "with values from the outer scope" in new Context {
+      val scope = 1
+      def source = Clump.sourceFrom((inputs: Set[Int]) => repo.fetchWithScope(scope, inputs))
+
+      when(repo.fetchWithScope(scope, Set(1))).thenReturn(Future(Map(1 -> 2)))
+
+      val future =
+        Future.collect {
+          for (i <- 0 until 5) yield {
+            source.get(List(1)).get
+          }
+        }
+
+      Await.result(future)
+
+      verify(repo).fetchWithScope(1, Set(1))
+      verifyNoMoreInteractions(repo)
+    }
   }
 }

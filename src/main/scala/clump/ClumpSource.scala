@@ -3,31 +3,37 @@ package clump
 import com.twitter.util.Future
 import scala.collection.generic.CanBuildFrom
 
-class ClumpSource[T, U] private (val fetch: Set[T] => Future[Map[T, U]],
+class ClumpSource[T, U] private (val functionIdentity: FunctionIdentity,
+                                 val fetch: Set[T] => Future[Map[T, U]],
                                  val maxBatchSize: Int = Int.MaxValue,
                                  val _maxRetries: PartialFunction[Throwable, Int] = PartialFunction.empty) {
 
-  def get(inputs: T*): Clump[List[U]] = get(inputs.toList)
+  def get(inputs: T*): Clump[List[U]] = 
+    get(inputs.toList)
 
-  def get(inputs: List[T]): Clump[List[U]] = Clump.collect(inputs.map(get))
+  def get(inputs: List[T]): Clump[List[U]] = 
+    Clump.collect(inputs.map(get))
 
-  def get(input: T): Clump[U] = new ClumpFetch(input, ClumpContext().fetcherFor(this))
+  def get(input: T): Clump[U] = 
+    new ClumpFetch(input, ClumpContext().fetcherFor(this))
 
-  def maxBatchSize(size: Int): ClumpSource[T, U] = new ClumpSource(fetch, size, _maxRetries)
+  def maxBatchSize(size: Int): ClumpSource[T, U] = 
+    new ClumpSource(functionIdentity, fetch, size, _maxRetries)
 
-  def maxRetries(retries: PartialFunction[Throwable, Int]): ClumpSource[T, U] = new ClumpSource(fetch, maxBatchSize, retries)
+  def maxRetries(retries: PartialFunction[Throwable, Int]): ClumpSource[T, U] = 
+    new ClumpSource(functionIdentity, fetch, maxBatchSize, retries)
 }
 
 private[clump] object ClumpSource {
 
   def apply[T, U, C](fetch: C => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]) =
-    new ClumpSource(extractKeys(adaptInput(fetch), keyExtractor))
+    new ClumpSource(FunctionIdentity(fetch), extractKeys(adaptInput(fetch), keyExtractor))
 
   def from[T, U, C](fetch: C => Future[Map[T, U]])(implicit cbf: CanBuildFrom[Nothing, T, C]) =
-    new ClumpSource(adaptInput(fetch))
+    new ClumpSource(FunctionIdentity(fetch), adaptInput(fetch))
 
   def zip[T, U](fetch: List[T] => Future[List[U]]): ClumpSource[T, U] = {
-    new ClumpSource(zipped(fetch))
+    new ClumpSource(FunctionIdentity(fetch), zipped(fetch))
   }
 
   private def zipped[T, U](fetch: List[T] => Future[List[U]]) = {
