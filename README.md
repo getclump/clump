@@ -35,7 +35,7 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 Clump removes the need for the developer to even think about bulk-fetching, batching and retries, providing a powerful and composable interface for aggregating resources.
 
-An example of batching using futures:
+An example of batching fetches using futures without Clump:
 
 ```scala
 tracksService.get(trackIds).flatMap { tracks =>
@@ -52,7 +52,7 @@ tracksService.get(trackIds).flatMap { tracks =>
 The same composition using Clump:
 
 ```scala
-Clump.travese(trackIds) { trackId =>
+Clump.traverse(trackIds) { trackId =>
   trackSource.get(trackId).flatMap { track =>
     userSource.get(track.creator).map { user =>
       new EnrichedTrack(track, user)
@@ -60,6 +60,19 @@ Clump.travese(trackIds) { trackId =>
   }
 }
 ```
+
+Or expressed more elegantly with a for-comprehension:
+
+```scala
+Clump.traverse(trackIds) { trackId =>
+  for {
+    track <- trackSource.get(trackId)
+    user <- userSource.get(track.creator)
+  } yield {
+    new EnrichedTrack(track, user)
+  }
+```
+
 
 ## Problem ##
 
