@@ -35,19 +35,44 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 Clump removes the need for the developer to even think about bulk-fetching, batching and retries, providing a powerful and composable interface for aggregating resources.
 
-For example:
+An example of batching fetches using futures without Clump:
+
 ```scala
-val goodTracks: Clump[List[CreatorTrack]] = 
-  Clump.traverse(trackIds) { trackId =>
-    for {
-      track <- tracks.get(trackId) if (track.rating >= 4)
-      user <- users.get(track.creatorId)
-    } yield {
-      CreatorTrack(track, user)
+tracksService.get(trackIds).flatMap { tracks =>
+  val userIds = tracks.map(_.creator)
+  usersService.get(userIds).map { users =>
+    val userMap = userIds.zip(users).toMap
+    tracks.map { track =>
+      new EnrichedTrack(track, userMap(track.creator))
     }
   }
-val efficientlyFetched: Future[List[CreatorTrack]] = goodTracks.list
+}
 ```
+
+The same composition using Clump:
+
+```scala
+Clump.traverse(trackIds) { trackId =>
+  trackSource.get(trackId).flatMap { track =>
+    userSource.get(track.creator).map { user =>
+      new EnrichedTrack(track, user)
+    }
+  }
+}
+```
+
+Or expressed more elegantly with a for-comprehension:
+
+```scala
+Clump.traverse(trackIds) { trackId =>
+  for {
+    track <- trackSource.get(trackId)
+    user <- userSource.get(track.creator)
+  } yield {
+    new EnrichedTrack(track, user)
+  }
+```
+
 
 ## Problem ##
 
@@ -59,23 +84,11 @@ An example of batching using futures:
 
 ```scala
 tracksService.get(trackIds).flatMap { tracks =>
-	val userIds = tracks.map(_.creator)
-	usersService.get(userIds).map {	users =>
-		val userMap = userIds.zip(users).toMap
-		tracks.map { track =>
-			new EnrichedTrack(track, userMap(track.creator))
-		}
-	}
-}
-```
-
-The same composition using Clump:
-
-```scala
-Clump.travese(trackIds) { trackId =>
-  trackSource.get(trackId).flatMap { track =>
-    userSource.get(track.creator).map { user =>
-      new EnrichedTrack(track, user)
+  val userIds = tracks.map(_.creator)
+  usersService.get(userIds).map { users =>
+    val userMap = userIds.zip(users).toMap
+    tracks.map { track =>
+      new EnrichedTrack(track, userMap(track.creator))
     }
   }
 }
