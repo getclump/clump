@@ -140,9 +140,9 @@ class ClumpApiSpec extends Spec {
       }
     }
 
-    "can have its result filtered (clump.withFilter)" in {
-      clumpResult(Clump.value(1).withFilter(_ != 1)) mustEqual None
-      clumpResult(Clump.value(1).withFilter(_ == 1)) mustEqual Some(1)
+    "can have its result filtered (clump.filter)" in {
+      clumpResult(Clump.value(1).filter(_ != 1)) mustEqual None
+      clumpResult(Clump.value(1).filter(_ == 1)) mustEqual Some(1)
     }
 
     "uses a covariant type parameter" in {
