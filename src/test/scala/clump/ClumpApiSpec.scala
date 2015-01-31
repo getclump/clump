@@ -57,8 +57,8 @@ class ClumpApiSpec extends Spec {
       clumpResult(Clump.collect(clumps)) mustEqual Some(List(1, 2))
     }
 
-    "allows to create an empty Clump (Clump.none)" in {
-      clumpResult(Clump.None) ==== None
+    "allows to create an empty Clump (Clump.empty)" in {
+      clumpResult(Clump.empty) ==== None
     }
   }
 
@@ -155,7 +155,7 @@ class ClumpApiSpec extends Spec {
 
     "allows to defined a fallback value (clump.orElse)" >> {
       "undefined" in {
-        clumpResult(Clump.None.orElse(Clump.value(1))) ==== Some(1)
+        clumpResult(Clump.empty.orElse(Clump.value(1))) ==== Some(1)
       }
       "defined" in {
         clumpResult(Clump.value(Some(1)).orElse(Clump.value(2))) ==== Some(1)
@@ -183,7 +183,7 @@ class ClumpApiSpec extends Spec {
     }
 
     "can be made optional (clump.optional) to avoid lossy joins" in {
-      val clump: Clump[String] = Clump.None
+      val clump: Clump[String] = Clump.empty
       val optionalClump: Clump[Option[String]] = clump.optional
       clumpResult(optionalClump) ==== Some(None)
 

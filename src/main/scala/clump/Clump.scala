@@ -54,7 +54,7 @@ sealed trait Clump[+T] {
 object Clump {
 
   
-  def None[T]: Clump[T] = value(scala.None)
+  def empty[T]: Clump[T] = value(scala.None)
 
   def value[T](value: T): Clump[T] = future(Future.value(Option(value)))
 
