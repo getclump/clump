@@ -1,11 +1,12 @@
 package clump
 
-import org.specs2.mutable.Specification
-import org.specs2.mock.Mockito
+import org.junit.runner.RunWith
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoMoreInteractions
+import org.mockito.Mockito.when
 import org.specs2.specification.Scope
 import com.twitter.util.Future
-import org.mockito.Mockito._
-import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])

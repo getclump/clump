@@ -1,13 +1,13 @@
 package clump
 
-import org.specs2.mutable.Specification
-import org.specs2.mock.Mockito
 import scala.collection.mutable.ListBuffer
-import org.specs2.specification.Scope
 import org.junit.runner.RunWith
+import org.specs2.specification.Scope
+import com.twitter.util.Future
+import com.twitter.util.JavaTimer
+import com.twitter.util.Promise
+import com.twitter.util.TimeConversions.intToTimeableNumber
 import org.specs2.runner.JUnitRunner
-import com.twitter.util.{Promise, JavaTimer, Future }
-import com.twitter.util.TimeConversions._
 
 @RunWith(classOf[JUnitRunner])
 class ClumpExecutionSpec extends Spec {
@@ -162,12 +162,12 @@ class ClumpExecutionSpec extends Spec {
     val promises = List(Promise[Map[Int, Int]](), Promise[Map[Int, Int]]())
 
     val promisesIterator = promises.iterator
-    
+
     override def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) =
       promisesIterator.next
 
     val clump = source1.get(1).join(source2.get(2))
-    
+
     val future: Future[Option[(Int, Int)]] = clump.get
 
     promises.size mustEqual 2

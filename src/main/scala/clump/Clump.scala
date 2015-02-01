@@ -1,8 +1,10 @@
 package clump
 
-import com.twitter.util.{ Future, Throw, Try, Return }
-
 import scala.collection.generic.CanBuildFrom
+
+import com.twitter.util.Future
+import com.twitter.util.Return
+import com.twitter.util.Throw
 
 sealed trait Clump[+T] {
 

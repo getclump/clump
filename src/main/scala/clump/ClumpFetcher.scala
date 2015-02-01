@@ -1,7 +1,9 @@
 package clump
 
-import com.twitter.util.{ Future, Promise }
-import scala.collection.mutable.{ Map => MutableMap }
+import scala.collection.mutable.{Map => MutableMap}
+
+import com.twitter.util.Future
+import com.twitter.util.Promise
 
 private[clump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
 

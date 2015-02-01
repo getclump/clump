@@ -1,7 +1,8 @@
 package clump
 
-import com.twitter.util.{Await, Future}
 import org.junit.runner.RunWith
+import com.twitter.util.Await
+import com.twitter.util.Future
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
