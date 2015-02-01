@@ -6,7 +6,7 @@ import scala.collection.mutable.HashMap
 
 private[clump] final class ClumpContext {
 
-  private val fetchers =
+  private[this] val fetchers =
     new HashMap[FunctionIdentity, ClumpFetcher[_, _]]()
 
   def fetcherFor[T, U](source: ClumpSource[T, U]) =
@@ -27,18 +27,18 @@ private[clump] final class ClumpContext {
         }
     }
 
-  private def flushUpstream(clumps: List[Clump[_]]) =
+  private[this] def flushUpstream(clumps: List[Clump[_]]) =
     flush(clumps.map(_.upstream).flatten)
 
-  private def flushDownstream(clumps: List[Clump[_]]) =
+  private[this] def flushDownstream(clumps: List[Clump[_]]) =
     Future.collect(clumps.map(_.downstream)).flatMap { down =>
       flush(down.flatten.toList)
     }
 
-  private def flushFetches(clumps: List[Clump[_]]) =
+  private[this] def flushFetches(clumps: List[Clump[_]]) =
     Future.collect(fetchersFor(clumps).map(_.flush))
 
-  private def fetchersFor(clumps: List[Clump[_]]) =
+  private[this] def fetchersFor(clumps: List[Clump[_]]) =
     clumps.collect {
       case clump: ClumpFetch[_, _] => clump.fetcher
     }.distinct

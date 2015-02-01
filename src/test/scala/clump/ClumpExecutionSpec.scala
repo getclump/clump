@@ -2,13 +2,11 @@ package clump
 
 import org.specs2.mutable.Specification
 import org.specs2.mock.Mockito
-import com.twitter.util.Future
 import scala.collection.mutable.ListBuffer
 import org.specs2.specification.Scope
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
-import com.twitter.util.Promise
-import com.twitter.util.JavaTimer
+import com.twitter.util.{Promise, JavaTimer, Future }
 import com.twitter.util.TimeConversions._
 
 @RunWith(classOf[JUnitRunner])
@@ -161,15 +159,16 @@ class ClumpExecutionSpec extends Spec {
   }
 
   "executes joined clumps in parallel" in new Context {
-    var promises = List[Promise[Map[Int, Int]]]()
+    val promises = List(Promise[Map[Int, Int]](), Promise[Map[Int, Int]]())
 
-    override def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) = {
-      val promise = Promise[Map[Int, Int]]()
-      promises :+= promise
-      promise
-    }
+    val promisesIterator = promises.iterator
+    
+    override def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) =
+      promisesIterator.next
 
-    source1.get(1).join(source2.get(2)).get
+    val clump = source1.get(1).join(source2.get(2))
+    
+    clump.get
 
     promises.size mustEqual 2
   }

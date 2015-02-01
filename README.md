@@ -3,7 +3,7 @@
 A library for expressive and efficient service composition
 
 [![Build Status](https://secure.travis-ci.org/fwbrasil/clump.png)](http://travis-ci.org/fwbrasil/clump)
-[![Coverage Status](https://coveralls.io/repos/fwbrasil/clump/badge.png)](https://coveralls.io/r/fwbrasil/clump)
+[![Codacy Badge](https://www.codacy.com/project/badge/5fd8030f7c494b739f6ec5c1963371a8)](https://www.codacy.com/public/fwbrasil/clump)
 [![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/fwbrasil/clump?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 * [Introduction](#introduction) 
