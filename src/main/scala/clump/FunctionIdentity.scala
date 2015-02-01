@@ -1,6 +1,6 @@
 package clump
 
-case class FunctionIdentity private (cls: Class[_], externalParams: List[Any])
+case class FunctionIdentity private[FunctionIdentity] (cls: Class[_], externalParams: List[Any])
 
 object FunctionIdentity {
   

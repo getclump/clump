@@ -46,7 +46,7 @@ private[clump] final class ClumpContext {
 
 private[clump] object ClumpContext {
 
-  private val local = new Local[ClumpContext]
+  private[this] val local = new Local[ClumpContext]
 
   def apply() =
     local().getOrElse {

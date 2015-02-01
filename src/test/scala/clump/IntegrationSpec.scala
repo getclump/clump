@@ -44,8 +44,8 @@ class IntegrationSpec extends Spec {
           enrichedLikes <- Clump.traverse(timeline.likeIds) { id =>
             for {
               like <- likes.get(id)
-              resources <- tracks.get(like.trackIds).join(users.get(like.userIds))
-            } yield (like, resources._1, resources._2)
+              (tracks, users) <- tracks.get(like.trackIds).join(users.get(like.userIds))
+            } yield (like, tracks, users)
           }
         } yield (timeline, enrichedLikes)
       }
