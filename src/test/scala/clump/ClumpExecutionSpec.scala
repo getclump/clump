@@ -2,13 +2,11 @@ package clump
 
 import org.specs2.mutable.Specification
 import org.specs2.mock.Mockito
-import com.twitter.util.Future
 import scala.collection.mutable.ListBuffer
 import org.specs2.specification.Scope
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
-import com.twitter.util.Promise
-import com.twitter.util.JavaTimer
+import com.twitter.util.{Promise, JavaTimer, Future }
 import com.twitter.util.TimeConversions._
 
 @RunWith(classOf[JUnitRunner])
@@ -149,9 +147,9 @@ class ClumpExecutionSpec extends Spec {
             const2 <- Clump.value(2)
             collect1 <- Clump.collect(source1.get(const1), source2.get(const2))
             collect2 <- Clump.collect(source1.get(const1), source2.get(const2)) if (true)
-            join1 <- Clump.value(4).join(Clump.value(5))
-            join2 <- source1.get(collect1).join(source2.get(join1._2))
-          } yield (const1, const2, collect1, collect2, join1, join2)
+            (join1a, join1b) <- Clump.value(4).join(Clump.value(5))
+            join2 <- source1.get(collect1).join(source2.get(join1b))
+          } yield (const1, const2, collect1, collect2, (join1a, join1b), join2)
 
         clumpResult(clump) mustEqual Some((1, 2, List(10, 20), List(10, 20), (4, 5), (List(100, 200), 50)))
         source1Fetches mustEqual List(Set(1), Set(10, 20))
@@ -161,15 +159,16 @@ class ClumpExecutionSpec extends Spec {
   }
 
   "executes joined clumps in parallel" in new Context {
-    var promises = List[Promise[Map[Int, Int]]]()
+    val promises = List(Promise[Map[Int, Int]](), Promise[Map[Int, Int]]())
 
-    override def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) = {
-      val promise = Promise[Map[Int, Int]]()
-      promises :+= promise
-      promise
-    }
+    val promisesIterator = promises.iterator
+    
+    override def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) =
+      promisesIterator.next
 
-    source1.get(1).join(source2.get(2)).get
+    val clump = source1.get(1).join(source2.get(2))
+    
+    val future: Future[Option[(Int, Int)]] = clump.get
 
     promises.size mustEqual 2
   }

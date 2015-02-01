@@ -1,16 +1,13 @@
 package clump
 
-import com.twitter.util.Future
-import com.twitter.util.Throw
-import com.twitter.util.Try
-import com.twitter.util.Return
+import com.twitter.util.{ Future, Throw, Try, Return }
 
 import scala.collection.generic.CanBuildFrom
 
 sealed trait Clump[+T] {
 
   
-  private val context = ClumpContext()
+  private[this] val context = ClumpContext()
 
   
   def map[U](f: T => U): Clump[U] = new ClumpMap(this, f)

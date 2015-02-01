@@ -1,6 +1,6 @@
 package clump
 
-case class FunctionIdentity private (cls: Class[_], externalParams: List[Any])
+case class FunctionIdentity private[FunctionIdentity] (cls: Class[_], externalParams: List[Any])
 
 object FunctionIdentity {
   
@@ -12,10 +12,10 @@ object FunctionIdentity {
     new FunctionIdentity(cls, fieldValuesFor(function, cls))
   }
   
-  private def fieldValuesFor(function: Function, cls: Class[_]) =
+  private[this] def fieldValuesFor(function: Function, cls: Class[_]) =
     fieldsFor(cls).map(_.get(function))
   
-  private def fieldsFor(cls: Class[_]) = {
+  private[this] def fieldsFor(cls: Class[_]) = {
     val fields = cls.getDeclaredFields
     fields.foreach(_.setAccessible(true))
     fields.toList

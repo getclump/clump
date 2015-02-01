@@ -1,19 +1,15 @@
 package clump
 
-import scala.concurrent.{ Await => ScalaAwait }
+import scala.concurrent.{ Await => ScalaAwait, Future => ScalaFuture }
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Future => ScalaFuture}
 import scala.concurrent.duration.Duration
 import org.junit.runner.RunWith
 import com.twitter.util.{Future => TwitterFuture, Await => TwitterAwait}
-import FutureBridge.scalaToTwitter
-import FutureBridge.twitterToScala
 import org.specs2.runner.JUnitRunner
+import FutureBridge._
 
 @RunWith(classOf[JUnitRunner])
 class FutureBridgeSpec extends Spec {
-
-  import FutureBridge._
 
   "success" >> {
 
