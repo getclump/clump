@@ -696,7 +696,7 @@ Clump was inspired by the Twitter's Stitch project. The initial goal was to have
 
 Facebook's [Haxl paper](http://community.haskell.org/~simonmar/papers/haxl-icfp14.pdf) and the Futurice's [blog post](http://futurice.com/blog/an-example-of-functional-design) about Jobba also were important sources for the development phase.
 
-The project was built mainly using SoundCloud's [Hacker Time](https://developers.soundcloud.com/blog/stop-hacker-time).
+The project was initially built mainly using SoundCloud's [Hacker Time](https://developers.soundcloud.com/blog/stop-hacker-time).
 
 # Versioning #
 
