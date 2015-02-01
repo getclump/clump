@@ -3,11 +3,10 @@ package clump
 import org.specs2.mutable.Specification
 import org.specs2.mock.Mockito
 import org.specs2.specification.Scope
-import com.twitter.util.Future
+import com.twitter.util.{ Future, Await }
 import org.mockito.Mockito._
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
-import com.twitter.util.Await
 
 @RunWith(classOf[JUnitRunner])
 class ClumpSourceSpec extends Spec {
@@ -140,14 +139,14 @@ class ClumpSourceSpec extends Spec {
 
       when(repo.fetch(Set(1))).thenReturn(Future(Map(1 -> 2)))
 
-      val future =
-        Future.collect {
-          for (i <- 0 until 5) yield {
-            source.get(List(1)).get
-          }
+      val clump =
+        Clump.collect {
+          (for (i <- 0 until 5) yield {
+            source.get(List(1))
+          }).toList
         }
 
-      Await.result(future)
+      Await.result(clump.get)
 
       verify(repo).fetch(Set(1))
       verifyNoMoreInteractions(repo)
@@ -159,14 +158,14 @@ class ClumpSourceSpec extends Spec {
 
       when(repo.fetchWithScope(scope, Set(1))).thenReturn(Future(Map(1 -> 2)))
 
-      val future =
-        Future.collect {
-          for (i <- 0 until 5) yield {
-            source.get(List(1)).get
-          }
+      val clump =
+        Clump.collect {
+          (for (i <- 0 until 5) yield {
+            source.get(List(1))
+          }).toList
         }
 
-      Await.result(future)
+      Await.result(clump.get)
 
       verify(repo).fetchWithScope(1, Set(1))
       verifyNoMoreInteractions(repo)

@@ -2,10 +2,9 @@ package clump
 
 import org.specs2.mock.Mockito
 import org.specs2.specification.Scope
-import com.twitter.util.Await
+import com.twitter.util.{ Await, Future }
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
-import com.twitter.util.Future
 import org.mockito.Mockito._
 
 @RunWith(classOf[JUnitRunner])
