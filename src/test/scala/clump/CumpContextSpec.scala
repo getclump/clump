@@ -1,8 +1,9 @@
 package clump
 
 import org.junit.runner.RunWith
+import com.twitter.util.Await
+import com.twitter.util.Future
 import org.specs2.runner.JUnitRunner
-import com.twitter.util.{ Future, Await }
 
 @RunWith(classOf[JUnitRunner])
 class CumpContextSpec extends Spec {

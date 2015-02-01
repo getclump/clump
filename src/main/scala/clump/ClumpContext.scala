@@ -1,8 +1,9 @@
 package clump
 
-import com.twitter.util.{Future, Local}
-
 import scala.collection.mutable.HashMap
+
+import com.twitter.util.Future
+import com.twitter.util.Local
 
 private[clump] final class ClumpContext {
 
