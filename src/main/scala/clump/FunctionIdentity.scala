@@ -7,7 +7,7 @@ object FunctionIdentity {
   // Functions don't have a common interface
   type Function = Any
 
-  def apply(function: Function) = {
+  def apply(function: Function): FunctionIdentity = {
     val cls = function.getClass
     new FunctionIdentity(cls, fieldValuesFor(function, cls))
   }

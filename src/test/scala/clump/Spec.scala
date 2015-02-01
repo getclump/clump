@@ -9,6 +9,6 @@ import com.twitter.util.TimeConversions.intToTimeableNumber
 
 trait Spec extends Specification with Mockito with NoTimeConversions {
 
-  def clumpResult[T](clump: Clump[T]) =
+  protected def clumpResult[T](clump: Clump[T]) =
     Await.result(clump.get, 10 seconds)
 }

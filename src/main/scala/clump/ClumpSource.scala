@@ -26,10 +26,10 @@ class ClumpSource[T, U] private[ClumpSource] (val functionIdentity: FunctionIden
 
 private[clump] object ClumpSource {
 
-  def apply[T, U, C](fetch: C => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]) =
+  def apply[T, U, C](fetch: C => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSource[T, U] =
     new ClumpSource(FunctionIdentity(fetch), extractKeys(adaptInput(fetch), keyExtractor))
 
-  def from[T, U, C](fetch: C => Future[Map[T, U]])(implicit cbf: CanBuildFrom[Nothing, T, C]) =
+  def from[T, U, C](fetch: C => Future[Map[T, U]])(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSource[T, U] =
     new ClumpSource(FunctionIdentity(fetch), adaptInput(fetch))
 
   def zip[T, U](fetch: List[T] => Future[List[U]]): ClumpSource[T, U] = {

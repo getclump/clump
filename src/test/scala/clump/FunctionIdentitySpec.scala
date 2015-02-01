@@ -6,7 +6,7 @@ import org.specs2.runner.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class FunctionIdentitySpec extends Spec {
 
-  def function(string: String, int: Int) = 1
+  private def function(string: String, int: Int) = 1
 
   "detects that the same function created two times is the same" >> {
     "without parameters from the outer scope" in {

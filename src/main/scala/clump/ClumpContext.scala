@@ -10,7 +10,7 @@ private[clump] final class ClumpContext {
   private[this] val fetchers =
     new HashMap[FunctionIdentity, ClumpFetcher[_, _]]()
 
-  def fetcherFor[T, U](source: ClumpSource[T, U]) =
+  def fetcherFor[T, U](source: ClumpSource[T, U]): ClumpFetcher[T, U] =
     synchronized {
       fetchers
         .getOrElseUpdate(source.functionIdentity, new ClumpFetcher(source))
@@ -49,7 +49,7 @@ private[clump] object ClumpContext {
 
   private[this] val local = new Local[ClumpContext]
 
-  def apply() =
+  def apply(): ClumpContext =
     local().getOrElse {
       val context = new ClumpContext
       local.set(Some(context))

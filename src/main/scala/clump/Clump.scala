@@ -58,14 +58,14 @@ object Clump {
 
   def collect[T](clumps: Clump[T]*): Clump[List[T]] = collect(clumps.toList)
 
-  def traverse[T, U](inputs: List[T])(f: T => Clump[U]) = collect(inputs.map(f))
+  def traverse[T, U](inputs: List[T])(f: T => Clump[U]): Clump[List[U]] = collect(inputs.map(f))
 
   def collect[T](clumps: List[Clump[T]]): Clump[List[T]] = new ClumpCollect(clumps)
 
-  def sourceFrom[T, U, C](fetch: C => Future[Map[T, U]])(implicit cbf: CanBuildFrom[Nothing, T, C]) =
+  def sourceFrom[T, U, C](fetch: C => Future[Map[T, U]])(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSource[T, U] =
     ClumpSource.from(fetch)
 
-  def source[T, U, C](fetch: C => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]) =
+  def source[T, U, C](fetch: C => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSource[T, U] =
     ClumpSource(fetch)(keyExtractor)
 
   def sourceZip[T, U](fetch: List[T] => Future[List[U]]): ClumpSource[T, U] =

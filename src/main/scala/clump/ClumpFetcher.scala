@@ -9,16 +9,15 @@ private[clump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
 
   private[this] val fetches = MutableMap[T, Promise[Option[U]]]()
 
-  def get(input: T) =
+  def get(input: T): Future[Option[U]] =
     synchronized {
       fetches.getOrElseUpdate(input, Promise[Option[U]])
     }
 
-  def flush =
+  def flush: Future[Unit] =
     synchronized {
       Future.collect(flushInBatches).unit
     }
-
 
   private[this] def flushInBatches =
     pendingFetches

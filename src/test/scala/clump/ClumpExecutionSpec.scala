@@ -16,12 +16,12 @@ class ClumpExecutionSpec extends Spec {
     val source1Fetches = ListBuffer[Set[Int]]()
     val source2Fetches = ListBuffer[Set[Int]]()
 
-    def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) = {
+    protected def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) = {
       fetches += inputs
       Future.value(inputs.map(i => i -> i * 10).toMap)
     }
 
-    def source1 = Clump.sourceFrom((i: Set[Int]) => fetchFunction(source1Fetches, i))
+    protected def source1 = Clump.sourceFrom((i: Set[Int]) => fetchFunction(source1Fetches, i))
     val source2 = Clump.sourceFrom((i: Set[Int]) => fetchFunction(source2Fetches, i))
   }
 
@@ -163,7 +163,7 @@ class ClumpExecutionSpec extends Spec {
 
     val promisesIterator = promises.iterator
 
-    override def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) =
+    protected override def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) =
       promisesIterator.next
 
     val clump = source1.get(1).join(source2.get(2))
