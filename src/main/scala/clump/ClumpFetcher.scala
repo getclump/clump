@@ -36,7 +36,7 @@ private[clump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
 
   private[this] def fetchWithRetries(batch: Set[T], retries: Int): Future[Map[T, U]] =
     source.fetch(batch).rescue {
-      case exception if (maxRetries(exception) > retries) =>
+      case exception: Throwable if (maxRetries(exception) > retries) =>
         fetchWithRetries(batch, retries + 1)
     }
 

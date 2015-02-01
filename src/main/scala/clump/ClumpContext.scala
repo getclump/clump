@@ -19,7 +19,7 @@ private[clump] final class ClumpContext {
   def flush(clumps: List[Clump[_]]): Future[Unit] =
     clumps match {
       case Nil => Future.Unit
-      case clumps =>
+      case _ =>
         flushUpstream(clumps).flatMap { _ =>
           flushFetches(clumps).flatMap { _ =>
             flushDownstream(clumps)

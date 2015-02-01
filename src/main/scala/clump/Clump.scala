@@ -6,33 +6,28 @@ import scala.collection.generic.CanBuildFrom
 
 sealed trait Clump[+T] {
 
-  
   private[this] val context = ClumpContext()
 
-  
   def map[U](f: T => U): Clump[U] = new ClumpMap(this, f)
 
   def flatMap[U](f: T => Clump[U]): Clump[U] = new ClumpFlatMap(this, f)
 
   def join[U](other: Clump[U]): Clump[(T, U)] = new ClumpJoin(this, other)
-  
 
   def handle[B >: T](f: PartialFunction[Throwable, Option[B]]): Clump[B] = new ClumpHandle(this, f)
 
   def rescue[B >: T](f: PartialFunction[Throwable, Clump[B]]): Clump[B] = new ClumpRescue(this, f)
-  
 
   def filter[B >: T](f: B => Boolean): Clump[B] = new ClumpFilter(this, f)
-  
+
   def orElse[B >: T](default: => Clump[B]): Clump[B] = new ClumpOrElse(this, default)
 
   def optional: Clump[Option[T]] = new ClumpOptional(this)
-  
 
   def apply(): Future[T] = get.map(_.get)
 
   def getOrElse[B >: T](default: => B): Future[B] = get.map(_.getOrElse(default))
-  
+
   def list[B](implicit ev: T <:< List[B]): Future[List[B]] = get.map(_.toList.flatten)
 
   def get: Future[Option[T]] =
@@ -41,7 +36,6 @@ sealed trait Clump[+T] {
       .flatMap { _ =>
         result
       }
-  
 
   protected[clump] def upstream: List[Clump[_]]
   protected[clump] def downstream: Future[List[Clump[_]]]
@@ -50,7 +44,6 @@ sealed trait Clump[+T] {
 
 object Clump {
 
-  
   def empty[T]: Clump[T] = value(scala.None)
 
   def value[T](value: T): Clump[T] = future(Future.value(Option(value)))
@@ -58,16 +51,14 @@ object Clump {
   def value[T](value: Option[T]): Clump[T] = future(Future.value(value))
 
   def exception[T](exception: Throwable): Clump[T] = future(Future.exception(exception))
-  
+
   def future[T](future: Future[Option[T]]): Clump[T] = new ClumpFuture(future)
-  
 
   def collect[T](clumps: Clump[T]*): Clump[List[T]] = collect(clumps.toList)
 
   def traverse[T, U](inputs: List[T])(f: T => Clump[U]) = collect(inputs.map(f))
 
   def collect[T](clumps: List[Clump[T]]): Clump[List[T]] = new ClumpCollect(clumps)
-  
 
   def sourceFrom[T, U, C](fetch: C => Future[Map[T, U]])(implicit cbf: CanBuildFrom[Nothing, T, C]) =
     ClumpSource.from(fetch)
@@ -97,7 +88,7 @@ private[clump] class ClumpJoin[A, B](a: Clump[A], b: Clump[B]) extends Clump[(A,
     a.result.join(b.result)
       .map {
         case (Some(valueA), Some(valueB)) => Some(valueA, valueB)
-        case other                        => None
+        case _                            => None
       }
 }
 
