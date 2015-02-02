@@ -5,7 +5,7 @@ scala:
 jdk:
   - oraclejdk7
   - openjdk7
-script: ./build.sh
+script: travis_retry ./build.sh
 env:
   global:
     secure: UkXqBkZKvIsGHsIwMS9DXwLYgS6/jSi+YjYjBKOO3b/xrf1jjOsVnd6nsMkw9x4RJoDzbLLbZSflhW+2ZvB6Xj5Cq0ehjk/wrEnZNGxLMinh3HOSsDyOI2Gt2FvcJvhuxc+cmTEBd36CgeZnQgLKp3EeSxpF80C/F6f1Xzx4MqA=
