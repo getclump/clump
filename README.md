@@ -220,26 +220,61 @@ The final result can be ```notFound``` because the user can be found or not.
 
 Sources represent the remote systems' batched interfaces. Clump offers some methods to create sources using different strategies.
 
+### Clump.source ###
+
 The ```Clump.source``` method accepts a function that may return less elements than requested. The output can also be in a different order than the inputs, since the last parameter is a function that allows Clump to determine which is the input for each output.
 
 ```scala
-val fetch: List[Int] => Future[List[User]] = usersService.fetch _
+def fetch(ids: List[Int]): Future[List[User]] = ...
+
 val usersSource = Clump.source(fetch)(_.id)
 ```
 
-The ```Clump.sourceFrom``` method accepts a function that return a ```Map``` with the values for the found inputs.
+It is possible to create sources that have additional inputs, but the compiler isn't capable of inferring the input type for these cases. The solution is to use an explicit generic:
 
 ```scala
-val fetch: List[Int] => Future[Map[Int, User]] = usersService.fetch _
+def fetch(session: UserSession, ids: List[Int]): Future[List[User]] = ...
+
+def usersSource(session: UserSession) = 
+    Clump.source[List[Int](fetch(session, _))(_.id)
+```
+
+Without the explicit generic, the compiler outputs this error message:
+
+```
+missing parameter type for expanded function ((x$1) => fetch(1, x$1))
+```
+
+### Clump.sourceFrom ###
+
+The ```Clump.sourceFrom``` method accepts a function that returns a ```Map``` with the values for the found inputs.
+
+```scala
+def fetch(ids: List[Int]): Future[Map[Int, User]] = ...
+
 val usersSource = Clump.sourceFrom(fetch)
 ```
+
+It is also possible to specify additional inputs for ```Clump.sourceFrom```:
+
+```scala
+def fetch(session: UserSession, ids: List[Int]): Future[Map[Int, User]] = ...
+
+def usersSource(session: UserSession) = 
+    Clump.sourceFrom[List[Int]](fetch(session, _))
+```
+
+### Clump.sourceZip ###
 
 The ```Clump.sourceZip``` methods accepts a function that produces a list of outputs for each provided input. The result must keep the same order as the inputs list.
 
 ```scala
-val fetch: List[Int] => Future[List[User]] = usersService.fetch _
+def fetch(ids: List[Int]): Future[List[User]] = ...
+
 val usersSource = Clump.sourceZip(fetch)
 ```
+
+### Additional configurations ###
 
 Some services have a limitation on how many resources can be fetched in a single request. It is possible to define this limit for each source instance:
 
