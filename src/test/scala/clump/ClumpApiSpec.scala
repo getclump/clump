@@ -57,6 +57,48 @@ class ClumpApiSpec extends Spec {
     "allows to create an empty Clump (Clump.empty)" in {
       clumpResult(Clump.empty) ==== None
     }
+
+    "allows to join clumps" >> {
+      
+      def c(int: Int) = Clump.value(int)
+      
+      "2 instances" in {
+        val clump = Clump.join(c(1), c(2))
+        clumpResult(clump) mustEqual Some(1, 2)
+      }
+      "3 instances" in {
+        val clump = Clump.join(c(1), c(2), c(3))
+        clumpResult(clump) mustEqual Some(1, 2, 3)
+      }
+      "4 instances" in {
+        val clump = Clump.join(c(1), c(2), c(3), c(4))
+        clumpResult(clump) mustEqual Some(1, 2, 3, 4)
+      }
+      "5 instances" in {
+        val clump = Clump.join(c(1), c(2), c(3), c(4), c(5))
+        clumpResult(clump) mustEqual Some(1, 2, 3, 4, 5)
+      }
+      "6 instances" in {
+        val clump = Clump.join(c(1), c(2), c(3), c(4), c(5), c(6))
+        clumpResult(clump) mustEqual Some(1, 2, 3, 4, 5, 6)
+      }
+      "7 instances" in {
+        val clump = Clump.join(c(1), c(2), c(3), c(4), c(5), c(6), c(7))
+        clumpResult(clump) mustEqual Some(1, 2, 3, 4, 5, 6, 7)
+      }
+      "8 instances" in {
+        val clump = Clump.join(c(1), c(2), c(3), c(4), c(5), c(6), c(7), c(8))
+        clumpResult(clump) mustEqual Some(1, 2, 3, 4, 5, 6, 7, 8)
+      }
+      "9 instances" in {
+        val clump = Clump.join(c(1), c(2), c(3), c(4), c(5), c(6), c(7), c(8), c(9))
+        clumpResult(clump) mustEqual Some(1, 2, 3, 4, 5, 6, 7, 8, 9)
+      }
+      "10 instances" in {
+        val clump = Clump.join(c(1), c(2), c(3), c(4), c(5), c(6), c(7), c(8), c(9), c(10))
+        clumpResult(clump) mustEqual Some(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+      }
+    }
   }
 
   "a Clump instance" >> {
