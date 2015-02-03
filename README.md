@@ -1,4 +1,4 @@
-![Clump](clump.png) Clump
+![Clump](clump.png)
 =========================
 A library for expressive and efficient service composition
 
