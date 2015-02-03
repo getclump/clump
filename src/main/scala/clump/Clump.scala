@@ -19,6 +19,8 @@ sealed trait Clump[+T] {
   def handle[B >: T](f: PartialFunction[Throwable, Option[B]]): Clump[B] = new ClumpHandle(this, f)
 
   def rescue[B >: T](f: PartialFunction[Throwable, Clump[B]]): Clump[B] = new ClumpRescue(this, f)
+  
+  def withFilter[B >: T](f: B => Boolean): Clump[B] = filter(f)
 
   def filter[B >: T](f: B => Boolean): Clump[B] = new ClumpFilter(this, f)
 
