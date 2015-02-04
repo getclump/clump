@@ -4,7 +4,7 @@ A library for expressive and efficient service composition
 
 [![Build Status](https://secure.travis-ci.org/getclump/clump.png)](http://travis-ci.org/getclump/clump)
 [![Codacy Badge](https://www.codacy.com/project/badge/5fd8030f7c494b739f6ec5c1963371a8)](https://www.codacy.com/public/fwbrasil/clump)
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/getclump?utm_source=share-link&utm_medium=link&utm_campaign=share-link)
+[![Join the chat at https://gitter.im/getclump/clump](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/getclump/clump?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 * [Introduction](#introduction) 
 * [Getting started](#getting-started)
