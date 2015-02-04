@@ -147,7 +147,7 @@ SBT
 
 ```scala
 libraryDependencies ++= Seq(
-  "clump" %% "clump" % "x.x.x"
+  "io.getclump" %% "clump" % "x.x.x"
 )
 ```
 
@@ -155,7 +155,7 @@ Maven
 
 ```xml
 <dependency>
-    <groupId>clump</groupId>
+    <groupId>io.getclump</groupId>
     <artifactId>clump</artifactId>
     <version>x.x.x</version>
 </dependency>
