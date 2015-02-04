@@ -1,4 +1,4 @@
-![Clump](clump.png)
+![Clump](https://raw.githubusercontent.com/getclump/clump/master/clump.png)
 =========================
 A library for expressive and efficient service composition
 
