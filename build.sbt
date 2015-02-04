@@ -14,6 +14,9 @@ libraryDependencies += "com.twitter" %% "util-core" % "6.22.0"
 
 releaseSettings
 
+ReleaseKeys.crossBuild := true
+ReleaseKeys.publishArtifactsAction := PgpKeys.publishSigned.value
+
 publishMavenStyle := true
 
 publishTo := {
