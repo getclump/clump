@@ -28,15 +28,7 @@
     <div id="content-wrapper">
       <div class="inner clearfix">
         <section id="main-content">
-          <h1>
-<a id="" class="anchor" href="#" aria-hidden="true"><span class="octicon octicon-link"></span></a><img src="clump.png" alt="Clump">
-</h1>
-
-<p>A library for expressive and efficient service composition</p>
-
-<p><a href="http://travis-ci.org/fwbrasil/clump"><img src="https://secure.travis-ci.org/fwbrasil/clump.png" alt="Build Status"></a>
-<a href="https://www.codacy.com/public/fwbrasil/clump"><img src="https://www.codacy.com/project/badge/5fd8030f7c494b739f6ec5c1963371a8" alt="Codacy Badge"></a>
-<a href="https://gitter.im/fwbrasil/clump?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge"><img src="https://badges.gitter.im/Join%20Chat.svg" alt="Gitter"></a></p>
+          <p><img src="https://raw.githubusercontent.com/getclump/clump/master/clump.png" alt="Clump"></p>
 
 <ul>
 <li>
@@ -178,7 +170,7 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>To use clump, just add the dependency to the project's build configuration.</p>
 
-<p><strong>Important</strong>: Change <code>x.x.x</code> with the latest version listed by the <a href="/CHANGELOG.md">CHANGELOG.md</a> file.</p>
+<p><strong>Important</strong>: Change <code>x.x.x</code> with the latest version listed by the <a href="https://github.com/getclump/clump/blob/master/CHANGELOG.md">CHANGELOG.md</a> file.</p>
 
 <p>SBT</p>
 
@@ -497,13 +489,13 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 
 <p>The codebase is relatively small. The only type explicitly exposed to the user is <code>Clump</code>, but internally there are four in total:</p>
 
-<p><a href="/src/main/scala/clump/Clump.scala">Clump</a> - Defines the public interface of Clump and represents the abstract syntactic tree (AST) for the compositions.</p>
+<p><a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala">Clump</a> - Defines the public interface of Clump and represents the abstract syntactic tree (AST) for the compositions.</p>
 
-<p><a href="/src/main/scala/clump/ClumpSource.scala">ClumpSource</a> - Represents the external systems' batched interfaces.</p>
+<p><a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpSource.scala">ClumpSource</a> - Represents the external systems' batched interfaces.</p>
 
-<p><a href="/src/main/scala/clump/ClumpFetcher.scala">ClumpFetcher</a> - It has the logic to fetch from a <code>ClumpSource</code>, maintains the implicit cache and implements the logic to retry failed fetches.</p>
+<p><a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpFetcher.scala">ClumpFetcher</a> - It has the logic to fetch from a <code>ClumpSource</code>, maintains the implicit cache and implements the logic to retry failed fetches.</p>
 
-<p><a href="/src/main/scala/clump/ClumpSource.scala">ClumpContext</a> - It is the execution model engine created automatically for each execution. It keeps the state by using a collection of <code>ClumpFetcher</code>s.</p>
+<p><a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpSource.scala">ClumpContext</a> - It is the execution model engine created automatically for each execution. It keeps the state by using a collection of <code>ClumpFetcher</code>s.</p>
 
 <p>Take some time to read the code of these classes. It will help to have a broader view and understand the explanation that follows.</p>
 
@@ -530,7 +522,7 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 <div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(usersService.fetch)(_.id)
 <span class="pl-k">val</span> <span class="pl-en">tracksSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(tracksService.fetch)(_.id)</pre></div>
 
-<p>The <code>ClumpSource</code> instances are created using one of the shortcuts that the <code>Clump</code> object <a href="/src/main/scala/clump/Clump.scala#L69">provides</a>. They don't hold any state and allow to create Clump instances representing the <a href="/src/main/scala/clump/ClumpSource.scala#L12">fetch</a>. Clump uses the fetch function's <a href="/src/main/scala/clump/FunctionIdentity.scala">identity</a> to group requests and perform batched fetches, so it is possible to have multiple instances of the same source within a clump composition and execution.</p>
+<p>The <code>ClumpSource</code> instances are created using one of the shortcuts that the <code>Clump</code> object <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L67">provides</a>. They don't hold any state and allow to create Clump instances representing the <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpSource.scala#L17">fetch</a>. Clump uses the fetch function's <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/FunctionIdentity.scala">identity</a> to group requests and perform batched fetches, so it is possible to have multiple instances of the same source within a clump composition and execution.</p>
 
 <h2>
 <a id="composition-1" class="anchor" href="#composition-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Composition</h2>
@@ -540,7 +532,7 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
       ...
     }</pre></div>
 
-<p>The <code>traverse</code> method is used as a <a href="/src/main/scala/clump/Clump.scala#L60">shortcut</a> for <code>map</code> and then <code>collect</code>, so this code could be rewritten as follows:</p>
+<p>The <code>traverse</code> method is used as a <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L63">shortcut</a> for <code>map</code> and then <code>collect</code>, so this code could be rewritten as follows:</p>
 
 <div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedTrack</span>]] <span class="pl-k">=</span>
     <span class="pl-en">Clump</span>.collect(trackIds.map { trackId <span class="pl-k">=&gt;</span> 
@@ -567,12 +559,12 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 <p>There are three methods being used in this composition:</p>
 
 <ol>
-<li><p><code>get</code> <a href="/src/main/scala/clump/ClumpSource.scala#L12">creates</a> a <code>ClumpFetch</code> instances that is the AST element <a href="/src/main/scala/clump/Clump.scala#L81">representing the fetch</a>. It doesn't trigger the actual fetch, only <a href="/src/main/scala/clump/Clump.scala#L84">uses</a> the <code>ClumpFetcher</code> instance to <a href="/src/main/scala/clump/ClumpFetcher.scala#L11">produce</a> a <code>Future</code> that will be <a href="/src/main/scala/clump/ClumpFetcher.scala#L17">executed by</a> the <code>ClumpContext</code> when the execution is triggered. The <code>ClumpFetcher</code> also <a href="/src/main/scala/clump/ClumpFetcher.scala#L13">removes failed fetches</a> in order to enable retrying already failed fetches.</p></li>
-<li><p><code>flatMap</code> <a href="/src/main/scala/clump/Clump.scala#L16">creates</a> a <code>ClumpFlatMap</code> instance <a href="/src/main/scala/clump/Clump.scala#L108">representing the operation</a>. It just <a href="/src/main/scala/clump/Clump.scala#L115">composes a new future</a> that is based on the result of the initial Clump and the result of the nested Clump.</p></li>
-<li><p><code>map</code> <a href="/src/main/scala/clump/Clump.scala#L14">creates</a> a <code>ClumpMap</code> instance <a href="TODO">representing the map operation</a>. It <a href="TODO">composes a new future</a> by applying the specified transformation.</p></li>
+<li><p><code>get</code> <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpSource.scala#L18">creates</a> a <code>ClumpFetch</code> instances that is the AST element <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L81">representing the fetch</a>. It doesn't trigger the actual fetch, only uses the <code>ClumpFetcher</code> instance to <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L89">produce</a> a <code>Future</code> that will be <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpFetcher.scala#L17">executed by</a> the <code>ClumpContext</code> when the execution is triggered. </p></li>
+<li><p><code>flatMap</code> creates a <code>ClumpFlatMap</code> instance <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L120">representing the operation</a>. It just <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L126">composes a new future</a> that is based on the result of the initial Clump and the result of the nested Clump.</p></li>
+<li><p><code>map</code> creates a <code>ClumpMap</code> instance <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L113">representing the map operation</a>. It <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L116">composes a new future</a> by applying the specified transformation.</p></li>
 </ol>
 
-<p>Note that <strong>any</strong> Clump composition creates a <code>ClumpContext</code> <a href="/src/main/scala/clump/Clump.scala#L12">implicitly</a> if it doesn't exist yet. The <code>ClumpContext</code> is maintained using a <code>Local</code> <a href="/src/main/scala/clump/ClumpContext.scala#L47">value</a>, that is a <a href="https://github.com/twitter/util/blob/master/util-core/src/main/scala/com/twitter/util/Local.scala#L91">mechanism</a> similar to a <code>ThreadLocal</code> but for asynchronous compositions.  </p>
+<p>Note that <strong>any</strong> Clump composition creates a <code>ClumpContext</code> <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L11">implicitly</a> if it doesn't exist yet. The <code>ClumpContext</code> is maintained using a <code>Local</code> <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L50">value</a>, that is a <a href="https://github.com/twitter/util/blob/master/util-corehttps://github.com/getclump/clump/blob/master/src/main/scala/com/twitter/util/Local.scala#L91">mechanism</a> similar to a <code>ThreadLocal</code> but for asynchronous compositions.  </p>
 
 <h2>
 <a id="execution-1" class="anchor" href="#execution-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Execution</h2>
@@ -581,36 +573,36 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 
 <ol>
 <li>
-<code>result</code> that has the <code>Future</code> <a href="/src/main/scala/clump/Clump.scala#L45">result</a> for the operation</li>
+<code>result</code> that has the <code>Future</code> <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L46">result</a> for the operation</li>
 <li>
-<code>upstream</code> that <a href="/src/main/scala/clump/Clump.scala#L43">returns</a> the upstream Clump instances that were used as the basis for the composition</li>
+<code>upstream</code> that <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L44">returns</a> the upstream Clump instances that were used as the basis for the composition</li>
 <li>
-<code>downstream</code> that <a href="/src/main/scala/clump/Clump.scala#L44">returns</a> the downstream Clump instances created as a result of the operation</li>
+<code>downstream</code> that <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L45">returns</a> the downstream Clump instances created as a result of the operation</li>
 </ol>
 
 <p>Note that <code>downstream</code> returns a <code>Future[List[Clump[_]]]</code>, while <code>upstream</code> returns a <code>List[Clump[_]]</code> directly. This happens because <code>downstream</code> produces Clump instances that are available only after the <code>upstream</code> execution.</p>
 
-<p>These methods are used by the <code>ClumpContext</code> to apply the execution model. It has a <a href="/src/main/scala/clump/ClumpContext.scala#L12">collection</a> with all <code>ClumpFetcher</code> instances in the composition.</p>
+<p>These methods are used by the <code>ClumpContext</code> to apply the execution model. It has a <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L10">collection</a> with all <code>ClumpFetcher</code> instances in the composition.</p>
 
 <p>This is the code that triggers the execution:</p>
 
 <div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">tracks</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">List</span>[<span class="pl-en">Track</span>]] <span class="pl-k">=</span> clump.list</pre></div>
 
-<p>The <code>list</code> method is just a <a href="/src/main/scala/clump/Clump.scala#L26">shortcut</a> to ease getting the value of Clump instances that have a <code>List</code>. The actual execution is triggered by the <code>get</code> <a href="/src/main/scala/clump/Clump.scala#L36">method</a>. It flushes the context and returns the Clump's result.</p>
+<p>The <code>list</code> method is just a <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L35">shortcut</a> to ease getting the value of Clump instances that have a <code>List</code>. The actual execution is triggered by the <code>get</code> <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L37">method</a>. It flushes the context and returns the Clump's result.</p>
 
-<p>The <a href="/src/main/scala/clump/ClumpContext.scala#L22">context flush</a> is a recursive function that performs simple steps:</p>
+<p>The <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L20">context flush</a> is a recursive function that performs simple steps:</p>
 
 <ul>
-<li>If there aren't Clump instances to be fetched, <a href="/src/main/scala/clump/ClumpContext.scala#L24">stop the recursion</a>;</li>
+<li>If there aren't Clump instances to be fetched, <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L22">stop the recursion</a>;</li>
 <li>If there are Clump instances to be fetched
 
 <ul>
 <li>
-<a href="/src/main/scala/clump/ClumpContext.scala#L33">Flush</a> all the upstream instances of the current clumps;</li>
+<a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L31">Flush</a> all the upstream instances of the current clumps;</li>
 <li>
-<a href="/src/main/scala/clump/ClumpContext.scala#L28">Flush</a> performs all the fetches among the current Clump instances being executed.</li>
+<a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L39">Flush</a> performs all the fetches among the current Clump instances being executed.</li>
 <li>
-<a href="/src/main/scala/clump/ClumpContext.scala#L36">Flush</a> all the downstream instances, since the pre-requisite to run the downstream is fulfilled (upstream already flushed). Note that the difference from the <code>upstream</code> flush is due the fact that <code>downstream</code> returns a future, but the semantic is the same.</li>
+<a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L34">Flush</a> all the downstream instances, since the pre-requisite to run the downstream is fulfilled (upstream already flushed). Note that the difference from the <code>upstream</code> flush is due the fact that <code>downstream</code> returns a future, but the semantic is the same.</li>
 </ul>
 </li>
 </ul>
@@ -744,11 +736,11 @@ get--&gt; |   (line 2)   |                                   +-------&gt; Empty
 <h1>
 <a id="acknowledgments" class="anchor" href="#acknowledgments" aria-hidden="true"><span class="octicon octicon-link"></span></a>Acknowledgments</h1>
 
-<p>Clump was inspired by the Twitter's Stitch project. The initial goal was to have a similar implementation, but the project evolved to provide an approach more adherent to some use-cases we have in mind. See <a href="STITCH.md">STITCH.md</a> for more information about the differences between Stich and Clump.</p>
+<p>Clump was inspired by the Twitter's Stitch project. The initial goal was to have a similar implementation, but the project evolved to provide an approach more adherent to some use-cases we have in mind. See <a href="https://github.com/getclump/clump/blob/master/STITCH.md">STITCH.md</a> for more information about the differences between Stich and Clump.</p>
 
 <p>Facebook's <a href="http://community.haskell.org/%7Esimonmar/papers/haxl-icfp14.pdf">Haxl paper</a> and the Futurice's <a href="http://futurice.com/blog/an-example-of-functional-design">blog post</a> about Jobba also were important sources for the development phase.</p>
 
-<p>The project was initially built mainly using SoundCloud's <a href="https://developers.soundcloud.com/blog/stop-hacker-time">Hacker Time</a>.</p>
+<p>The project was initially built using SoundCloud's <a href="https://developers.soundcloud.com/blog/stop-hacker-time">Hacker Time</a>.</p>
 
 <h1>
 <a id="versioning" class="anchor" href="#versioning" aria-hidden="true"><span class="octicon octicon-link"></span></a>Versioning</h1>
@@ -758,7 +750,7 @@ get--&gt; |   (line 2)   |                                   +-------&gt; Empty
 <h1>
 <a id="license" class="anchor" href="#license" aria-hidden="true"><span class="octicon octicon-link"></span></a>License</h1>
 
-<p>See the <a href="/LICENSE-LGPL.txt">LICENSE-LGPL</a> file for details.</p>
+<p>See the <a href="https://github.com/getclump/clump/blob/master/LICENSE-LGPL.txt">LICENSE-LGPL</a> file for details.</p>
         </section>
 
         <aside id="sidebar">
