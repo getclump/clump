@@ -47,7 +47,7 @@ val result: Future[Option[Track]] = clump.get
 2. Composition
 ==============
 
-Given the optimization to deal with optional fetches, the ```Clump``` compositions is also different from Stitch. They have semantics similar to the relational database's joins, where not found joined elements make the tuple be filtered-out.
+Given the optimization to deal with optional fetches, the ```Clump``` compositions are also different from Stitch. They have semantics similar to the relational database's joins, where not found joined elements make the tuple be filtered-out.
 
 ```scala
 val clump: Clump[(Track, User)]
@@ -78,7 +78,7 @@ val clump: Clump[(Track, Option[User])]
 3. Filtering
 ============
 
-The behavior introduced by the optional fetches compositions allows to define filtering conditions:
+The behavior introduced by the optional fetches compositions allows the definition of filtering conditions:
 
 ```scala
 val clump: Clump[(Track, User)]
