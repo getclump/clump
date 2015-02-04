@@ -28,9 +28,7 @@
     <div id="content-wrapper">
       <div class="inner clearfix">
         <section id="main-content">
-          <p><img src="https://raw.githubusercontent.com/getclump/clump/master/clump.png" alt="Clump"></p>
-
-<ul>
+          <ul>
 <li>
 <a href="#introduction">Introduction</a> </li>
 <li><a href="#getting-started">Getting started</a></li>
@@ -564,7 +562,7 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 <li><p><code>map</code> creates a <code>ClumpMap</code> instance <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L113">representing the map operation</a>. It <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L116">composes a new future</a> by applying the specified transformation.</p></li>
 </ol>
 
-<p>Note that <strong>any</strong> Clump composition creates a <code>ClumpContext</code> <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L11">implicitly</a> if it doesn't exist yet. The <code>ClumpContext</code> is maintained using a <code>Local</code> <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L50">value</a>, that is a <a href="https://github.com/twitter/util/blob/master/util-corehttps://github.com/getclump/clump/blob/master/src/main/scala/com/twitter/util/Local.scala#L91">mechanism</a> similar to a <code>ThreadLocal</code> but for asynchronous compositions.  </p>
+<p>Note that <strong>any</strong> Clump composition creates a <code>ClumpContext</code> <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L11">implicitly</a> if it doesn't exist yet. The <code>ClumpContext</code> is maintained using a <code>Local</code> <a href="https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L50">value</a>, that is a <a href="https://github.com/twitter/util/blob/master/util-core/src/main/scala/com/twitter/util/Local.scala#L91">mechanism</a> similar to a <code>ThreadLocal</code> but for asynchronous compositions.  </p>
 
 <h2>
 <a id="execution-1" class="anchor" href="#execution-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Execution</h2>
