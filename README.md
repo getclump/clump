@@ -595,7 +595,7 @@ There are three methods being used in this composition:
 
 3. ```map``` creates a ```ClumpMap``` instance [representing the map operation](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L113). It [composes a new future](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L116) by applying the specified transformation.
 
-Note that __any__ Clump composition creates a ```ClumpContext``` [implicitly](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L11) if it doesn't exist yet. The ```ClumpContext``` is maintained using a ```Local``` [value](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L50), that is a [mechanism](https://github.com/twitter/util/blob/master/util-corehttps://github.com/getclump/clump/blob/master/src/main/scala/com/twitter/util/Local.scala#L91) similar to a ```ThreadLocal``` but for asynchronous compositions.  
+Note that __any__ Clump composition creates a ```ClumpContext``` [implicitly](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L11) if it doesn't exist yet. The ```ClumpContext``` is maintained using a ```Local``` [value](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L50), that is a [mechanism](https://github.com/twitter/util/blob/master/util-core/src/main/scala/com/twitter/util/Local.scala#L91) similar to a ```ThreadLocal``` but for asynchronous compositions.  
 
 ## Execution
 
