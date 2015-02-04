@@ -59,9 +59,9 @@ class ClumpApiSpec extends Spec {
     }
 
     "allows to join clumps" >> {
-      
+
       def c(int: Int) = Clump.value(int)
-      
+
       "2 instances" in {
         val clump = Clump.join(c(1), c(2))
         clumpResult(clump) mustEqual Some(1, 2)

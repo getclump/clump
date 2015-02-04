@@ -19,7 +19,7 @@ sealed trait Clump[+T] {
   def handle[B >: T](f: PartialFunction[Throwable, Option[B]]): Clump[B] = new ClumpHandle(this, f)
 
   def rescue[B >: T](f: PartialFunction[Throwable, Clump[B]]): Clump[B] = new ClumpRescue(this, f)
-  
+
   def withFilter[B >: T](f: B => Boolean): Clump[B] = filter(f)
 
   def filter[B >: T](f: B => Boolean): Clump[B] = new ClumpFilter(this, f)
@@ -86,22 +86,22 @@ object Clump {
     (join(a, b, c, d, e).join(f)).map {
       case ((a, b, c, d, e), f) => (a, b, c, d, e, f)
     }
-  
+
   def join[A, B, C, D, E, F, G](a: Clump[A], b: Clump[B], c: Clump[C], d: Clump[D], e: Clump[E], f: Clump[F], g: Clump[G]): Clump[(A, B, C, D, E, F, G)] =
     (join(a, b, c, d, e, f).join(g)).map {
       case ((a, b, c, d, e, f), g) => (a, b, c, d, e, f, g)
     }
-  
+
   def join[A, B, C, D, E, F, G, H](a: Clump[A], b: Clump[B], c: Clump[C], d: Clump[D], e: Clump[E], f: Clump[F], g: Clump[G], h: Clump[H]): Clump[(A, B, C, D, E, F, G, H)] =
     (join(a, b, c, d, e, f, g).join(h)).map {
       case ((a, b, c, d, e, f, g), h) => (a, b, c, d, e, f, g, h)
     }
-  
+
   def join[A, B, C, D, E, F, G, H, I](a: Clump[A], b: Clump[B], c: Clump[C], d: Clump[D], e: Clump[E], f: Clump[F], g: Clump[G], h: Clump[H], i: Clump[I]): Clump[(A, B, C, D, E, F, G, H, I)] =
     (join(a, b, c, d, e, f, g, h).join(i)).map {
       case ((a, b, c, d, e, f, g, h), i) => (a, b, c, d, e, f, g, h, i)
     }
-  
+
   def join[A, B, C, D, E, F, G, H, I, J](a: Clump[A], b: Clump[B], c: Clump[C], d: Clump[D], e: Clump[E], f: Clump[F], g: Clump[G], h: Clump[H], i: Clump[I], j: Clump[J]): Clump[(A, B, C, D, E, F, G, H, I, J)] =
     (join(a, b, c, d, e, f, g, h, i).join(j)).map {
       case ((a, b, c, d, e, f, g, h, i), j) => (a, b, c, d, e, f, g, h, i, j)
