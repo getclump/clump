@@ -1,3 +1,3 @@
-# 0.0.1 / 2015-??-?? (TBD)
+# 0.0.6 / 04-Feb-2015
 
-* first release
+* first public release
