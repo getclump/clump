@@ -23,7 +23,7 @@ publishTo := {
 }
 
 pomExtra := (
-  <url>http://github.com/fwbrasil/clump</url>
+  <url>http://github.com/getclump/clump</url>
   <licenses>
     <license>
       <name>LGPL</name>
@@ -32,18 +32,18 @@ pomExtra := (
     </license>
   </licenses>
   <scm>
-    <url>git@github.com:fwbrasil/clump.git</url>
-    <connection>scm:git:git@github.com:fwbrasil/clump.git</connection>
+    <url>git@github.com:getclump/clump.git</url>
+    <connection>scm:git:git@github.com:getclump/clump.git</connection>
   </scm>
   <developers>
     <developer>
       <id>fwbrasil</id>
       <name>Flavio W. Brasil</name>
-      <url>http://fwbrasil.net</url>
+      <url>http://github.com/fwbrasil/</url>
     </developer>
     <developer>
       <id>williamboxhall</id>
       <name>William Boxhall</name>
-      <url></url>
+      <url>http://github.com/williamboxhall/</url>
     </developer>
   </developers>)
