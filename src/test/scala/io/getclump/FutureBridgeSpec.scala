@@ -1,4 +1,4 @@
-package clump
+package io.getclump
 
 import scala.concurrent.{Await => ScalaAwait}
 import scala.concurrent.ExecutionContext.Implicits.global

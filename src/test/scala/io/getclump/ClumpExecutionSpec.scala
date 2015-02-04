@@ -1,4 +1,4 @@
-package clump
+package io.getclump
 
 import scala.collection.mutable.ListBuffer
 import org.junit.runner.RunWith

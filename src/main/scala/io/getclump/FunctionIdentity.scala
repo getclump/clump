@@ -1,4 +1,4 @@
-package clump
+package io.getclump
 
 case class FunctionIdentity private[FunctionIdentity] (cls: Class[_], externalParams: List[Any])
 

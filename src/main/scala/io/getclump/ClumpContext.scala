@@ -1,11 +1,11 @@
-package clump
+package io.getclump
 
 import scala.collection.mutable.HashMap
 
 import com.twitter.util.Future
 import com.twitter.util.Local
 
-private[clump] final class ClumpContext {
+private[getclump] final class ClumpContext {
 
   private[this] val fetchers =
     new HashMap[FunctionIdentity, ClumpFetcher[_, _]]()
@@ -45,7 +45,7 @@ private[clump] final class ClumpContext {
     }.distinct
 }
 
-private[clump] object ClumpContext {
+private[getclump] object ClumpContext {
 
   private[this] val local = new Local[ClumpContext]
 

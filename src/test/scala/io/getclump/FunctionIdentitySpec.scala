@@ -1,4 +1,4 @@
-package clump
+package io.getclump
 
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner

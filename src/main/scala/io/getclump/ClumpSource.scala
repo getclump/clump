@@ -1,4 +1,4 @@
-package clump
+package io.getclump
 
 import com.twitter.util.Future
 import scala.collection.generic.CanBuildFrom
@@ -24,7 +24,7 @@ class ClumpSource[T, U] private[ClumpSource] (val functionIdentity: FunctionIden
     new ClumpSource(functionIdentity, fetch, maxBatchSize, retries)
 }
 
-private[clump] object ClumpSource {
+private[getclump] object ClumpSource {
 
   def apply[T, U, C](fetch: C => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSource[T, U] =
     new ClumpSource(FunctionIdentity(fetch), extractKeys(adaptInput(fetch), keyExtractor))
