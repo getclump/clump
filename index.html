@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <title>Clump by getclump</title>
+  </head>
+
+  <body>
+    <header>
+      <div class="inner">
+        <h1>Clump</h1>
+        <h2>A library for expressive and efficient service composition</h2>
+        <a href="https://github.com/getclump/clump" class="button"><small>View project on</small> GitHub</a>
+      </div>
+    </header>
+
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>
+<a id="" class="anchor" href="#" aria-hidden="true"><span class="octicon octicon-link"></span></a><img src="clump.png" alt="Clump">
+</h1>
+
+<p>A library for expressive and efficient service composition</p>
+
+<p><a href="http://travis-ci.org/fwbrasil/clump"><img src="https://secure.travis-ci.org/fwbrasil/clump.png" alt="Build Status"></a>
+<a href="https://www.codacy.com/public/fwbrasil/clump"><img src="https://www.codacy.com/project/badge/5fd8030f7c494b739f6ec5c1963371a8" alt="Codacy Badge"></a>
+<a href="https://gitter.im/fwbrasil/clump?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge"><img src="https://badges.gitter.im/Join%20Chat.svg" alt="Gitter"></a></p>
+
+<ul>
+<li>
+<a href="#introduction">Introduction</a> </li>
+<li><a href="#getting-started">Getting started</a></li>
+<li>
+<a href="#usage">Usage</a>
+
+<ul>
+<li><a href="#example">Example</a></li>
+<li><a href="#sources">Sources</a></li>
+<li><a href="#constants">Constants</a></li>
+<li><a href="#composition">Composition</a></li>
+<li><a href="#execution">Execution</a></li>
+<li><a href="#composition-behavior">Composition behavior</a></li>
+<li><a href="#filtering">Filtering</a></li>
+<li><a href="#exception-handling">Exception handling</a></li>
+<li><a href="#scala-futures">Scala Futures</a></li>
+</ul>
+</li>
+<li><a href="#internals">Internals</a></li>
+<li><a href="#known-limitations">Known limitations</a></li>
+<li><a href="#acknowledgments">Acknowledgments</a></li>
+<li><a href="#versioning">Versioning</a></li>
+<li><a href="#license">License</a></li>
+</ul>
+
+<h1>
+<a id="introduction" class="anchor" href="#introduction" aria-hidden="true"><span class="octicon octicon-link"></span></a>Introduction</h1>
+
+<h2>
+<a id="summary" class="anchor" href="#summary" aria-hidden="true"><span class="octicon octicon-link"></span></a>Summary</h2>
+
+<p>Clump addresses the problem of knitting together data from multiple sources in an elegant and efficient way.</p>
+
+<p>In a typical microservice-powered system, it is common to find awkward wrangling code to facilitate manually bulk-fetching
+dependent resources. Worse, this problem of batching is often accidentally overlooked, resulting in <strong>n</strong> calls to a micro-service instead of <strong>1</strong>.</p>
+
+<p>Clump removes the need for the developer to even think about bulk-fetching, batching and retries, providing a powerful and composable interface for aggregating resources.</p>
+
+<p>An example of batching fetches using futures without Clump:</p>
+
+<div class="highlight highlight-scala"><pre>tracksService.get(trackIds).flatMap { tracks <span class="pl-k">=&gt;</span>
+  <span class="pl-k">val</span> <span class="pl-en">userIds</span> <span class="pl-k">=</span> tracks.map(_.creator)
+  usersService.get(userIds).map { users <span class="pl-k">=&gt;</span>
+    <span class="pl-k">val</span> <span class="pl-en">userMap</span> <span class="pl-k">=</span> userIds.zip(users).toMap
+    tracks.map { track <span class="pl-k">=&gt;</span>
+      <span class="pl-k">new</span> <span class="pl-en">EnrichedTrack</span>(track, userMap(track.creator))
+    }
+  }
+}</pre></div>
+
+<p>The same composition using Clump:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-en">Clump</span>.traverse(trackIds) { trackId <span class="pl-k">=&gt;</span>
+  trackSource.get(trackId).flatMap { track <span class="pl-k">=&gt;</span>
+    userSource.get(track.creator).map { user <span class="pl-k">=&gt;</span>
+      <span class="pl-k">new</span> <span class="pl-en">EnrichedTrack</span>(track, user)
+    }
+  }
+}</pre></div>
+
+<p>Or expressed more elegantly with a for-comprehension:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-en">Clump</span>.traverse(trackIds) { trackId <span class="pl-k">=&gt;</span>
+  <span class="pl-k">for</span> {
+    track <span class="pl-k">&lt;</span><span class="pl-k">-</span> trackSource.get(trackId)
+    user <span class="pl-k">&lt;</span><span class="pl-k">-</span> userSource.get(track.creator)
+  } <span class="pl-k">yield</span> {
+    <span class="pl-k">new</span> <span class="pl-en">EnrichedTrack</span>(track, user)
+  }</pre></div>
+
+<h2>
+<a id="problem" class="anchor" href="#problem" aria-hidden="true"><span class="octicon octicon-link"></span></a>Problem</h2>
+
+<p>The microservices architecture introduces many new challenges when dealing with complex systems. One of them is the high number of remote procedure calls and the cost associated to them. Among the techniques applied to amortize this cost, batching of requests has an important role. Instead of paying the price of one call for each interaction, many interactions are batched in only one call.</p>
+
+<p>While batching introduces performance enhancements, it also introduces complexity to the codebase. The common approach is to extract as much information as possible about what needs to be fetched, perform the batched fetch and extract the individual values to compose the final result. The steps need to be repeated many times depending on how complex is the final structure.</p>
+
+<p>An example of batching using futures:</p>
+
+<div class="highlight highlight-scala"><pre>tracksService.get(trackIds).flatMap { tracks <span class="pl-k">=&gt;</span>
+  <span class="pl-k">val</span> <span class="pl-en">userIds</span> <span class="pl-k">=</span> tracks.map(_.creator)
+  usersService.get(userIds).map { users <span class="pl-k">=&gt;</span>
+    <span class="pl-k">val</span> <span class="pl-en">userMap</span> <span class="pl-k">=</span> userIds.zip(users).toMap
+    tracks.map { track <span class="pl-k">=&gt;</span>
+      <span class="pl-k">new</span> <span class="pl-en">EnrichedTrack</span>(track, userMap(track.creator))
+    }
+  }
+}</pre></div>
+
+<p>This example has only one level of nested resources. In a complex system, it is common to have several levels:</p>
+
+<pre><code>• timeline
+  • track post
+    • track
+      • creator
+  • track repost
+    • track
+      • creator
+    • reposter
+  • playlist post
+    • playlist
+      • track ids
+      • creator
+  • playlist repost
+    • playlist
+      • track ids
+      • creator
+    • reposter
+  • comment
+    • user
+  • user follow
+    • follower
+    • followee
+</code></pre>
+
+<p>This structure can also be part of a bigger structure that includes the user's data for instance. Given this scenario, the code that is capable of batching requests in an optimal way is really complex and hard to maintain.</p>
+
+<h2>
+<a id="solution" class="anchor" href="#solution" aria-hidden="true"><span class="octicon octicon-link"></span></a>Solution</h2>
+
+<p>The complexity comes mainly from declaring together <strong>what</strong> needs to be fetched and <strong>how</strong> it should be fetched. Clump offers an embedded Domain-Specific Language (DSL) that allows declaration of <strong>what</strong> needs to be fetched and an execution model that determines <strong>how</strong> the resources should be fetched.</p>
+
+<p>The execution model applies three main optimizations:</p>
+
+<ol>
+<li>Batch requests when it is possible;</li>
+<li>Fetch from the multiple sources in parallel;</li>
+<li>Avoid fetching the same resource multiple times by using a cache.</li>
+</ol>
+
+<p>The DSL is based on a monadic interface similar to <code>Future</code>. It is a Free Monad, that produces a nested series of transformations without starting the actual execution. This is the characteristic that allows triggering of the execution separately from the definition of what needs to be fetched.</p>
+
+<p>The execution model leverages on Applicative Functors to express the independence of computations. It exposes only <code>join</code> to the user but makes use of other applicative operations internally. This means that even without the user specifying what is independent, the execution model can apply optimizations.</p>
+
+<h1>
+<a id="getting-started" class="anchor" href="#getting-started" aria-hidden="true"><span class="octicon octicon-link"></span></a>Getting started</h1>
+
+<p>To use clump, just add the dependency to the project's build configuration.</p>
+
+<p><strong>Important</strong>: Change <code>x.x.x</code> with the latest version listed by the <a href="/CHANGELOG.md">CHANGELOG.md</a> file.</p>
+
+<p>SBT</p>
+
+<div class="highlight highlight-scala"><pre>libraryDependencies <span class="pl-k">++</span><span class="pl-k">=</span> <span class="pl-en">Seq</span>(
+  <span class="pl-s1"><span class="pl-pds">"</span>clump<span class="pl-pds">"</span></span> <span class="pl-k">%%</span> <span class="pl-s1"><span class="pl-pds">"</span>clump<span class="pl-pds">"</span></span> <span class="pl-k">%</span> <span class="pl-s1"><span class="pl-pds">"</span>x.x.x<span class="pl-pds">"</span></span>
+)</pre></div>
+
+<p>Maven</p>
+
+<div class="highlight highlight-xml"><pre>&lt;<span class="pl-ent">dependency</span>&gt;
+    &lt;<span class="pl-ent">groupId</span>&gt;clump&lt;/<span class="pl-ent">groupId</span>&gt;
+    &lt;<span class="pl-ent">artifactId</span>&gt;clump&lt;/<span class="pl-ent">artifactId</span>&gt;
+    &lt;<span class="pl-ent">version</span>&gt;x.x.x&lt;/<span class="pl-ent">version</span>&gt;
+&lt;/<span class="pl-ent">dependency</span>&gt;</pre></div>
+
+<h1>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h1>
+
+<h2>
+<a id="example" class="anchor" href="#example" aria-hidden="true"><span class="octicon octicon-link"></span></a>Example</h2>
+
+<p>Example usage of Clump:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">import</span> <span class="pl-v">clump.</span><span class="pl-v">Clump</span>
+
+<span class="pl-c">// Creates sources using the batched interfaces</span>
+<span class="pl-k">val</span> <span class="pl-en">tracksSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(tracksService.fetch)(_.id)
+<span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(usersService.fetch)(_.id)
+
+<span class="pl-k">def</span> <span class="pl-en">renderTrackPosts</span>(<span class="pl-v">userId</span>: <span class="pl-st">Long</span>) <span class="pl-k">=</span> {
+
+  <span class="pl-c">// Defines the clump</span>
+  <span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedTrack</span>]] <span class="pl-k">=</span> enrichedTrackPosts(userId)
+
+  <span class="pl-c">// Triggers execution</span>
+  <span class="pl-k">val</span> <span class="pl-en">future</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">Option</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedTrack</span>]]] <span class="pl-k">=</span> clump.get
+
+  <span class="pl-c">// Renders the response</span>
+  future.map {
+    <span class="pl-k">case</span> <span class="pl-en">Some</span>(trackPosts) <span class="pl-k">=&gt;</span> render.json(trackPosts)
+    <span class="pl-k">case</span> <span class="pl-c1">None</span>             <span class="pl-k">=&gt;</span> render.notFound
+  }
+}
+
+<span class="pl-c">// Composes a clump with the user's track posts</span>
+<span class="pl-k">def</span> <span class="pl-en">enrichedTrackPosts</span>(<span class="pl-v">userId</span>: <span class="pl-st">Long</span>) <span class="pl-k">=</span>
+  <span class="pl-k">for</span> {
+    trackPosts <span class="pl-k">&lt;</span><span class="pl-k">-</span> <span class="pl-en">Clump</span>.future(timelineService.fetchTrackPosts(userId))
+    enrichedTracks <span class="pl-k">&lt;</span><span class="pl-k">-</span> <span class="pl-en">Clump</span>.traverse(trackPosts)(enrichedTrack(_))
+  } <span class="pl-k">yield</span> {
+    enrichedTracks
+  }
+
+<span class="pl-c">// Composes an enriched track clump</span>
+<span class="pl-k">def</span> <span class="pl-en">enrichedTrack</span>(<span class="pl-v">trackId</span>: <span class="pl-st">Long</span>) <span class="pl-k">=</span>
+  <span class="pl-k">for</span> {
+    track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(trackId)
+    creator <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(track.creatorId)
+  } <span class="pl-k">yield</span> {
+    <span class="pl-k">new</span> <span class="pl-en">EnrichedTrack</span>(track, creator)
+  }</pre></div>
+
+<p>The usage of <code>renderTrackPosts</code> produces only three remote procedure calls:</p>
+
+<ol>
+<li>Fetch the track posts list (from <code>timelineService</code>);</li>
+<li>Fetch the metadata for all the tracks (from <code>tracksService</code>);</li>
+<li>Fetch the user metadata for all the tracks' creators (from <code>usersService</code>).</li>
+</ol>
+
+<p>The final result can be <code>notFound</code> because the user can be found or not.</p>
+
+<h2>
+<a id="sources" class="anchor" href="#sources" aria-hidden="true"><span class="octicon octicon-link"></span></a>Sources</h2>
+
+<p>Sources represent the remote systems' batched interfaces. Clump offers some methods to create sources using different strategies.</p>
+
+<h3>
+<a id="clumpsource" class="anchor" href="#clumpsource" aria-hidden="true"><span class="octicon octicon-link"></span></a>Clump.source</h3>
+
+<p>The <code>Clump.source</code> method accepts a function that may return less elements than requested. The output can also be in a different order than the inputs, since the last parameter is a function that allows Clump to determine which is the input for each output.</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">def</span> <span class="pl-en">fetch</span>(<span class="pl-v">ids</span>: <span class="pl-en">List</span>[<span class="pl-st">Int</span>])<span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> ...
+
+<span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(fetch)(_.id)</pre></div>
+
+<p>It is possible to create sources that have additional inputs, but the compiler isn't capable of inferring the input type for these cases. The solution is to use an explicit generic:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">def</span> <span class="pl-en">fetch</span>(<span class="pl-v">session</span>: <span class="pl-en">UserSession</span>, <span class="pl-v">ids</span>: <span class="pl-en">List</span>[<span class="pl-st">Int</span>])<span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> ...
+
+<span class="pl-k">def</span> <span class="pl-en">usersSource</span>(<span class="pl-v">session</span>: <span class="pl-en">UserSession</span>) <span class="pl-k">=</span> 
+    <span class="pl-en">Clump</span>.source[<span class="pl-en">List</span>[<span class="pl-st">Int</span>](fetch(session, _))(_.id)</pre></div>
+
+<p>Without the explicit generic, the compiler outputs this error message:</p>
+
+<pre><code>missing parameter type for expanded function ((x$1) =&gt; fetch(1, x$1))
+</code></pre>
+
+<h3>
+<a id="clumpsourcefrom" class="anchor" href="#clumpsourcefrom" aria-hidden="true"><span class="octicon octicon-link"></span></a>Clump.sourceFrom</h3>
+
+<p>The <code>Clump.sourceFrom</code> method accepts a function that returns a <code>Map</code> with the values for the found inputs.</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">def</span> <span class="pl-en">fetch</span>(<span class="pl-v">ids</span>: <span class="pl-en">List</span>[<span class="pl-st">Int</span>])<span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">Map</span>[<span class="pl-st">Int</span>, <span class="pl-en">User</span>]] <span class="pl-k">=</span> ...
+
+<span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.sourceFrom(fetch)</pre></div>
+
+<p>It is also possible to specify additional inputs for <code>Clump.sourceFrom</code>:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">def</span> <span class="pl-en">fetch</span>(<span class="pl-v">session</span>: <span class="pl-en">UserSession</span>, <span class="pl-v">ids</span>: <span class="pl-en">List</span>[<span class="pl-st">Int</span>])<span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">Map</span>[<span class="pl-st">Int</span>, <span class="pl-en">User</span>]] <span class="pl-k">=</span> ...
+
+<span class="pl-k">def</span> <span class="pl-en">usersSource</span>(<span class="pl-v">session</span>: <span class="pl-en">UserSession</span>) <span class="pl-k">=</span> 
+    <span class="pl-en">Clump</span>.sourceFrom[<span class="pl-en">List</span>[<span class="pl-st">Int</span>]](fetch(session, _))</pre></div>
+
+<h3>
+<a id="clumpsourcezip" class="anchor" href="#clumpsourcezip" aria-hidden="true"><span class="octicon octicon-link"></span></a>Clump.sourceZip</h3>
+
+<p>The <code>Clump.sourceZip</code> methods accepts a function that produces a list of outputs for each provided input. The result must keep the same order as the inputs list.</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">def</span> <span class="pl-en">fetch</span>(<span class="pl-v">ids</span>: <span class="pl-en">List</span>[<span class="pl-st">Int</span>])<span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> ...
+
+<span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.sourceZip(fetch)</pre></div>
+
+<h3>
+<a id="additional-configurations" class="anchor" href="#additional-configurations" aria-hidden="true"><span class="octicon octicon-link"></span></a>Additional configurations</h3>
+
+<p>Some services have a limitation on how many resources can be fetched in a single request. It is possible to define this limit for each source instance:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.sourceZip(fetch).maxBatchSize(<span class="pl-c1">100</span>)</pre></div>
+
+<p>The source instance can be also configured to automatically retry failed fetches by using the <code>maxRetries</code> method. It receives a partial function that defines the number of retries for each type of exception. The default number of retries is zero.</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> 
+    <span class="pl-en">Clump</span>.sourceZip(fetch).maxRetries {
+      <span class="pl-k">case</span> <span class="pl-v">e</span>: <span class="pl-en">SomeException</span> <span class="pl-k">=&gt;</span> <span class="pl-c1">10</span>
+    }</pre></div>
+
+<h2>
+<a id="constants" class="anchor" href="#constants" aria-hidden="true"><span class="octicon octicon-link"></span></a>Constants</h2>
+
+<p>It is possible to create Clump instances based on values.</p>
+
+<p>From a non-optional value:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-st">Int</span>] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.value(<span class="pl-c1">111</span>)</pre></div>
+
+<p>From an optional value:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-st">Int</span>] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.value(<span class="pl-en">Option</span>(<span class="pl-c1">111</span>))</pre></div>
+
+<p>From a future:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-c">// This method is useful as a bridge between Clump and non-batched services.</span>
+<span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-st">Int</span>] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.future(counterService.currentValueFor(<span class="pl-c1">111</span>))</pre></div>
+
+<p>It is possible to create a failed Clump instance:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-st">Int</span>] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.exception(<span class="pl-k">new</span> <span class="pl-en">NumberFormatException)</span></pre></div>
+
+<p>There is a shortcut for a constant empty Clump:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-st">Int</span>] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.<span class="pl-c1">None</span></pre></div>
+
+<h2>
+<a id="composition" class="anchor" href="#composition" aria-hidden="true"><span class="octicon octicon-link"></span></a>Composition</h2>
+
+<p>Clump has a monadic interface similar to <code>Future</code>.</p>
+
+<p>It is possible to apply a simple transformation by using <code>map</code>:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">intClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.value(<span class="pl-c1">1</span>)
+<span class="pl-k">val</span> <span class="pl-en">stringClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-st">String</span>] <span class="pl-k">=</span> intClump.map(_.toString)</pre></div>
+
+<p>If the transformation results on another Clump instance, it is possible to use <code>flatMap</code>:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">Track</span>, <span class="pl-en">User</span>)] <span class="pl-k">=</span>
+  tracksSource.get(trackId).flatMap { track <span class="pl-k">=&gt;</span>
+    usersSource.get(track.id).map { user <span class="pl-k">=&gt;</span>
+      (track, user)
+    }
+  }</pre></div>
+
+<p>The <code>join</code> method produces a Clump that has a tuple with the values of two Clump instances:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">User</span>, <span class="pl-en">List</span>[<span class="pl-en">Track</span>])] <span class="pl-k">=</span>
+    usersSource.get(userId).join(userTracksSource.get(userId))</pre></div>
+
+<p>There are also methods to deal with collections. Use <code>collect</code> to transform a list of Clump instances into a single Clump:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">userClumps</span><span class="pl-k">:</span> <span class="pl-en">List</span>[<span class="pl-en">Clump</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> userIds.map(usersSource.get(_))
+<span class="pl-k">val</span> <span class="pl-en">usersClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.collect(usersClump)</pre></div>
+
+<p>Instead of <code>map</code> and then <code>collect</code>, it is possible to use the shortcut <code>traverse</code>:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.traverse(userIds)(usersSource.get(_))</pre></div>
+
+<p>It is possible to use for-comprehensions as syntactic sugar to avoid having to write the compositions:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">trackClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span>
+    <span class="pl-k">for</span> {
+      track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(trackId)
+      creator <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(track.creatorId)
+    } <span class="pl-k">yield</span> {
+      <span class="pl-k">new</span> <span class="pl-en">EnrichedTrack</span>(track, creator)
+    }</pre></div>
+
+<h2>
+<a id="execution" class="anchor" href="#execution" aria-hidden="true"><span class="octicon octicon-link"></span></a>Execution</h2>
+
+<p>The creation of Clump instances doesn't trigger calls to the remote services. The only exception is when the code explicitly uses <code>Clump.future</code> to invoke a service.</p>
+
+<p>To trigger execution, it is possible to use <code>get</code>:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">trackClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span> ...
+<span class="pl-k">val</span> <span class="pl-en">user</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">Option</span>[<span class="pl-en">EnrichedTrack</span>]] <span class="pl-k">=</span> trackClump.get</pre></div>
+
+<p>Clump assumes that the remote services can return less elements than requested. That's why the result is an <code>Option</code>, since the input's result may be missing.</p>
+
+<p>It is possible to define a default value by using <code>getOrElse</code>:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">trackClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span> ...
+<span class="pl-k">val</span> <span class="pl-en">user</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span> trackClump.getOrElse(unknownTrack)</pre></div>
+
+<p>If it is guaranteed that the underlying service will always return results for all fetched inputs, it is possible to use <code>apply</code>, that throws a <code>NotFoundException</code> if the result is empty:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">trackClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span> ...
+<span class="pl-k">val</span> <span class="pl-en">user1</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span> trackClump.apply()
+<span class="pl-k">val</span> <span class="pl-en">user2</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span> trackClump() <span class="pl-c">// syntactic sugar</span></pre></div>
+
+<p>When a Clump instance has a List, it is possible to use the <code>list</code> method. It returns an empty list if the result is <code>None</code>:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.traverse(userIds)(usersSource.get(_))
+<span class="pl-k">val</span> <span class="pl-en">users</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> usersClump.list</pre></div>
+
+<h2>
+<a id="composition-behavior" class="anchor" href="#composition-behavior" aria-hidden="true"><span class="octicon octicon-link"></span></a>Composition behavior</h2>
+
+<p>The composition of Clump instances takes in consideration that the sources may not return results for all requested inputs. It has a behavior similar to the relational databases' joins, where not found joined elements make the tuple be filtered-out.</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">Track</span>, <span class="pl-en">User</span>)]
+  <span class="pl-k">for</span> {
+    track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(<span class="pl-c1">111</span>)
+    user <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(track.creator)
+  } <span class="pl-k">yield</span> (track, user)</pre></div>
+
+<p>In this example, if the track's creator isn't found, the final result will be <code>None</code>.</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">future</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">Option</span>[(<span class="pl-en">Track</span>, <span class="pl-en">User</span>)]] <span class="pl-k">=</span> clump.get
+<span class="pl-k">val</span> <span class="pl-en">result</span><span class="pl-k">:</span> <span class="pl-en">Option</span>[(<span class="pl-en">Track</span>, <span class="pl-en">User</span>)] <span class="pl-k">=</span> <span class="pl-en">Await</span>.result(future)
+require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</pre></div>
+
+<p>If a nested clump is expected to be optional, it is possible to use the <code>optional</code> method to have a behavior similar to an outer join.</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">Track</span>, <span class="pl-en">Option</span>[<span class="pl-en">User</span>])]
+  <span class="pl-k">for</span> {
+    track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(<span class="pl-c1">111</span>)
+    user <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(track.creator).optional
+  } <span class="pl-k">yield</span> (track, user)</pre></div>
+
+<p>Another alternative is to define a fallback by using <code>orElse</code>:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">Track</span>, <span class="pl-en">Option</span>[<span class="pl-en">User</span>])]
+  <span class="pl-k">for</span> {
+    track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(<span class="pl-c1">111</span>)
+    user <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(track.creator).orElse(usersSource.get(track.uploader))
+  } <span class="pl-k">yield</span> (track, user)</pre></div>
+
+<h2>
+<a id="filtering" class="anchor" href="#filtering" aria-hidden="true"><span class="octicon octicon-link"></span></a>Filtering</h2>
+
+<p>The behavior introduced by the optional fetch compositions allows defining of filtering conditions:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">Track</span>, <span class="pl-en">User</span>)]
+  <span class="pl-k">for</span> {
+    track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(<span class="pl-c1">111</span>) <span class="pl-k">if</span>(track.owner <span class="pl-k">==</span> currentUser)
+    user <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(track.creator)
+  } <span class="pl-k">yield</span> (track, user)</pre></div>
+
+<h2>
+<a id="exception-handling" class="anchor" href="#exception-handling" aria-hidden="true"><span class="octicon octicon-link"></span></a>Exception handling</h2>
+
+<p>Clump offers some mechanisms to deal with failed fetches.</p>
+
+<p>The <code>handle</code> method defines a fallback value given an exception:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">User</span>] <span class="pl-k">=</span>
+    usersService.get(userId).handle {
+      <span class="pl-k">case</span> <span class="pl-v">_</span>: <span class="pl-en">SomeException</span> <span class="pl-k">=&gt;</span>
+        defaultUser
+    }</pre></div>
+
+<p>If the fallback value is another Clump instance, it is possible to use <code>rescue</code>:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">User</span>] <span class="pl-k">=</span>
+    usersService.get(trackCreatorId).rescue {
+      <span class="pl-k">case</span> <span class="pl-v">_</span>: <span class="pl-en">SomeException</span> <span class="pl-k">=&gt;</span>
+        usersService.get(trackUploaderId)
+    }</pre></div>
+
+<h1>
+<a id="scala-futures" class="anchor" href="#scala-futures" aria-hidden="true"><span class="octicon octicon-link"></span></a>Scala Futures</h1>
+
+<p>Clump uses Twitter Futures by default, but is is possible to use Scala Futures by importing the <code>FutureBridge</code>:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">import</span> <span class="pl-v">clump.FutureBridge.</span><span class="pl-v">_</span>
+
+<span class="pl-k">val</span> <span class="pl-en">userClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">User</span>] <span class="pl-k">=</span> ...
+<span class="pl-k">val</span> <span class="pl-en">future</span><span class="pl-k">:</span> scala.concurrent.<span class="pl-en">Future</span>[<span class="pl-en">User</span>] <span class="pl-k">=</span> userClump.get</pre></div>
+
+<p>It provides bidirectional implicit conversions. </p>
+
+<h1>
+<a id="internals" class="anchor" href="#internals" aria-hidden="true"><span class="octicon octicon-link"></span></a>Internals</h1>
+
+<p>This section explains how Clump works under the hood.</p>
+
+<p>The codebase is relatively small. The only type explicitly exposed to the user is <code>Clump</code>, but internally there are four in total:</p>
+
+<p><a href="/src/main/scala/clump/Clump.scala">Clump</a> - Defines the public interface of Clump and represents the abstract syntactic tree (AST) for the compositions.</p>
+
+<p><a href="/src/main/scala/clump/ClumpSource.scala">ClumpSource</a> - Represents the external systems' batched interfaces.</p>
+
+<p><a href="/src/main/scala/clump/ClumpFetcher.scala">ClumpFetcher</a> - It has the logic to fetch from a <code>ClumpSource</code>, maintains the implicit cache and implements the logic to retry failed fetches.</p>
+
+<p><a href="/src/main/scala/clump/ClumpSource.scala">ClumpContext</a> - It is the execution model engine created automatically for each execution. It keeps the state by using a collection of <code>ClumpFetcher</code>s.</p>
+
+<p>Take some time to read the code of these classes. It will help to have a broader view and understand the explanation that follows.</p>
+
+<p>Lets see what happens when this example is executed:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(usersService.fetch)(_.id)
+<span class="pl-k">val</span> <span class="pl-en">tracksSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(tracksService.fetch)(_.id)
+
+<span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedTrack</span>]] <span class="pl-k">=</span>
+    <span class="pl-en">Clump</span>.traverse(trackIds) { trackId <span class="pl-k">=&gt;</span>
+      <span class="pl-k">for</span> {
+        track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(trackId)
+        user <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(track.creatorId)
+      } <span class="pl-k">yield</span> {
+        <span class="pl-k">new</span> <span class="pl-en">EnrichedTrack</span>(track, user)
+      }
+    }
+
+<span class="pl-k">val</span> <span class="pl-en">tracks</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">List</span>[<span class="pl-en">Track</span>]] <span class="pl-k">=</span> clump.list</pre></div>
+
+<h2>
+<a id="sources-creation" class="anchor" href="#sources-creation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Sources creation</h2>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(usersService.fetch)(_.id)
+<span class="pl-k">val</span> <span class="pl-en">tracksSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(tracksService.fetch)(_.id)</pre></div>
+
+<p>The <code>ClumpSource</code> instances are created using one of the shortcuts that the <code>Clump</code> object <a href="/src/main/scala/clump/Clump.scala#L69">provides</a>. They don't hold any state and allow to create Clump instances representing the <a href="/src/main/scala/clump/ClumpSource.scala#L12">fetch</a>. Clump uses the fetch function's <a href="/src/main/scala/clump/FunctionIdentity.scala">identity</a> to group requests and perform batched fetches, so it is possible to have multiple instances of the same source within a clump composition and execution.</p>
+
+<h2>
+<a id="composition-1" class="anchor" href="#composition-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Composition</h2>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedTrack</span>]] <span class="pl-k">=</span>
+    <span class="pl-en">Clump</span>.traverse(trackIds) { trackId <span class="pl-k">=&gt;</span>
+      ...
+    }</pre></div>
+
+<p>The <code>traverse</code> method is used as a <a href="/src/main/scala/clump/Clump.scala#L60">shortcut</a> for <code>map</code> and then <code>collect</code>, so this code could be rewritten as follows:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedTrack</span>]] <span class="pl-k">=</span>
+    <span class="pl-en">Clump</span>.collect(trackIds.map { trackId <span class="pl-k">=&gt;</span> 
+      ...
+    }</pre></div>
+
+<p>For each <code>trackId</code>, a for-comprehension is used to compose a Clump that has the <code>EnrichedTrack</code>:</p>
+
+<div class="highlight highlight-scala"><pre>      <span class="pl-k">for</span> {
+        track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(trackId)
+        user <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(track.creatorId)
+      } <span class="pl-k">yield</span> {
+        <span class="pl-k">new</span> <span class="pl-en">EnrichedTrack</span>(track, user)
+      }</pre></div>
+
+<p>The for-comprehension is actually just syntactic sugar using <code>map</code> and <code>flatMap</code>, so this code is equivalent to:</p>
+
+<div class="highlight highlight-scala"><pre>      tracksSource.get(trackId).flatMap { track <span class="pl-k">=&gt;</span>
+        usersSource.get(track.creatorId).map { user <span class="pl-k">=&gt;</span>
+          <span class="pl-k">new</span> <span class="pl-en">EnrichedTrack</span>(track, user)
+        }
+      }</pre></div>
+
+<p>There are three methods being used in this composition:</p>
+
+<ol>
+<li><p><code>get</code> <a href="/src/main/scala/clump/ClumpSource.scala#L12">creates</a> a <code>ClumpFetch</code> instances that is the AST element <a href="/src/main/scala/clump/Clump.scala#L81">representing the fetch</a>. It doesn't trigger the actual fetch, only <a href="/src/main/scala/clump/Clump.scala#L84">uses</a> the <code>ClumpFetcher</code> instance to <a href="/src/main/scala/clump/ClumpFetcher.scala#L11">produce</a> a <code>Future</code> that will be <a href="/src/main/scala/clump/ClumpFetcher.scala#L17">executed by</a> the <code>ClumpContext</code> when the execution is triggered. The <code>ClumpFetcher</code> also <a href="/src/main/scala/clump/ClumpFetcher.scala#L13">removes failed fetches</a> in order to enable retrying already failed fetches.</p></li>
+<li><p><code>flatMap</code> <a href="/src/main/scala/clump/Clump.scala#L16">creates</a> a <code>ClumpFlatMap</code> instance <a href="/src/main/scala/clump/Clump.scala#L108">representing the operation</a>. It just <a href="/src/main/scala/clump/Clump.scala#L115">composes a new future</a> that is based on the result of the initial Clump and the result of the nested Clump.</p></li>
+<li><p><code>map</code> <a href="/src/main/scala/clump/Clump.scala#L14">creates</a> a <code>ClumpMap</code> instance <a href="TODO">representing the map operation</a>. It <a href="TODO">composes a new future</a> by applying the specified transformation.</p></li>
+</ol>
+
+<p>Note that <strong>any</strong> Clump composition creates a <code>ClumpContext</code> <a href="/src/main/scala/clump/Clump.scala#L12">implicitly</a> if it doesn't exist yet. The <code>ClumpContext</code> is maintained using a <code>Local</code> <a href="/src/main/scala/clump/ClumpContext.scala#L47">value</a>, that is a <a href="https://github.com/twitter/util/blob/master/util-core/src/main/scala/com/twitter/util/Local.scala#L91">mechanism</a> similar to a <code>ThreadLocal</code> but for asynchronous compositions.  </p>
+
+<h2>
+<a id="execution-1" class="anchor" href="#execution-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Execution</h2>
+
+<p>Now comes the most important part. Until now, the compositions only create <code>Clump*</code> instances to represent the operations and produce futures that will be fulfilled when the execution is triggered. You probably have noticed that the Clump instances define three things:</p>
+
+<ol>
+<li>
+<code>result</code> that has the <code>Future</code> <a href="/src/main/scala/clump/Clump.scala#L45">result</a> for the operation</li>
+<li>
+<code>upstream</code> that <a href="/src/main/scala/clump/Clump.scala#L43">returns</a> the upstream Clump instances that were used as the basis for the composition</li>
+<li>
+<code>downstream</code> that <a href="/src/main/scala/clump/Clump.scala#L44">returns</a> the downstream Clump instances created as a result of the operation</li>
+</ol>
+
+<p>Note that <code>downstream</code> returns a <code>Future[List[Clump[_]]]</code>, while <code>upstream</code> returns a <code>List[Clump[_]]</code> directly. This happens because <code>downstream</code> produces Clump instances that are available only after the <code>upstream</code> execution.</p>
+
+<p>These methods are used by the <code>ClumpContext</code> to apply the execution model. It has a <a href="/src/main/scala/clump/ClumpContext.scala#L12">collection</a> with all <code>ClumpFetcher</code> instances in the composition.</p>
+
+<p>This is the code that triggers the execution:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">tracks</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">List</span>[<span class="pl-en">Track</span>]] <span class="pl-k">=</span> clump.list</pre></div>
+
+<p>The <code>list</code> method is just a <a href="/src/main/scala/clump/Clump.scala#L26">shortcut</a> to ease getting the value of Clump instances that have a <code>List</code>. The actual execution is triggered by the <code>get</code> <a href="/src/main/scala/clump/Clump.scala#L36">method</a>. It flushes the context and returns the Clump's result.</p>
+
+<p>The <a href="/src/main/scala/clump/ClumpContext.scala#L22">context flush</a> is a recursive function that performs simple steps:</p>
+
+<ul>
+<li>If there aren't Clump instances to be fetched, <a href="/src/main/scala/clump/ClumpContext.scala#L24">stop the recursion</a>;</li>
+<li>If there are Clump instances to be fetched
+
+<ul>
+<li>
+<a href="/src/main/scala/clump/ClumpContext.scala#L33">Flush</a> all the upstream instances of the current clumps;</li>
+<li>
+<a href="/src/main/scala/clump/ClumpContext.scala#L28">Flush</a> performs all the fetches among the current Clump instances being executed.</li>
+<li>
+<a href="/src/main/scala/clump/ClumpContext.scala#L36">Flush</a> all the downstream instances, since the pre-requisite to run the downstream is fulfilled (upstream already flushed). Note that the difference from the <code>upstream</code> flush is due the fact that <code>downstream</code> returns a future, but the semantic is the same.</li>
+</ul>
+</li>
+</ul>
+
+<p>You could consider this a depth-first, upstream-first traversal of the Clump graph.</p>
+
+<p>In case you are wondering why we need this upstream mechanism since we have the Clump instance at hand and could start the execution from it: actually the instance used to trigger the execution isn't the "root" of the composition. For instance:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span>
+    tracksSource.get(trackId).flatMap { track <span class="pl-k">=&gt;</span>
+      usersSource.get(track.creatorId).map { user <span class="pl-k">=&gt;</span>
+        <span class="pl-k">new</span> <span class="pl-en">EnrichedTrack</span>(track, user)
+      }
+    }</pre></div>
+
+<p>The clump instance will be a <code>ClumpFlatMap</code>, not the <code>ClumpFetch</code> created by the <code>tracksSource.get(trackId)</code> call. This is the AST behind the clump instance:</p>
+
+<pre><code>                                   +----------&gt; Empty                    
+                                   |Up                                   
+                            +------+-----+                               
+                            | ClumpFetch |                               
+               +----------&gt; |  (line 2)  |                               
+               |Up          +------+-----+                               
+               |                   |Down                                 
+               |                   +----------&gt; Empty                    
+       +-------+------+                                                  
+       | ClumpFlatMap |                                                  
+get--&gt; |   (line 2)   |                                   +-------&gt; Empty
+       +-------+------+                                   |Up            
+               |                                +---------+--+           
+               |                   +----------&gt; | ClumpFetch |           
+               |                   |Up          |  (line 3)  |           
+               |Down        +------+-----+      +---------+--+           
+               +----------&gt; |  ClumpMap  |                |Down          
+                            |  (line 3)  |                +-------&gt; Empty
+                            +------+-----+                               
+                                   |Down                                 
+                                   +----------&gt; Empty                    
+</code></pre>
+
+<p>The steps to execute this composition happen as follows:</p>
+
+<ul>
+<li>The execution is triggered by the <code>get</code> method on the <code>ClumpFlatMap</code> instance</li>
+<li>The flush of <code>ClumpFlatMap</code> starts
+
+<ul>
+<li>
+<code>ClumpFlatMap</code> upstream is flushed
+
+<ul>
+<li>The flush of <code>ClumpFetch</code> starts
+
+<ul>
+<li>Upstream is flushed and returns immediately (empty)</li>
+<li>The fetch is executed to fulfill the prerequisites to the downstream flush (upstream + fetch)</li>
+<li>Downstream is flushed and returns immediately (empty)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<code>ClumpFlatMap</code> downstream is flushed
+
+<ul>
+<li>The flush of <code>ClumpMap</code> starts
+
+<ul>
+<li>Upstream is flushed
+
+<ul>
+<li>The flush of the second <code>ClumpFetch</code> starts
+
+<ul>
+<li>Upstream is flushed and returns immediately (empty)</li>
+<li>The fetch is executed</li>
+<li>Downstream is flushed and returns immediately (empty)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Downstream is flushed and returns immediately (empty)</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<p>Note that this example has only one Clump instance per flush phase, but normally there are multiple instances. This is what allows Clump to batch requests that are in the same flush phase.</p>
+
+<h1>
+<a id="known-limitations" class="anchor" href="#known-limitations" aria-hidden="true"><span class="octicon octicon-link"></span></a>Known limitations</h1>
+
+<p>The execution model is capable of batching requests that are in the same level of the composition. For instance, this example produces only one fetch from <code>usersSource</code>:</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedTrack</span>]] <span class="pl-k">=</span>
+    <span class="pl-en">Clump</span>.traverse(trackIds) { trackId <span class="pl-k">=&gt;</span>
+      <span class="pl-k">for</span> {
+        track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(trackId)
+        user <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(track.creatorId)
+      } <span class="pl-k">yield</span> {
+        <span class="pl-k">new</span> <span class="pl-en">EnrichedTrack</span>(track, user)
+      }
+    }</pre></div>
+
+<p>The next example has two fetches from <code>usersSource</code>: one for the playlists' creators and other for the tracks' creators.</p>
+
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedPlaylist</span>]] <span class="pl-k">=</span>
+    <span class="pl-en">Clump</span>.traverse(playlistIds) { playlistId <span class="pl-k">=&gt;</span>
+      <span class="pl-k">for</span> {
+        playlist <span class="pl-k">&lt;</span><span class="pl-k">-</span> playlistsSource.get(playlistId)
+        creator <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(playlist.creator)
+        tracks <span class="pl-k">&lt;</span><span class="pl-k">-</span> 
+          <span class="pl-en">Clump</span>.traverse(playlist.trackids) {
+            <span class="pl-k">for</span> {
+              track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(trackId)
+              user <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(track.creatorId)
+            } <span class="pl-k">yield</span> {
+              <span class="pl-k">new</span> <span class="pl-en">EnrichedTrack</span>(track, user)
+            }
+          }
+      } <span class="pl-k">yield</span> {
+        <span class="pl-k">new</span> <span class="pl-en">EnrichedPlaylist</span>(playlist, creator, tracks)
+      }
+    }</pre></div>
+
+<p>Considering that they happen in different levels of the composition, the execution model will execute two batched fetches to <code>usersSource</code>, not one.</p>
+
+<h1>
+<a id="acknowledgments" class="anchor" href="#acknowledgments" aria-hidden="true"><span class="octicon octicon-link"></span></a>Acknowledgments</h1>
+
+<p>Clump was inspired by the Twitter's Stitch project. The initial goal was to have a similar implementation, but the project evolved to provide an approach more adherent to some use-cases we have in mind. See <a href="STITCH.md">STITCH.md</a> for more information about the differences between Stich and Clump.</p>
+
+<p>Facebook's <a href="http://community.haskell.org/%7Esimonmar/papers/haxl-icfp14.pdf">Haxl paper</a> and the Futurice's <a href="http://futurice.com/blog/an-example-of-functional-design">blog post</a> about Jobba also were important sources for the development phase.</p>
+
+<p>The project was initially built mainly using SoundCloud's <a href="https://developers.soundcloud.com/blog/stop-hacker-time">Hacker Time</a>.</p>
+
+<h1>
+<a id="versioning" class="anchor" href="#versioning" aria-hidden="true"><span class="octicon octicon-link"></span></a>Versioning</h1>
+
+<p>Clump adheres to Semantic Versioning 2.0.0. If there is a violation of this scheme, report it as a bug.Specifically, if a patch or minor version is released and breaks backward compatibility, that version should be immediately yanked and/or a new version should be immediately released that restores compatibility. Any change that breaks the public API will only be introduced at a major-version release.</p>
+
+<h1>
+<a id="license" class="anchor" href="#license" aria-hidden="true"><span class="octicon octicon-link"></span></a>License</h1>
+
+<p>See the <a href="/LICENSE-LGPL.txt">LICENSE-LGPL</a> file for details.</p>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/getclump/clump/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/getclump/clump/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/getclump/clump"></a> is maintained by <a href="https://github.com/getclump">getclump</a>.</p>
+
+          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
+    </div>
+
+  
+  </body>
+</html>
