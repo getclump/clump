@@ -27,7 +27,7 @@ pomExtra := (
   <licenses>
     <license>
       <name>LGPL</name>
-      <url>LICENCE-LGPL.md</url>
+      <url>https://raw.githubusercontent.com/getclump/clump/master/LICENSE-LGPL.txt</url>
       <distribution>repo</distribution>
     </license>
   </licenses>
