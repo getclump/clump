@@ -493,7 +493,7 @@ val clump: Clump[User] =
 
 # Scala Futures #
 
-Clump uses Twitter Futures by default, but is is possible to use Scala Futures by importing the ```FutureBridge```:
+Clump uses Twitter Futures by default, but it is possible to use Scala Futures by importing the ```FutureBridge```:
 
 ```scala
 import clump.FutureBridge._
