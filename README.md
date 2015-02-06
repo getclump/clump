@@ -723,7 +723,7 @@ val clump: Clump[List[EnrichedPlaylist]] =
     }
 ```
 
-Considering that they happen in different levels of the composition, the execution model will execute two batched fetches to ```usersSource```, not one.
+Considering that they happen in different levels of the composition, the execution model will execute two batched fetches to ```usersSource```, not one. This limitation is alleviated by the implicit caching if the playlist and tracks have the same creator.
 
 # Acknowledgments #
 
