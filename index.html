@@ -60,7 +60,7 @@
 <h2>
 <a id="summary" class="anchor" href="#summary" aria-hidden="true"><span class="octicon octicon-link"></span></a>Summary</h2>
 
-<p>Clump addresses the problem of knitting together data from multiple sources in an elegant and efficient way.</p>
+<p>Clump is a <strong>Scala</strong> library that addresses the problem of knitting together data from multiple sources in an elegant and efficient way.</p>
 
 <p>In a typical microservice-powered system, it is common to find awkward wrangling code to facilitate manually bulk-fetching
 dependent resources. Worse, this problem of batching is often accidentally overlooked, resulting in <strong>n</strong> calls to a micro-service instead of <strong>1</strong>.</p>
@@ -726,7 +726,7 @@ get--&gt; |   (line 2)   |                                   +-------&gt; Empty
       }
     }</pre></div>
 
-<p>Considering that they happen in different levels of the composition, the execution model will execute two batched fetches to <code>usersSource</code>, not one.</p>
+<p>Considering that they happen in different levels of the composition, the execution model will execute two batched fetches to <code>usersSource</code>, not one. This limitation is alleviated by the implicit caching if the playlist and tracks have the same creator.</p>
 
 <h1>
 <a id="acknowledgments" class="anchor" href="#acknowledgments" aria-hidden="true"><span class="octicon octicon-link"></span></a>Acknowledgments</h1>
