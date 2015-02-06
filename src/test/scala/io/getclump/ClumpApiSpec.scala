@@ -49,9 +49,19 @@ class ClumpApiSpec extends Spec {
       clumpResult(clump) mustEqual Some(List(2, 3, 4))
     }
 
-    "allows to collect multiple clumps in only one (Clump.collect)" in {
-      val clumps = List(Clump.value(1), Clump.value(2))
-      clumpResult(Clump.collect(clumps)) mustEqual Some(List(1, 2))
+    "allows to collect multiple clumps in only one (Clump.collect)" >> {
+      "list" in {
+        val clumps = List(Clump.value(1), Clump.value(2))
+        clumpResult(Clump.collect(clumps)) mustEqual Some(List(1, 2))
+      }
+      "set" in {
+        val clumps = Set(Clump.value(1), Clump.value(2))
+        clumpResult(Clump.collect(clumps)) mustEqual Some(Set(1, 2))
+      }
+      "seq" in {
+        val clumps = Seq(Clump.value(1), Clump.value(2))
+        clumpResult(Clump.collect(clumps)) mustEqual Some(Seq(1, 2))
+      }
     }
 
     "allows to create an empty Clump (Clump.empty)" in {
@@ -201,9 +211,17 @@ class ClumpApiSpec extends Spec {
       }
     }
 
-    "can represent its result as a list (clump.list) when its type is List[T]" in {
-      Await.result(Clump.value(List(1, 2)).list) ==== List(1, 2)
-      // Clump.value(1).list doesn't compile
+    "can represent its result as a collection (clump.list) when its type is a collection" >> {
+      "list" in {
+        Await.result(Clump.value(List(1, 2)).list) ==== List(1, 2)
+      }
+      "set" in {
+        Await.result(Clump.value(Set(1, 2)).list) ==== Set(1, 2)
+      }
+      "seq" in {
+        Await.result(Clump.value(Seq(1, 2)).list) ==== Seq(1, 2)
+      }
+      // Clump.value(1).flatten //doesn't compile
     }
 
     "can provide a result falling back to a default (clump.getOrElse)" >> {

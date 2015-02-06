@@ -32,7 +32,8 @@ sealed trait Clump[+T] {
 
   def getOrElse[B >: T](default: => B): Future[B] = get.map(_.getOrElse(default))
 
-  def list[B](implicit ev: T <:< List[B]): Future[List[B]] = get.map(_.toList.flatten)
+  def list[B >: T](implicit cbf: CanBuildFrom[Nothing, Nothing, B]): Future[B] =
+    get.map(_.getOrElse(cbf().result))
 
   def get: Future[Option[T]] =
     context
@@ -62,7 +63,8 @@ object Clump {
 
   def traverse[T, U](inputs: List[T])(f: T => Clump[U]): Clump[List[U]] = collect(inputs.map(f))
 
-  def collect[T](clumps: List[Clump[T]]): Clump[List[T]] = new ClumpCollect(clumps)
+  def collect[T, C[_] <: Iterable[_]](clumps: C[Clump[T]])(implicit cbf: CanBuildFrom[C[Clump[T]], T, C[T]]): Clump[C[T]] =
+    new ClumpCollect(clumps)
 
   def join[A, B](a: Clump[A], b: Clump[B]): Clump[(A, B)] =
     a.join(b)
@@ -143,13 +145,16 @@ private[getclump] class ClumpJoin[A, B](a: Clump[A], b: Clump[B]) extends Clump[
       }
 }
 
-private[getclump] class ClumpCollect[T](list: List[Clump[T]]) extends Clump[List[T]] {
-  val upstream = list
-  val downstream = Future.value(List())
+private[getclump] class ClumpCollect[T, C[_] <: Iterable[_]](clumps: C[Clump[T]])(implicit cbf: CanBuildFrom[C[Clump[T]], T, C[T]]) extends Clump[C[T]] {
+  val upstream =
+    clumps.toList.asInstanceOf[List[Clump[T]]]
+  val downstream =
+    Future.value(List())
   val result =
     Future
-      .collect(list.map(_.result))
-      .map(_.flatten.toList)
+      .collect(upstream.map(_.result))
+      .map(_.flatten)
+      .map(cbf.apply().++=(_).result)
       .map(Some(_))
 }
 

@@ -355,7 +355,7 @@ val clump: Clump[(User, List[Track])] =
     usersSource.get(userId).join(userTracksSource.get(userId))
 ```
 
-There are also methods to deal with collections. Use ```collect``` to transform a list of Clump instances into a single Clump:
+There are also methods to deal with collections. Use ```collect``` to transform a collection of Clump instances into a single Clump:
 
 ```scala
 val userClumps: List[Clump[User]] = userIds.map(usersSource.get(_))
@@ -408,7 +408,7 @@ val user1: Future[EnrichedTrack] = trackClump.apply()
 val user2: Future[EnrichedTrack] = trackClump() // syntactic sugar
 ```
 
-When a Clump instance has a List, it is possible to use the ```list``` method. It returns an empty list if the result is ```None```:
+When a Clump instance has a collection, it is possible to use the ```list``` method. It returns an empty collection if the result is ```None```:
 
 ```scala
 val usersClump: Clump[List[User]] = Clump.traverse(userIds)(usersSource.get(_))
@@ -615,7 +615,7 @@ This is the code that triggers the execution:
 val tracks: Future[List[Track]] = clump.list
 ```
 
-The ```list``` method is just a [shortcut](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L35) to ease getting the value of Clump instances that have a ```List```. The actual execution is triggered by the ```get``` [method](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L37). It flushes the context and returns the Clump's result.
+The ```list``` method is just a [shortcut](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L35) to ease getting the value of Clump instances that have a collection. The actual execution is triggered by the ```get``` [method](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L37). It flushes the context and returns the Clump's result.
 
 The [context flush](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L20) is a recursive function that performs simple steps:
 
