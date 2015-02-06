@@ -615,11 +615,11 @@ This is the code that triggers the execution:
 val tracks: Future[List[Track]] = clump.list
 ```
 
-The ```list``` method is just a [shortcut](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L35) to ease getting the value of Clump instances that have a collection. The actual execution is triggered by the ```get``` [method](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L38). It flushes the context and returns the Clump's result.
+The ```list``` method is just a [shortcut](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L35) to ease getting the value of Clump instances that have a collection. The actual execution is triggered by the ```get``` [method](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L38). It flushes the context and returns the Clump's result.
 
 The [context flush](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/ClumpContext.scala#L20) is a recursive function that performs simple steps:
 
-* If there aren't Clump instances to be fetched, [stop the recursion](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L22);
+* If there aren't Clump instances to be fetched, [stop the recursion](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/ClumpContext.scala#L22);
 * If there are Clump instances to be fetched
   * Flush all the upstream instances of the current clumps;
   * Perform all the fetches among the current Clump instances being executed.
