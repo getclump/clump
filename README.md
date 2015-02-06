@@ -28,7 +28,7 @@ A library for expressive and efficient service composition
 
 ## Summary ##
 
-Clump addresses the problem of knitting together data from multiple sources in an elegant and efficient way.
+Clump is a __Scala__ library that addresses the problem of knitting together data from multiple sources in an elegant and efficient way.
 
 In a typical microservice-powered system, it is common to find awkward wrangling code to facilitate manually bulk-fetching
 dependent resources. Worse, this problem of batching is often accidentally overlooked, resulting in **n** calls to a micro-service instead of **1**.
