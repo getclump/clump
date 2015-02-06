@@ -510,13 +510,13 @@ This section explains how Clump works under the hood.
 
 The codebase is relatively small. The only type explicitly exposed to the user is ```Clump```, but internally there are four in total:
 
-[Clump](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala) - Defines the public interface of Clump and represents the abstract syntactic tree (AST) for the compositions.
+[Clump](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala) - Defines the public interface of Clump and represents the abstract syntactic tree (AST) for the compositions.
 
-[ClumpSource](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpSource.scala) - Represents the external systems' batched interfaces.
+[ClumpSource](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/ClumpSource.scala) - Represents the external systems' batched interfaces.
 
-[ClumpFetcher](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpFetcher.scala) - It has the logic to fetch from a ```ClumpSource```, maintains the implicit cache and implements the logic to retry failed fetches.
+[ClumpFetcher](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/ClumpFetcher.scala) - It has the logic to fetch from a ```ClumpSource```, maintains the implicit cache and implements the logic to retry failed fetches.
 
-[ClumpContext](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpSource.scala) - It is the execution model engine created automatically for each execution. It keeps the state by using a collection of ```ClumpFetcher```s.
+[ClumpContext](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/ClumpContext.scala) - It is the execution model engine created automatically for each execution. It keeps the state by using a collection of ```ClumpFetcher```s.
 
 Take some time to read the code of these classes. It will help to have a broader view and understand the explanation that follows.
 
@@ -546,7 +546,7 @@ val usersSource = Clump.source(usersService.fetch)(_.id)
 val tracksSource = Clump.source(tracksService.fetch)(_.id)
 ```
 
-The ```ClumpSource``` instances are created using one of the shortcuts that the ```Clump``` object [provides](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L67). They don't hold any state and allow to create Clump instances representing the [fetch](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpSource.scala#L17). Clump uses the fetch function's [identity](https://github.com/getclump/clump/blob/master/src/main/scala/clump/FunctionIdentity.scala) to group requests and perform batched fetches, so it is possible to have multiple instances of the same source within a clump composition and execution.
+The ```ClumpSource``` instances are created using one of the shortcuts that the ```Clump``` object [provides](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L112). They don't hold any state and allow to create Clump instances representing the [fetch](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/ClumpSource.scala#L18). Clump uses the fetch function's [identity](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/FunctionIdentity.scala) to group requests and perform batched fetches, so it is possible to have multiple instances of the same source within a clump composition and execution.
 
 ## Composition
 
@@ -557,7 +557,7 @@ val clump: Clump[List[EnrichedTrack]] =
     }
 ```
 
-The ```traverse``` method is used as a [shortcut](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L63) for ```map``` and then ```collect```, so this code could be rewritten as follows:
+The ```traverse``` method is used as a [shortcut](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L64) for ```map``` and then ```collect```, so this code could be rewritten as follows:
 
 ```scala
 val clump: Clump[List[EnrichedTrack]] =
@@ -589,25 +589,25 @@ The for-comprehension is actually just syntactic sugar using ```map``` and ```fl
 
 There are three methods being used in this composition:
 
-1. ```get``` [creates](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpSource.scala#L18) a ```ClumpFetch``` instances that is the AST element [representing the fetch](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L81). It doesn't trigger the actual fetch, only uses the ```ClumpFetcher``` instance to [produce](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L89) a ```Future``` that will be [executed by](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpFetcher.scala#L17) the ```ClumpContext``` when the execution is triggered. 
+1. ```get``` [creates](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/ClumpSource.scala#L17) a ```ClumpFetch``` instances that is the AST element [representing the fetch](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L131). It doesn't trigger the actual fetch, only uses the ```ClumpFetcher``` instance to produce a ```Future``` that will be [executed by](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/ClumpFetcher.scala#L17) the ```ClumpContext``` when the execution is triggered. 
 
-2. ```flatMap``` creates a ```ClumpFlatMap``` instance [representing the operation](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L120). It just [composes a new future](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L126) that is based on the result of the initial Clump and the result of the nested Clump.
+2. ```flatMap``` creates a ```ClumpFlatMap``` instance [representing the operation](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L168). It just [composes a new future](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L174) that is based on the result of the initial Clump and the result of the nested Clump.
 
-3. ```map``` creates a ```ClumpMap``` instance [representing the map operation](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L113). It [composes a new future](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L116) by applying the specified transformation.
+3. ```map``` creates a ```ClumpMap``` instance [representing the map operation](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L161). It [composes a new future](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L164) by applying the specified transformation.
 
-Note that __any__ Clump composition creates a ```ClumpContext``` [implicitly](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L11) if it doesn't exist yet. The ```ClumpContext``` is maintained using a ```Local``` [value](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L50), that is a [mechanism](https://github.com/twitter/util/blob/master/util-core/src/main/scala/com/twitter/util/Local.scala#L91) similar to a ```ThreadLocal``` but for asynchronous compositions.  
+Note that __any__ Clump composition creates a ```ClumpContext``` [implicitly](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L11) if it doesn't exist yet. The ```ClumpContext``` is maintained using a ```Local``` [value](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/ClumpContext.scala#L50), that is a [mechanism](https://github.com/twitter/util/blob/util-6.23.0/util-core/src/main/scala/com/twitter/util/Local.scala#L91) similar to a ```ThreadLocal``` but for asynchronous compositions.  
 
 ## Execution
 
 Now comes the most important part. Until now, the compositions only create ```Clump*``` instances to represent the operations and produce futures that will be fulfilled when the execution is triggered. You probably have noticed that the Clump instances define three things:
 
-1. ```result``` that has the ```Future``` [result](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L46) for the operation
-2. ```upstream``` that [returns](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L44) the upstream Clump instances that were used as the basis for the composition
-3. ```downstream``` that [returns](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L45) the downstream Clump instances created as a result of the operation
+1. ```result``` that has the ```Future``` [result](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L47) for the operation
+2. ```upstream``` that [returns](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L45) the upstream Clump instances that were used as the basis for the composition
+3. ```downstream``` that [returns](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L46) the downstream Clump instances created as a result of the operation
 
 Note that ```downstream``` returns a ```Future[List[Clump[_]]]```, while ```upstream``` returns a ```List[Clump[_]]``` directly. This happens because ```downstream``` produces Clump instances that are available only after the ```upstream``` execution.
 
-These methods are used by the ```ClumpContext``` to apply the execution model. It has a [collection](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L10) with all ```ClumpFetcher``` instances in the composition.
+These methods are used by the ```ClumpContext``` to apply the execution model. It has a [collection](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/ClumpContext.scala#L10) with all ```ClumpFetcher``` instances in the composition.
 
 This is the code that triggers the execution:
 
@@ -615,15 +615,15 @@ This is the code that triggers the execution:
 val tracks: Future[List[Track]] = clump.list
 ```
 
-The ```list``` method is just a [shortcut](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L35) to ease getting the value of Clump instances that have a collection. The actual execution is triggered by the ```get``` [method](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L37). It flushes the context and returns the Clump's result.
+The ```list``` method is just a [shortcut](https://github.com/getclump/clump/blob/master/src/main/scala/clump/Clump.scala#L35) to ease getting the value of Clump instances that have a collection. The actual execution is triggered by the ```get``` [method](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L38). It flushes the context and returns the Clump's result.
 
-The [context flush](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L20) is a recursive function that performs simple steps:
+The [context flush](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/ClumpContext.scala#L20) is a recursive function that performs simple steps:
 
 * If there aren't Clump instances to be fetched, [stop the recursion](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L22);
 * If there are Clump instances to be fetched
-  * [Flush](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L31) all the upstream instances of the current clumps;
-  * [Flush](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L39) performs all the fetches among the current Clump instances being executed.
-  * [Flush](https://github.com/getclump/clump/blob/master/src/main/scala/clump/ClumpContext.scala#L34) all the downstream instances, since the pre-requisite to run the downstream is fulfilled (upstream already flushed). Note that the difference from the ```upstream``` flush is due the fact that ```downstream``` returns a future, but the semantic is the same.
+  * Flush all the upstream instances of the current clumps;
+  * Perform all the fetches among the current Clump instances being executed.
+  * Flush all the downstream instances, since the pre-requisite to run the downstream is fulfilled (upstream already flushed). Note that the difference from the ```upstream``` flush is due the fact that ```downstream``` returns a future, but the semantic is the same.
 
 You could consider this a depth-first, upstream-first traversal of the Clump graph.
 
