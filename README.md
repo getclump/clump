@@ -236,7 +236,7 @@ It is possible to create sources that have additional inputs, but the compiler i
 def fetch(session: UserSession, ids: List[Int]): Future[List[User]] = ...
 
 def usersSource(session: UserSession) = 
-    Clump.source[List[Int](fetch(session, _))(_.id)
+    Clump.source[List[Int]](fetch(session, _))(_.id)
 ```
 
 Without the explicit generic, the compiler outputs this error message:
