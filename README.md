@@ -168,7 +168,7 @@ Maven
 Example usage of Clump:
 
 ```scala
-import clump.Clump
+import io.getclump.Clump
 
 // Creates sources using the batched interfaces
 val tracksSource = Clump.source(tracksService.fetch)(_.id)
