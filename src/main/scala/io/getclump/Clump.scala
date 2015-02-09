@@ -115,7 +115,7 @@ object Clump {
   }
 
   def sourceFrom[C] = new {
-    def apply[T, U](fetch: C => Future[Map[T, U]])(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSource[T, U] =
+    def apply[T, U](fetch: C => Future[Iterable[(T, U)]])(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSource[T, U] =
       ClumpSource.from(fetch)
   }
 
