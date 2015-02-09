@@ -29,7 +29,7 @@ private[getclump] object ClumpSource {
   def apply[T, U, C](fetch: C => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSource[T, U] =
     new ClumpSource(FunctionIdentity(fetch), extractKeys(adaptInput(fetch), keyExtractor))
 
-  def from[T, U, C](fetch: C => Future[Iterable[(T, U)]])(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSource[T, U] = 
+  def from[T, U, C](fetch: C => Future[Iterable[(T, U)]])(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSource[T, U] =
     new ClumpSource(FunctionIdentity(fetch), adaptOutput(adaptInput(fetch)))
 
   def zip[T, U](fetch: List[T] => Future[List[U]]): ClumpSource[T, U] = {
@@ -52,7 +52,7 @@ private[getclump] object ClumpSource {
 
   private[this] def adaptInput[T, C, R](fetch: C => Future[R])(implicit cbf: CanBuildFrom[Nothing, T, C]) =
     (c: Set[T]) => fetch(cbf.apply().++=(c).result())
-    
+
   private[this] def adaptOutput[T, U, C](fetch: C => Future[Iterable[(T, U)]]) =
     fetch.andThen(_.map(_.toMap))
 }
