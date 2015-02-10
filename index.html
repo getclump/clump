@@ -192,7 +192,7 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>Example usage of Clump:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">import</span> <span class="pl-v">clump.</span><span class="pl-v">Clump</span>
+<div class="highlight highlight-scala"><pre><span class="pl-k">import</span> <span class="pl-v">io.getclump.</span><span class="pl-v">Clump</span>
 
 <span class="pl-c">// Creates sources using the batched interfaces</span>
 <span class="pl-k">val</span> <span class="pl-en">tracksSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(tracksService.fetch)(_.id)
@@ -260,7 +260,7 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 <div class="highlight highlight-scala"><pre><span class="pl-k">def</span> <span class="pl-en">fetch</span>(<span class="pl-v">session</span>: <span class="pl-en">UserSession</span>, <span class="pl-v">ids</span>: <span class="pl-en">List</span>[<span class="pl-st">Int</span>])<span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> ...
 
 <span class="pl-k">def</span> <span class="pl-en">usersSource</span>(<span class="pl-v">session</span>: <span class="pl-en">UserSession</span>) <span class="pl-k">=</span> 
-    <span class="pl-en">Clump</span>.source[<span class="pl-en">List</span>[<span class="pl-st">Int</span>](fetch(session, _))(_.id)</pre></div>
+    <span class="pl-en">Clump</span>.source[<span class="pl-en">List</span>[<span class="pl-st">Int</span>]](fetch(session, _))(_.id)</pre></div>
 
 <p>Without the explicit generic, the compiler outputs this error message:</p>
 
