@@ -59,9 +59,12 @@ object Clump {
 
   def future[T](future: Future[Option[T]]): Clump[T] = new ClumpFuture(future)
 
+  def traverse[T, U](inputs: T*)(f: T => Clump[U]): Clump[List[U]] = traverse(inputs.toList)(f)
+
   def collect[T](clumps: Clump[T]*): Clump[List[T]] = collect(clumps.toList)
 
-  def traverse[T, U](inputs: List[T])(f: T => Clump[U]): Clump[List[U]] = collect(inputs.map(f))
+  def traverse[T, U, C[_] <: Iterable[_]](inputs: C[T])(f: T => Clump[U])(implicit cbf: CanBuildFrom[Nothing, U, C[U]]): Clump[C[U]] =
+    collect(inputs.toList.asInstanceOf[List[T]].map(f)).map(cbf.apply().++=(_).result())
 
   def collect[T, C[_] <: Iterable[_]](clumps: C[Clump[T]])(implicit cbf: CanBuildFrom[C[Clump[T]], T, C[T]]): Clump[C[T]] =
     new ClumpCollect(clumps)
