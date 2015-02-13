@@ -44,9 +44,21 @@ class ClumpApiSpec extends Spec {
     }
 
     "allows to create a clump traversing multiple inputs (Clump.traverse)" in {
-      val inputs = List(1, 2, 3)
-      val clump = Clump.traverse(inputs)(i => Clump.value(i + 1))
-      clumpResult(clump) mustEqual Some(List(2, 3, 4))
+      "list" in {
+        val inputs = List(1, 2, 3)
+        val clump = Clump.traverse(inputs)(i => Clump.value(i + 1))
+        clumpResult(clump) ==== Some(List(2, 3, 4))
+      }
+      "set" in {
+        val inputs = Set(1, 2, 3)
+        val clump = Clump.traverse(inputs)(i => Clump.value(i + 1))
+        clumpResult(clump) ==== Some(Set(2, 3, 4))
+      }
+      "seq" in {
+        val inputs = Seq(1, 2, 3)
+        val clump = Clump.traverse(inputs)(i => Clump.value(i + 1))
+        clumpResult(clump) ==== Some(Seq(2, 3, 4))
+      }
     }
 
     "allows to collect multiple clumps in only one (Clump.collect)" >> {
