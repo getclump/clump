@@ -14,8 +14,18 @@ class ClumpApiSpec extends Spec {
 
       "from a future (Clump.future)" >> {
 
-        "success" in {
-          clumpResult(Clump.future(Future.value(Some(1)))) mustEqual Some(1)
+        "success" >> {
+          "optional" >> {
+            "defined" in {
+              clumpResult(Clump.future(Future.value(Some(1)))) mustEqual Some(1)
+            }
+            "undefined" in {
+              clumpResult(Clump.future(Future.value(None))) mustEqual None
+            }
+          }
+          "non-optional" in {
+            clumpResult(Clump.future(Future.value(1))) mustEqual Some(1)
+          }
         }
 
         "failure" in {
