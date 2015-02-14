@@ -5,6 +5,7 @@ import scala.collection.generic.CanBuildFrom
 import com.twitter.util.Future
 import com.twitter.util.Return
 import com.twitter.util.Throw
+import scala.reflect.ClassTag
 
 sealed trait Clump[+T] {
 
@@ -56,6 +57,8 @@ object Clump {
   def value[T](value: Option[T]): Clump[T] = future(Future.value(value))
 
   def exception[T](exception: Throwable): Clump[T] = future(Future.exception(exception))
+
+  def future[T: ClassTag](future: Future[T]): Clump[T] = new ClumpFuture(future.map(Option(_)))
 
   def future[T](future: Future[Option[T]]): Clump[T] = new ClumpFuture(future)
 

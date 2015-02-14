@@ -314,6 +314,8 @@ From a future:
 val clump: Clump[Int] = Clump.future(counterService.currentValueFor(111))
 ```
 
+The `future` method is overloaded to be able to receive both `Future[T]` and `Future[Option[T]]`.
+
 It is possible to create a failed Clump instance:
 
 ```scala
