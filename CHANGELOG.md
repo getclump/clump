@@ -1,3 +1,8 @@
+# 0.0.9 / 18-Feb-2015
+
+* Clump.traverse now accepts any kind of collection as input
+* Clump.future now accepts `Future[T]` and `Future[Option[T]]`
+
 # 0.0.8 / 10-Feb-2015
 
 * Clump.sourceFrom - support iterable output
