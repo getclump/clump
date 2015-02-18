@@ -29,6 +29,8 @@ case object FetchTracks extends SeqGroup[Id, Option[Track] {
 }
 ```
 
+Another alternative is keep the fetches as non-optional and catch the `NotFound` exception that Stitch produces for not found resources.
+
 Basically, we can say that the Stitch's API is optimized for non-optional fetches. On the other hand, Clump is optimized for optional fetches:
 
 ```scala
@@ -88,54 +90,16 @@ val clump: Clump[(Track, User)]
 	} yield (track, user)
 ```
 
-Filtering is most probably not supported by Stitch.
+Filtering is also supported by Stitch, but as final result is non-optional it throws a `MatchError` for compositions that yield empty values.
 
-4. Sourcing
-===========
-
-Stitch uses the ```SeqGroup``` objects to define fetch sources:
-
-```scala
-case object FetchTracks extends SeqGroup[Id, Track] {
-	def run(ids: Seq[Id]): Future[Seq[Track]] = 
-		tracksService.fetch(ids)
-}
-```
-
-If ```tracksService.fetch``` matches the ```run``` signature, the ```SeqGroup``` implementation is straightforward. If that isn't the case, the user must implement the input/output transformations.
-
-Clump has built-in transformations to ease some common use cases.
-
-If the fetch function returns a collection, it is possible to define a ```keyExtractor``` function to determine which one is the input key for each output:
-
-```scala
-val fetch: (List[Id]) => Future[List[Track]] = tracksService.fetch _
-val tracksSource = Clump.source(fetch)(_.trackId)
-```
-
-Some services can return a ```Map[Input, Output]```. It is possible to use them directly with ```Clump.sourceFrom```:
-
-```scala
-val fetch: (List[Id]) => Future[Map[Id, User]] = usersService.fetch _
-val usersSource = Clump.sourceFrom(fetch)
-```
-
-If the service has an interface similar to the Stitch's ```SeqGroup```, it is possible to match the inputs/outputs using a positional approach:
-
-
-```scala
-val fetch: (List[Id]) => Future[List[Playlist]] = playlistsService.fetch _
-val playlistsSource = Clump.sourceZip(fetch)
-```
-
-5. Caching
+4. Caching
 ==========
 
-It is common to have an object graph where the same resource is used in multiple places. For instance, many items of a tracks list can have the same creator.
+It is common to have an object graph where the same resource is used in multiple places. For instance, many items of a tracks list can have the same creator. Each clump execution triggered by ```clump.get``` has an implicit cache that can avoid fetching the same resource multiple times.
 
-Each clump execution triggered by ```clump.get``` has an implicit cache that can avoid fetching the same resource multiple times. This mechanism seems to be not present in Stitch.
+This mechanism is not present in Stitch, but the its execution model is able to group deep nested fetches and thus reduce the impact of the missing cache.
 
-6. Execution model
+5. Execution model
 ==================
 
 Stitch has an execution model capable of inspecting the AST definition and prepare an execution plan to allow batching. It also has logic to apply simplifications on the execution plan.
@@ -146,8 +110,3 @@ Clump has a simpler execution model that favors parallelism. Basically, it uses 
 2. Expand the composition starting from the roots and register the pending fetches
 3. Flush all pending fetches in parallel for each source
 4. If there are nested structures, go back to 2 using them as the roots. If not, return the clump's value.
-
-7. Nested flatmaps
-==================
-
-The Stitch talk mentions a limitation regarding the execution plan when a ```flatMap``` is used. It is not clear if batching also occurs for nested ```flatMap``` compositions. The Clump's expansion based execution allows batching of calls even for this scenario.
