@@ -6,7 +6,7 @@ import com.twitter.util.Future
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class CumpContextSpec extends Spec {
+class ClumpContextSpec extends Spec {
 
   "returns always the same fetcher for a source" in {
     val context = new ClumpContext
