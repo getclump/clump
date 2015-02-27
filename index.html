@@ -324,13 +324,15 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 <div class="highlight highlight-scala"><pre><span class="pl-c">// This method is useful as a bridge between Clump and non-batched services.</span>
 <span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-st">Int</span>] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.future(counterService.currentValueFor(<span class="pl-c1">111</span>))</pre></div>
 
+<p>The <code>future</code> method is overloaded to be able to receive both <code>Future[T]</code> and <code>Future[Option[T]]</code>.</p>
+
 <p>It is possible to create a failed Clump instance:</p>
 
 <div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-st">Int</span>] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.exception(<span class="pl-k">new</span> <span class="pl-en">NumberFormatException)</span></pre></div>
 
 <p>There is a shortcut for a constant empty Clump:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-st">Int</span>] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.<span class="pl-c1">None</span></pre></div>
+<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-st">Int</span>] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.empty</pre></div>
 
 <h2>
 <a id="composition" class="anchor" href="#composition" aria-hidden="true"><span class="octicon octicon-link"></span></a>Composition</h2>
