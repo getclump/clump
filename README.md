@@ -325,7 +325,7 @@ val clump: Clump[Int] = Clump.exception(new NumberFormatException)
 There is a shortcut for a constant empty Clump:
 
 ```scala
-val clump: Clump[Int] = Clump.None
+val clump: Clump[Int] = Clump.empty
 ```
 
 ## Composition ##
