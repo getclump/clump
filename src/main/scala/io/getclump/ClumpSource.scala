@@ -3,6 +3,12 @@ package io.getclump
 import com.twitter.util.Future
 import scala.collection.generic.CanBuildFrom
 
+class ClumpSourceWithParam[T, U, C, I](fetch: I => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]) {
+  def apply(parameterize : (C) => I): ClumpSource[T, U] = {
+    ClumpSource(parameterize andThen fetch)(keyExtractor)(cbf)
+  }
+}
+
 class ClumpSource[T, U] private[ClumpSource] (val functionIdentity: FunctionIdentity,
                                               val fetch: Set[T] => Future[Map[T, U]],
                                               val maxBatchSize: Int = Int.MaxValue,

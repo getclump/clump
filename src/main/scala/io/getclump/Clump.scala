@@ -120,6 +120,11 @@ object Clump {
       ClumpSource(fetch)(keyExtractor)
   }
 
+  def sourceWithParam[C] = new {
+    def apply[T, U, I](fetch: I => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSourceWithParam[T, U, C, I] =
+      new ClumpSourceWithParam[T, U, C, I](fetch)(keyExtractor)
+  }
+
   def sourceFrom[C] = new {
     def apply[T, U](fetch: C => Future[Iterable[(T, U)]])(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSource[T, U] =
       ClumpSource.from(fetch)
