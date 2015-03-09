@@ -48,7 +48,7 @@ sealed trait Clump[+T] {
   protected[getclump] def result: Future[Option[T]]
 }
 
-object Clump {
+object Clump extends ClumpSourceFactory {
 
   def empty[T]: Clump[T] = value(scala.None)
 
@@ -114,19 +114,6 @@ object Clump {
     (join(a, b, c, d, e, f, g, h, i).join(j)).map {
       case ((a, b, c, d, e, f, g, h, i), j) => (a, b, c, d, e, f, g, h, i, j)
     }
-
-  def source[C] = new {
-    def apply[T, U](fetch: C => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSource[T, U] =
-      ClumpSource(fetch)(keyExtractor)
-  }
-
-  def sourceFrom[C] = new {
-    def apply[T, U](fetch: C => Future[Iterable[(T, U)]])(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSource[T, U] =
-      ClumpSource.from(fetch)
-  }
-
-  def sourceZip[T, U](fetch: List[T] => Future[List[U]]): ClumpSource[T, U] =
-    ClumpSource.zip(fetch)
 }
 
 private[getclump] class ClumpFuture[T](val result: Future[Option[T]]) extends Clump[T] {
