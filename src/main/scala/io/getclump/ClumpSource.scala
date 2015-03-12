@@ -3,6 +3,39 @@ package io.getclump
 import com.twitter.util.Future
 import scala.collection.generic.CanBuildFrom
 
+class ClumpSourceWithParam[T, U, P] private[ClumpSourceWithParam] (val unparameterized: (P) => ClumpSource[T, U]) {
+
+  def get(param: P, inputs: T*): Clump[List[U]] =
+    unparameterized(param).get(inputs: _*)
+
+  def get(param: P, inputs: List[T]): Clump[List[U]] =
+    unparameterized(param).get(inputs)
+
+  def get(param: P, input: T): Clump[U] =
+    unparameterized(param).get(input)
+
+  def maxBatchSize(size: Int): ClumpSourceWithParam[T, U, P] =
+    new ClumpSourceWithParam(unparameterized.andThen(_.maxBatchSize(size)))
+
+  def maxRetries(retries: PartialFunction[Throwable, Int]): ClumpSourceWithParam[T, U, P] =
+    new ClumpSourceWithParam(unparameterized.andThen(_.maxRetries(retries)))
+}
+
+private[getclump] object ClumpSourceWithParam {
+
+  def apply[T, U, C, P](fetch: (P, C) => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSourceWithParam[T, U, P] = {
+    new ClumpSourceWithParam(p => ClumpSource.apply[T, U, C](fetch(p, _))(keyExtractor))
+  }
+
+  def from[T, U, C, P](fetch: (P, C) => Future[Iterable[(T, U)]])(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSourceWithParam[T, U, P] = {
+    new ClumpSourceWithParam(p => ClumpSource.from[T, U, C](fetch(p, _)))
+  }
+
+  def zip[T, U, P](fetch: (P, List[T]) => Future[List[U]]): ClumpSourceWithParam[T, U, P] = {
+    new ClumpSourceWithParam(p => ClumpSource.zip(fetch(p, _)))
+  }
+}
+
 class ClumpSource[T, U] private[ClumpSource] (val functionIdentity: FunctionIdentity,
                                               val fetch: Set[T] => Future[Map[T, U]],
                                               val maxBatchSize: Int = Int.MaxValue,
