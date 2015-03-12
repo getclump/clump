@@ -3,7 +3,7 @@ package io.getclump
 import com.twitter.util.Future
 import scala.collection.generic.CanBuildFrom
 
-class ClumpSourceWithParam[T, U, P](val unparameterized: (P) => ClumpSource[T, U]) {
+class ClumpSourceWithParam[T, U, P] private[ClumpSourceWithParam] (val unparameterized: (P) => ClumpSource[T, U]) {
 
   def get(param: P, inputs: T*): Clump[List[U]] =
     unparameterized(param).get(inputs: _*)
@@ -36,10 +36,10 @@ private[getclump] object ClumpSourceWithParam {
   }
 }
 
-class ClumpSource[T, U](val functionIdentity: FunctionIdentity,
-                        val fetch: Set[T] => Future[Map[T, U]],
-                        val maxBatchSize: Int = Int.MaxValue,
-                        val _maxRetries: PartialFunction[Throwable, Int] = PartialFunction.empty) {
+class ClumpSource[T, U] private[ClumpSource] (val functionIdentity: FunctionIdentity,
+                                              val fetch: Set[T] => Future[Map[T, U]],
+                                              val maxBatchSize: Int = Int.MaxValue,
+                                              val _maxRetries: PartialFunction[Throwable, Int] = PartialFunction.empty) {
 
   def get(inputs: T*): Clump[List[U]] =
     get(inputs.toList)
