@@ -62,10 +62,10 @@ class ClumpSourceSpec extends Spec {
     }
   }
 
-  "allows to create a clump source with key function and parameter (ClumpSource.apply)" in {
-      def fetch(session: Long, inputs: Set[Int]) = Future.value(inputs.map(_.toString))
-      val source = Clump.sourceWithParam[Set[Int]].apply[Int, String, (Long, Set[Int])]({ case ((session, inputs)) => fetch(session, inputs)})(_.toInt)
-      clumpResult(source((2L, _)).get(1)) mustEqual Some("1")
+  "allows to create a clump source with key function and parameter (ClumpSourceWithParameter.apply)" in {
+      def fetch(session: String, inputs: Set[Int]) = Future.value(inputs.map(_.toString))
+      val source = Clump.sourceWithParam(fetch)(_.toInt)
+      clumpResult(source.get("session", 1)) mustEqual Some("1")
   }
 
   "allows to create a clump source with zip as the key function (ClumpSource.zip)" in {
