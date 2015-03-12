@@ -3,63 +3,37 @@ package io.getclump
 import com.twitter.util.Future
 import scala.collection.generic.CanBuildFrom
 
-class ClumpSourceWithParam[T, U, P](val functionIdentity: FunctionIdentity,
-                                    val fetch: ((P, Set[T])) => Future[Map[T, U]],
-                                    val maxBatchSize: Int = Int.MaxValue,
-                                    val _maxRetries: PartialFunction[Throwable, Int] = PartialFunction.empty) {
+class ClumpSourceWithParam[T, U, P](val unparameterized: (P) => ClumpSource[T, U]) {
 
   def get(param: P, inputs: T*): Clump[List[U]] =
-    get(param, inputs.toList)
+    unparameterized(param).get(inputs: _*)
 
   def get(param: P, inputs: List[T]): Clump[List[U]] =
-    Clump.collect(inputs.map(get(param, _)))
+    unparameterized(param).get(inputs)
 
-  def get(param: P, input: T): Clump[U] = {
-    val parameterized: Set[T] => Future[Map[T, U]] = fetch(param, _)
-    val clumpSource: ClumpSource[T, U] = new ClumpSource[T, U](functionIdentity, parameterized, maxBatchSize, _maxRetries)
-    new ClumpFetch(input, ClumpContext().fetcherFor(clumpSource))
-  }
+  def get(param: P, input: T): Clump[U] =
+    unparameterized(param).get(input)
 
   def maxBatchSize(size: Int): ClumpSourceWithParam[T, U, P] =
-    new ClumpSourceWithParam(functionIdentity, fetch, size, _maxRetries)
+    new ClumpSourceWithParam(unparameterized.andThen(_.maxBatchSize(size)))
 
   def maxRetries(retries: PartialFunction[Throwable, Int]): ClumpSourceWithParam[T, U, P] =
-    new ClumpSourceWithParam(functionIdentity, fetch, maxBatchSize, retries)
+    new ClumpSourceWithParam(unparameterized.andThen(_.maxRetries(retries)))
 }
 
 private[getclump] object ClumpSourceWithParam {
 
-  def apply[T, U, C, P](fetch: (P, C) => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSourceWithParam[T, U, P] =
-    new ClumpSourceWithParam(FunctionIdentity(fetch), extractKeys(adaptInput(fetch), keyExtractor))
+  def apply[T, U, C, P](fetch: (P, C) => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSourceWithParam[T, U, P] = {
+    new ClumpSourceWithParam(p => ClumpSource.apply[T, U, C](fetch(p, _))(keyExtractor))
+  }
 
-  def from[T, U, C, P](fetch: (P, C) => Future[Iterable[(T, U)]])(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSourceWithParam[T, U, P] =
-    new ClumpSourceWithParam(FunctionIdentity(fetch), adaptOutput(adaptInput(fetch)))
+  def from[T, U, C, P](fetch: (P, C) => Future[Iterable[(T, U)]])(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSourceWithParam[T, U, P] = {
+    new ClumpSourceWithParam(p => ClumpSource.from[T, U, C](fetch(p, _)))
+  }
 
   def zip[T, U, P](fetch: (P, List[T]) => Future[List[U]]): ClumpSourceWithParam[T, U, P] = {
-    new ClumpSourceWithParam(FunctionIdentity(fetch), zipped(fetch))
+    new ClumpSourceWithParam(p => ClumpSource.zip(fetch(p, _)))
   }
-
-  private[this] def zipped[T, U, P](fetch: (P, List[T]) => Future[List[U]]) = {
-    val zip: ((P, List[T])) => Future[Map[T, U]] = { case ((param, inputs)) =>
-      fetch(param, inputs).map(inputs.zip(_).toMap)
-    }
-    val setToList: (P, Set[T]) => (P, List[T]) = { (param, input) => (param, input.toList) }
-    setToList.tupled.andThen(zip)
-  }
-
-  private[this] def extractKeys[T, U, P](fetch: (P, Set[T]) => Future[Iterable[U]], keyExtractor: U => T) = {
-    val map: (Future[Iterable[U]]) => Future[Map[T, U]] = _.map(resultsToKeys(keyExtractor, _))
-    fetch.tupled.andThen(map)
-  }
-
-  private[this] def resultsToKeys[U, T](keyExtractor: (U) => T, results: Iterable[U]) =
-    results.map(v => (keyExtractor(v), v)).toMap
-
-  private[this] def adaptInput[T, C, R, P](fetch: (P, C) => Future[R])(implicit cbf: CanBuildFrom[Nothing, T, C]) =
-    (p: P, c: Set[T]) => fetch(p, cbf.apply().++=(c).result())
-
-  private[this] def adaptOutput[T, U, C, P](fetch: (P, C) => Future[Iterable[(T, U)]]) =
-    fetch.tupled.andThen(_.map(_.toMap))
 }
 
 class ClumpSource[T, U](val functionIdentity: FunctionIdentity,

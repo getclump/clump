@@ -120,11 +120,6 @@ object Clump {
       ClumpSource(fetch)(keyExtractor)
   }
 
-  def sourceWithParam[P, C] = new {
-    def apply[T, U](fetch: (P, C) => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSourceWithParam[T, U, P] =
-      ClumpSourceWithParam.apply(fetch)(keyExtractor)
-  }
-
   def sourceFrom[C] = new {
     def apply[T, U](fetch: C => Future[Iterable[(T, U)]])(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSource[T, U] =
       ClumpSource.from(fetch)
@@ -132,6 +127,19 @@ object Clump {
 
   def sourceZip[T, U](fetch: List[T] => Future[List[U]]): ClumpSource[T, U] =
     ClumpSource.zip(fetch)
+
+  def sourceWithParam[P, C] = new {
+    def apply[T, U](fetch: (P, C) => Future[Iterable[U]])(keyExtractor: U => T)(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSourceWithParam[T, U, P] =
+      ClumpSourceWithParam.apply(fetch)(keyExtractor)
+  }
+
+  def sourceWithParamFrom[P, C] = new {
+    def apply[T, U](fetch: (P, C) => Future[Iterable[(T, U)]])(implicit cbf: CanBuildFrom[Nothing, T, C]): ClumpSourceWithParam[T, U, P] =
+      ClumpSourceWithParam.from(fetch)
+  }
+
+  def sourceWithParamZip[T, U, P](fetch: (P, List[T]) => Future[List[U]]): ClumpSourceWithParam[T, U, P] =
+    ClumpSourceWithParam.zip(fetch)
 }
 
 private[getclump] class ClumpFuture[T](val result: Future[Option[T]]) extends Clump[T] {

@@ -57,6 +57,40 @@ class IntegrationSpec extends Spec {
       (Tweet("Tweet3", 30), User(30, "User30"))))
   }
 
+  "A Clump should batch calls to services with parameters" in {
+    val tweetRepositoryMock = mock[TweetRepositoryWithParam]
+    val tweets = Clump.sourceWithParamFrom(tweetRepositoryMock.tweetsFor)
+
+    val userRepositoryMock = mock[UserRepositoryWithParam]
+    val users = Clump.sourceWithParam(userRepositoryMock.usersFor)(_.userId)
+
+    tweetRepositoryMock.tweetsFor("session", Set(1L,2L,3L)) returns
+      Future.value(Map(
+        1L -> Tweet("Tweet1", 10),
+        2L -> Tweet("Tweet2", 20),
+        3L -> Tweet("Tweet3", 30)
+      ))
+
+    userRepositoryMock.usersFor("session", Set(10L,20L,30L)) returns
+      Future.value(Set(
+        User(10, "User10"),
+        User(20, "User20"),
+        User(30, "User30")
+      ))
+
+    val enrichedTweets = Clump.traverse(1, 2, 3) { tweetId =>
+      for {
+        tweet <- tweets.get("session", tweetId)
+        user <- users.get("session", tweet.userId)
+      } yield (tweet, user)
+    }
+
+    Await.result(enrichedTweets.get) ==== Some(List(
+      (Tweet("Tweet1", 10), User(10, "User10")),
+      (Tweet("Tweet2", 20), User(20, "User20")),
+      (Tweet("Tweet3", 30), User(30, "User30"))))
+  }
+
   "it should be able to be used in complex nested fetches" in {
     val timelineIds = List(1, 3)
     val enrichedTimelines = Clump.traverse(timelineIds) { id =>
@@ -162,9 +196,21 @@ class TweetRepository {
   }
 }
 
+class TweetRepositoryWithParam {
+  def tweetsFor(session: String, ids: Set[Long]): Future[Map[Long, Tweet]] = {
+    Future.value(ids.map(id => id -> Tweet(s"Tweet$id", id * 10)).toMap)
+  }
+}
+
 class UserRepository {
   def usersFor(ids: Set[Long]): Future[Map[Long, User]] = {
     Future.value(ids.map(id => id -> User(id, s"User$id")).toMap)
+  }
+}
+
+class UserRepositoryWithParam {
+  def usersFor(session: String, ids: Set[Long]): Future[Set[User]] = {
+    Future.value(ids.map(id => User(id, s"User$id")))
   }
 }
 
