@@ -28,11 +28,6 @@ class ClumpSourceFactorySpec extends Spec {
       val source = Clump.sourceFrom(fetch _)
       clumpResult(source.get(1)) mustEqual Some("1")
     }
-    "expanded function" in {
-      def fetch(int: Int, inputs: List[Int]) = Future.value(inputs.map(i => i -> i.toString).toMap)
-      val source = Clump.sourceFrom[List[Int]](fetch(1, _))
-      clumpResult(source.get(1)) mustEqual Some("1")
-    }
     "extra params" >> {
       "one" in {
         def fetch(param1: Int, values: List[Int]) =
@@ -74,11 +69,6 @@ class ClumpSourceFactorySpec extends Spec {
     "seq input" in {
       def fetch(inputs: Seq[Int]) = Future.value(inputs.map(_.toString))
       val source = Clump.source(fetch _)(_.toInt)
-      clumpResult(source.get(1)) mustEqual Some("1")
-    }
-    "expanded function" in {
-      def fetch(int: Int, inputs: Seq[Int]) = Future.value(inputs.map(_.toString))
-      val source = Clump.source[Seq[Int]](fetch(11, _))(_.toInt)
       clumpResult(source.get(1)) mustEqual Some("1")
     }
     "extra params" >> {
