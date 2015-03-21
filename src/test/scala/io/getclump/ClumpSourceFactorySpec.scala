@@ -1,18 +1,13 @@
 package io.getclump
 
-import org.junit.runner.RunWith
-import org.mockito.Mockito.verify
-import org.mockito.Mockito.verifyNoMoreInteractions
-import org.mockito.Mockito.when
-import org.specs2.specification.Scope
-import com.twitter.util.Await
 import com.twitter.util.Future
+import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class ClumpSourceFactorySpec extends Spec {
 
-  "creates a clump source (ClumpSource.from)" >> {
+  "creates a clump source" >> {
     "set input" in {
       def fetch(inputs: Set[Int]) = Future.value(inputs.map(i => i -> i.toString).toMap)
       val source = Clump.source(fetch _)
@@ -55,7 +50,7 @@ class ClumpSourceFactorySpec extends Spec {
     }
   }
 
-  "creates a clump source with key function (ClumpSource.apply)" >> {
+  "creates a clump source with key function" >> {
     "set input" in {
       def fetch(inputs: Set[Int]) = Future.value(inputs.map(_.toString))
       val source = Clump.source(fetch _)(_.toInt)
@@ -96,10 +91,34 @@ class ClumpSourceFactorySpec extends Spec {
     }
   }
 
-  "creates a clump source with zip as the key function (ClumpSource.zip)" in {
-    def fetch(inputs: List[Int]) = Future.value(inputs.map(_.toString))
-    val source = Clump.sourceZip(fetch)
-    clumpResult(source.get(1)) mustEqual Some("1")
+  "creates a clump source with zip as the key function" >> {
+    "list input" in {
+      def fetch(inputs: List[Int]) = Future.value(inputs.map(_.toString))
+      val source = Clump.sourceZip(fetch _)
+      clumpResult(source.get(1)) mustEqual Some("1")
+    }
+    "extra params" >> {
+      "one" in {
+        def fetch(param1: Int, inputs: List[Int]) = Future.value(inputs.map(_ + param1).map(_.toString))
+        val source = Clump.sourceZip(fetch _)
+        clumpResult(source.get(1, 2)) mustEqual Some("3")
+      }
+      "two" in {
+        def fetch(param1: Int, param2: String, inputs: List[Int]) = Future.value(inputs.map(_ + param1).map(_ + param2))
+        val source = Clump.sourceZip(fetch _)
+        clumpResult(source.get(1, "a", 2)) mustEqual Some("3a")
+      }
+      "three" in {
+        def fetch(param1: Int, param2: String, param3: List[String], inputs: List[Int]) = Future.value(inputs.map(_ + param1).map(_ + param2).map(_ + param3.fold("")(_ + _)))
+        val source = Clump.sourceZip(fetch _)
+        clumpResult(source.get(1, "a", List("b", "c"), 2)) mustEqual Some("3abc")
+      }
+      "four" in {
+        def fetch(param1: Int, param2: String, param3: List[String], param4: Boolean, inputs: List[Int]) = Future.value(inputs.map(_ + param1).map(_ + param2).map(_ + param3.fold("")(_ + _)).map(_ + s"-$param4"))
+        val source = Clump.sourceZip(fetch _)
+        clumpResult(source.get(1, "a", List("b", "c"), true, 2)) mustEqual Some("3abc-true")
+      }
+    }
   }
 
   "creates a clump source from various input/ouput type fetch functions (ClumpSource.apply)" in {
