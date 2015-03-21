@@ -15,29 +15,29 @@ class IntegrationSpec extends Spec {
   val likeRepository = new LikeRepository
   val trackRepository = new TrackRepository
 
-  val tweets = Clump.sourceFrom(tweetRepository.tweetsFor _)
-  val users = Clump.sourceFrom(userRepository.usersFor _)
-  val filteredUsers = Clump.source(filteredUserRepository.usersFor _) { _.userId }
-  val zippedUsers = Clump.sourceZip(zipUserRepository.usersFor)
-  val timelines = Clump.source(timelineRepository.timelinesFor _) { _.timelineId }
-  val likes = Clump.source(likeRepository.likesFor _) { _.likeId }
-  val tracks = Clump.source(trackRepository.tracksFor _) { _.trackId }
+  val tweets = Clump.source(tweetRepository.tweetsFor _)
+  val users = Clump.source(userRepository.usersFor _)
+  val filteredUsers = Clump.source(filteredUserRepository.usersFor _)(_.userId)
+  val zippedUsers = Clump.sourceZip(zipUserRepository.usersFor _)
+  val timelines = Clump.source(timelineRepository.timelinesFor _)(_.timelineId)
+  val likes = Clump.source(likeRepository.likesFor _)(_.likeId)
+  val tracks = Clump.source(trackRepository.tracksFor _)(_.trackId)
 
   "A Clump should batch calls to services" in {
     val tweetRepositoryMock = mock[TweetRepository]
-    val tweets = Clump.sourceFrom(tweetRepositoryMock.tweetsFor _)
+    val tweets = Clump.source(tweetRepositoryMock.tweetsFor _)
 
     val userRepositoryMock = mock[UserRepository]
-    val users = Clump.sourceFrom(userRepositoryMock.usersFor _)
+    val users = Clump.source(userRepositoryMock.usersFor _)
 
-    tweetRepositoryMock.tweetsFor(Set(1L,2L,3L)) returns
-    Future.value(Map(
-      1L -> Tweet("Tweet1", 10),
-      2L -> Tweet("Tweet2", 20),
-      3L -> Tweet("Tweet3", 30)
-    ))
+    tweetRepositoryMock.tweetsFor(Set(1L, 2L, 3L)) returns
+      Future.value(Map(
+        1L -> Tweet("Tweet1", 10),
+        2L -> Tweet("Tweet2", 20),
+        3L -> Tweet("Tweet3", 30)
+      ))
 
-    userRepositoryMock.usersFor(Set(10L,20L,30L)) returns
+    userRepositoryMock.usersFor(Set(10L, 20L, 30L)) returns
       Future.value(Map(
         10L -> User(10, "User10"),
         20L -> User(20, "User20"),
@@ -45,11 +45,45 @@ class IntegrationSpec extends Spec {
       ))
 
     val enrichedTweets = Clump.traverse(1, 2, 3) { tweetId =>
-        for {
-          tweet <- tweets.get(tweetId)
-          user <- users.get(tweet.userId)
-        } yield (tweet, user)
-      }
+      for {
+        tweet <- tweets.get(tweetId)
+        user <- users.get(tweet.userId)
+      } yield (tweet, user)
+    }
+
+    Await.result(enrichedTweets.get) ==== Some(List(
+      (Tweet("Tweet1", 10), User(10, "User10")),
+      (Tweet("Tweet2", 20), User(20, "User20")),
+      (Tweet("Tweet3", 30), User(30, "User30"))))
+  }
+
+  "A Clump should batch calls to parameterized services" in {
+    val parameterizedTweetRepositoryMock = mock[ParameterizedTweetRepository]
+    val tweets = Clump.source(parameterizedTweetRepositoryMock.tweetsFor _)
+
+    val parameterizedUserRepositoryMock = mock[ParameterizedUserRepository]
+    val users = Clump.source(parameterizedUserRepositoryMock.usersFor _)(_.userId)
+
+    parameterizedTweetRepositoryMock.tweetsFor("foo", Set(1, 2, 3)) returns
+      Future.value(Map(
+        1L -> Tweet("Tweet1", 10),
+        2L -> Tweet("Tweet2", 20),
+        3L -> Tweet("Tweet3", 30)
+      ))
+
+    parameterizedUserRepositoryMock.usersFor("bar", Set(10, 20, 30)) returns
+      Future.value(Set(
+        User(10, "User10"),
+        User(20, "User20"),
+        User(30, "User30")
+      ))
+
+    val enrichedTweets = Clump.traverse(1, 2, 3) { tweetId =>
+      for {
+        tweet <- tweets.get("foo", tweetId)
+        user <- users.get("bar", tweet.userId)
+      } yield (tweet, user)
+    }
 
     Await.result(enrichedTweets.get) ==== Some(List(
       (Tweet("Tweet1", 10), User(10, "User10")),
@@ -162,10 +196,18 @@ class TweetRepository {
   }
 }
 
+trait ParameterizedTweetRepository {
+  def tweetsFor(prefix: String, ids: Set[Long]): Future[Map[Long, Tweet]]
+}
+
 class UserRepository {
   def usersFor(ids: Set[Long]): Future[Map[Long, User]] = {
     Future.value(ids.map(id => id -> User(id, s"User$id")).toMap)
   }
+}
+
+trait ParameterizedUserRepository {
+  def usersFor(prefix: String, ids: Set[Long]): Future[Set[User]]
 }
 
 class ZipUserRepository {

@@ -22,7 +22,7 @@ class ClumpSourceSpec extends Spec {
   }
 
   "fetches an individual clump" in new Context {
-    val source = Clump.sourceFrom(repo.fetch _)
+    val source = Clump.source(repo.fetch _)
 
     when(repo.fetch(Set(1))).thenReturn(Future(Map(1 -> 2)))
 
@@ -35,7 +35,7 @@ class ClumpSourceSpec extends Spec {
   "fetches multiple clumps" >> {
 
     "using list" in new Context {
-      val source = Clump.sourceFrom(repo.fetch _)
+      val source = Clump.source(repo.fetch _)
 
       when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
 
@@ -50,7 +50,7 @@ class ClumpSourceSpec extends Spec {
 
   "can be used as a non-singleton" >> {
     "without values from the outer scope" in new Context {
-      def source = Clump.sourceFrom(repo.fetch _)
+      def source = Clump.source(repo.fetch _)
 
       when(repo.fetch(Set(1))).thenReturn(Future(Map(1 -> 2)))
 
@@ -69,7 +69,7 @@ class ClumpSourceSpec extends Spec {
 
     "with values from the outer scope" in new Context {
       val scope = 1
-      def source = Clump.sourceFrom((inputs: Set[Int]) => repo.fetchWithScope(scope, inputs))
+      def source = Clump.source((inputs: Set[Int]) => repo.fetchWithScope(scope, inputs))
 
       when(repo.fetchWithScope(scope, Set(1))).thenReturn(Future(Map(1 -> 2)))
 

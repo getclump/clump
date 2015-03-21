@@ -171,8 +171,8 @@ Example usage of Clump:
 import io.getclump.Clump
 
 // Creates sources using the batched interfaces
-val tracksSource = Clump.source(tracksService.fetch)(_.id)
-val usersSource = Clump.source(usersService.fetch)(_.id)
+val tracksSource = Clump.source(tracksService.fetch _)(_.id)
+val usersSource = Clump.source(usersService.fetch _)(_.id)
 
 def renderTrackPosts(userId: Long) = {
 
@@ -227,7 +227,7 @@ The ```Clump.source``` method accepts a function that may return less elements t
 ```scala
 def fetch(ids: List[Int]): Future[List[User]] = ...
 
-val usersSource = Clump.source(fetch)(_.id)
+val usersSource = Clump.source(fetch _)(_.id)
 ```
 
 It is possible to create sources that have additional inputs, but the compiler isn't capable of inferring the input type for these cases. The solution is to use an explicit generic:
@@ -252,7 +252,7 @@ The ```Clump.sourceFrom``` method accepts a function that returns a ```Map``` wi
 ```scala
 def fetch(ids: List[Int]): Future[Map[Int, User]] = ...
 
-val usersSource = Clump.sourceFrom(fetch)
+val usersSource = Clump.sourceFrom(fetch _)
 ```
 
 It is also possible to specify additional inputs for ```Clump.sourceFrom```:
@@ -525,8 +525,8 @@ Take some time to read the code of these classes. It will help to have a broader
 Lets see what happens when this example is executed:
 
 ```scala
-val usersSource = Clump.source(usersService.fetch)(_.id)
-val tracksSource = Clump.source(tracksService.fetch)(_.id)
+val usersSource = Clump.source(usersService.fetch _)(_.id)
+val tracksSource = Clump.source(tracksService.fetch _)(_.id)
 
 val clump: Clump[List[EnrichedTrack]] =
     Clump.traverse(trackIds) { trackId =>
@@ -544,8 +544,8 @@ val tracks: Future[List[Track]] = clump.list
 ## Sources creation
 
 ```scala
-val usersSource = Clump.source(usersService.fetch)(_.id)
-val tracksSource = Clump.source(tracksService.fetch)(_.id)
+val usersSource = Clump.source(usersService.fetch _)(_.id)
+val tracksSource = Clump.source(tracksService.fetch _)(_.id)
 ```
 
 The ```ClumpSource``` instances are created using one of the shortcuts that the ```Clump``` object [provides](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L112). They don't hold any state and allow to create Clump instances representing the [fetch](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/ClumpSource.scala#L18). Clump uses the fetch function's [identity](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/FunctionIdentity.scala) to group requests and perform batched fetches, so it is possible to have multiple instances of the same source within a clump composition and execution.
