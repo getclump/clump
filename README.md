@@ -220,7 +220,7 @@ The final result can be ```notFound``` because the user can be found or not.
 
 Sources represent the remote systems' batched interfaces. Clump offers some methods to create sources using different strategies.
 
-### Clump.source ###
+### Source a fetch function with key-extractor ###
 
 The ```Clump.source``` method accepts a function that may return less elements than requested. The output can also be in a different order than the inputs, since the last parameter is a function that allows Clump to determine which is the input for each output.
 
@@ -228,50 +228,44 @@ The ```Clump.source``` method accepts a function that may return less elements t
 def fetch(ids: List[Int]): Future[List[User]] = ...
 
 val usersSource = Clump.source(fetch _)(_.id)
+
+val userClump = usersSource.get(id)
 ```
 
-It is possible to create sources that have additional inputs, but the compiler isn't capable of inferring the input type for these cases. The solution is to use an explicit generic:
+### Source a fetch function that returns a Map ###
 
-```scala
-def fetch(session: UserSession, ids: List[Int]): Future[List[User]] = ...
-
-def usersSource(session: UserSession) = 
-    Clump.source[List[Int]](fetch(session, _))(_.id)
-```
-
-Without the explicit generic, the compiler outputs this error message:
-
-```
-missing parameter type for expanded function ((x$1) => fetch(1, x$1))
-```
-
-### Clump.sourceFrom ###
-
-The ```Clump.sourceFrom``` method accepts a function that returns a ```Map``` with the values for the found inputs.
+The ```Clump.source``` method accepts a function that returns a ```Map``` with the values for the found inputs.
 
 ```scala
 def fetch(ids: List[Int]): Future[Map[Int, User]] = ...
 
-val usersSource = Clump.sourceFrom(fetch _)
+val usersSource = Clump.source(fetch _)
+
+val userClump = usersSource.get(id)
 ```
 
-It is also possible to specify additional inputs for ```Clump.sourceFrom```:
-
-```scala
-def fetch(session: UserSession, ids: List[Int]): Future[Map[Int, User]] = ...
-
-def usersSource(session: UserSession) = 
-    Clump.sourceFrom[List[Int]](fetch(session, _))
-```
-
-### Clump.sourceZip ###
+### Source a fetch function and zip the inputs with the result ###
 
 The ```Clump.sourceZip``` methods accepts a function that produces a list of outputs for each provided input. The result must keep the same order as the inputs list.
 
 ```scala
 def fetch(ids: List[Int]): Future[List[User]] = ...
 
-val usersSource = Clump.sourceZip(fetch)
+val usersSource = Clump.sourceZip(fetch _)
+
+val userClump = usersSource.get(id)
+```
+
+### Source a fetch function with parameters ###
+
+For the three sourcing options above, it is possible to create sources that have up to four additional parameters, with the resulting `ClumpSource` accepting each parameter and a singular input. There is a restriction that the inputs must be the last parameter of the fetch function.
+
+```scala
+def fetch(session: UserSession, ids: List[Int]): Future[List[User]] = ...
+
+def usersSource(session: UserSession) = Clump.source(fetch _)(_.id)
+
+val userClump = usersSource.get(session, id)
 ```
 
 ### Additional configurations ###
@@ -279,14 +273,14 @@ val usersSource = Clump.sourceZip(fetch)
 Some services have a limitation on how many resources can be fetched in a single request. It is possible to define this limit for each source instance:
 
 ```scala
-val usersSource = Clump.sourceZip(fetch).maxBatchSize(100)
+val usersSource = Clump.sourceZip(fetch _).maxBatchSize(100)
 ```
 
 The source instance can be also configured to automatically retry failed fetches by using the ```maxRetries``` method. It receives a partial function that defines the number of retries for each type of exception. The default number of retries is zero.
 
 ```scala
 val usersSource = 
-    Clump.sourceZip(fetch).maxRetries {
+    Clump.sourceZip(fetch _).maxRetries {
       case e: SomeException => 10
     }
 ```
