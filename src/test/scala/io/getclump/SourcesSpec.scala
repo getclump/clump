@@ -5,7 +5,7 @@ import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
-class ClumpSourceFactorySpec extends Spec {
+class SourcesSpec extends Spec {
 
   "creates a clump source" >> {
     "set input" in {
