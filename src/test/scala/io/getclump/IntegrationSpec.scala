@@ -15,8 +15,8 @@ class IntegrationSpec extends Spec {
   val likeRepository = new LikeRepository
   val trackRepository = new TrackRepository
 
-  val tweets = Clump.sourceFrom(tweetRepository.tweetsFor _)
-  val users = Clump.sourceFrom(userRepository.usersFor _)
+  val tweets = Clump.source(tweetRepository.tweetsFor _)
+  val users = Clump.source(userRepository.usersFor _)
   val filteredUsers = Clump.source(filteredUserRepository.usersFor _) { _.userId }
   val zippedUsers = Clump.sourceZip(zipUserRepository.usersFor)
   val timelines = Clump.source(timelineRepository.timelinesFor _) { _.timelineId }
@@ -25,10 +25,10 @@ class IntegrationSpec extends Spec {
 
   "A Clump should batch calls to services" in {
     val tweetRepositoryMock = mock[TweetRepository]
-    val tweets = Clump.sourceFrom(tweetRepositoryMock.tweetsFor _)
+    val tweets = Clump.source(tweetRepositoryMock.tweetsFor _)
 
     val userRepositoryMock = mock[UserRepository]
-    val users = Clump.sourceFrom(userRepositoryMock.usersFor _)
+    val users = Clump.source(userRepositoryMock.usersFor _)
 
     tweetRepositoryMock.tweetsFor(Set(1L,2L,3L)) returns
     Future.value(Map(

@@ -15,45 +15,40 @@ class ClumpSourceFactorySpec extends Spec {
   "creates a clump source (ClumpSource.from)" >> {
     "set input" in {
       def fetch(inputs: Set[Int]) = Future.value(inputs.map(i => i -> i.toString).toMap)
-      val source = Clump.sourceFrom(fetch _)
+      val source = Clump.source(fetch _)
       clumpResult(source.get(1)) mustEqual Some("1")
     }
     "list input" in {
       def fetch(inputs: List[Int]) = Future.value(inputs.map(i => i -> i.toString).toMap)
-      val source = Clump.sourceFrom(fetch _)
-      clumpResult(source.get(1)) mustEqual Some("1")
-    }
-    "iterable output" in {
-      def fetch(inputs: Set[Int]) = Future.value(inputs.map(i => i -> i.toString))
-      val source = Clump.sourceFrom(fetch _)
+      val source = Clump.source(fetch _)
       clumpResult(source.get(1)) mustEqual Some("1")
     }
     "extra params" >> {
       "one" in {
         def fetch(param1: Int, values: List[Int]) =
           Future(values.map(v => v -> v * param1).toMap)
-        val source = Clump.sourceFrom(fetch _)
+        val source = Clump.source(fetch _)
         val clump = Clump.collect(source.get(2, 3), source.get(2, 4), source.get(3, 5))
         clumpResult(clump) mustEqual Some(List(6, 8, 15))
       }
       "two" in {
         def fetch(param1: Int, param2: String, values: List[Int]) =
           Future(values.map(v => v -> List(param1, param2, v)).toMap)
-        val source = Clump.sourceFrom(fetch _)
+        val source = Clump.source(fetch _)
         val clump = Clump.collect(source.get(1, "2", 3), source.get(1, "2", 4), source.get(2, "3", 5))
         clumpResult(clump) mustEqual Some(List(List(1, "2", 3), List(1, "2", 4), List(2, "3", 5)))
       }
       "three" in {
         def fetch(param1: Int, param2: String, param3: List[String], values: List[Int]) =
           Future(values.map(v => v -> List(param1, param2, param3, v)).toMap)
-        val source = Clump.sourceFrom(fetch _)
+        val source = Clump.source(fetch _)
         val clump = Clump.collect(source.get(1, "2", List("a"), 3), source.get(1, "2", List("a"), 4), source.get(2, "3", List("b"), 5))
         clumpResult(clump) mustEqual Some(List(List(1, "2", List("a"), 3), List(1, "2", List("a"), 4), List(2, "3", List("b"), 5)))
       }
       "four" in {
         def fetch(param1: Int, param2: String, param3: List[String], param4: Boolean, values: List[Int]) =
           Future(values.map(v => v -> List(param1, param2, param3, param4, v)).toMap)
-        val source = Clump.sourceFrom(fetch _)
+        val source = Clump.source(fetch _)
         val clump = Clump.collect(source.get(1, "2", List("a"), true, 3), source.get(1, "2", List("a"), true, 4), source.get(2, "3", List("b"), false, 5))
         clumpResult(clump) mustEqual Some(List(List(1, "2", List("a"), true, 3), List(1, "2", List("a"), true, 4), List(2, "3", List("b"), false, 5)))
       }
@@ -73,15 +68,13 @@ class ClumpSourceFactorySpec extends Spec {
     }
     "extra params" >> {
       "one" in {
-        def fetch(param1: Int, values: List[Int]) =
-          Future(values.map((param1, _)))
+        def fetch(param1: Int, values: List[Int]) = Future(values.map((param1, _)))
         val source = Clump.source(fetch _)(_._2)
         val clump = Clump.collect(source.get(2, 3), source.get(2, 4), source.get(3, 5))
         clumpResult(clump) mustEqual Some(List((2, 3), (2, 4), (3, 5)))
       }
       "two" in {
-        def fetch(param1: Int, param2: String, values: List[Int]) =
-          Future(values.map((param1, param2, _)))
+        def fetch(param1: Int, param2: String, values: List[Int]) = Future(values.map((param1, param2, _)))
         val source = Clump.source(fetch _)(_._3)
         val clump = Clump.collect(source.get(1, "2", 3), source.get(1, "2", 4), source.get(2, "3", 5))
         clumpResult(clump) mustEqual Some(List((1, "2", 3), (1, "2", 4), (2, "3", 5)))
@@ -145,8 +138,8 @@ class ClumpSourceFactorySpec extends Spec {
     def testSource(source: ClumpSource[Int, String]) =
       clumpResult(source.get(List(1, 2))) mustEqual Some(List("1", "2"))
 
-    testSource(Clump.sourceFrom(setToMap))
-    testSource(Clump.sourceFrom(listToMap))
-    testSource(Clump.sourceFrom(iterableToMap))
+    testSource(Clump.source(setToMap))
+    testSource(Clump.source(listToMap))
+    testSource(Clump.source(iterableToMap))
   }
 }

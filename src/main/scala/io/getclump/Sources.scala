@@ -26,23 +26,23 @@ trait Sources extends Tuples {
                                      (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, B, C, D, K), V] =
     new ClumpSource(FunctionIdentity(fetch), parametrizeFetch(normalize4, denormalize4[A, B, C, D, K], fetch4(fetch), keyExtractor))
 
-  def sourceFrom[KS, K, V](fetch: KS => Future[Iterable[(K, V)]])
+  def source[KS, K, V](fetch: KS => Future[Map[K, V]])
                          (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[K, V] =
     new ClumpSource(FunctionIdentity(fetch), adaptOutput(adaptInput(fetch)))
 
-  def sourceFrom[A, KS, K, V](fetch: (A, KS) => Future[Iterable[(K, V)]])
+  def source[A, KS, K, V](fetch: (A, KS) => Future[Map[K, V]])
                              (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, K), V] =
     new ClumpSource(FunctionIdentity(fetch), parametrizeFetchFrom(normalize1, denormalize1[A, K], fetch1(fetch)))
 
-  def sourceFrom[A, B, KS, K, V](fetch: (A, B, KS) => Future[Iterable[(K, V)]])
+  def source[A, B, KS, K, V](fetch: (A, B, KS) => Future[Map[K, V]])
                                  (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, B, K), V] =
     new ClumpSource(FunctionIdentity(fetch), parametrizeFetchFrom(normalize2, denormalize2[A, B, K], fetch2(fetch)))
 
-  def sourceFrom[A, B, C, KS, K, V](fetch: (A, B, C, KS) => Future[Iterable[(K, V)]])
+  def source[A, B, C, KS, K, V](fetch: (A, B, C, KS) => Future[Map[K, V]])
                                      (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, B, C, K), V] =
     new ClumpSource(FunctionIdentity(fetch), parametrizeFetchFrom(normalize3, denormalize3[A, B, C, K], fetch3(fetch)))
 
-  def sourceFrom[A, B, C, D, KS, K, V](fetch: (A, B, C, D, KS) => Future[Iterable[(K, V)]])
+  def source[A, B, C, D, KS, K, V](fetch: (A, B, C, D, KS) => Future[Map[K, V]])
                                          (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, B, C, D, K), V] =
     new ClumpSource(FunctionIdentity(fetch), parametrizeFetchFrom(normalize4, denormalize4[A, B, C, D, K], fetch4(fetch)))
 
