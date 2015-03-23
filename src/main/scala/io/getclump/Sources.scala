@@ -4,7 +4,7 @@ import com.twitter.util.Future
 
 import scala.collection.generic.CanBuildFrom
 
-trait Sources extends Tuples {
+protected[getclump] trait Sources extends Tuples {
 
   def source[KS, V, K](fetch: KS => Future[Iterable[V]])(keyExtractor: V => K)
                       (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[K, V] =
@@ -90,7 +90,7 @@ trait Sources extends Tuples {
       listOutputs.map(listInputs.zip(_).toMap)
     }
 
-  private[this] def zipped[T, U](fetch: List[T] => Future[List[U]]) = {
+  private def zipped[T, U](fetch: List[T] => Future[List[U]]) = {
     val zip: List[T] => Future[Map[T, U]] = { inputs =>
       fetch(inputs).map(inputs.zip(_).toMap)
     }
@@ -98,16 +98,16 @@ trait Sources extends Tuples {
     setToList.andThen(zip)
   }
 
-  private[this] def extractKeys[T, U](fetch: Set[T] => Future[Iterable[U]], keyExtractor: U => T) =
+  private def extractKeys[T, U](fetch: Set[T] => Future[Iterable[U]], keyExtractor: U => T) =
     fetch.andThen(_.map(resultsToKeys(keyExtractor, _)))
 
-  private[this] def resultsToKeys[U, T](keyExtractor: (U) => T, results: Iterable[U]) =
+  private def resultsToKeys[U, T](keyExtractor: (U) => T, results: Iterable[U]) =
     results.map(v => (keyExtractor(v), v)).toMap
 
-  private[this] def adaptInput[T, C, R](fetch: C => Future[R])(implicit cbf: CanBuildFrom[Nothing, T, C]) =
+  private def adaptInput[T, C, R](fetch: C => Future[R])(implicit cbf: CanBuildFrom[Nothing, T, C]) =
     (c: Set[T]) => fetch(cbf.apply().++=(c).result())
 
-  private[this] def adaptOutput[T, U, C](fetch: C => Future[Iterable[(T, U)]]) =
+  private def adaptOutput[T, U, C](fetch: C => Future[Iterable[(T, U)]]) =
     fetch.andThen(_.map(_.toMap))
 
 }

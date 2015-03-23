@@ -1,6 +1,6 @@
 package io.getclump
 
-trait Joins {
+protected[getclump] trait Joins {
   def join[A, B](a: Clump[A], b: Clump[B]): Clump[(A, B)] =
     a.join(b)
 
