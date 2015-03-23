@@ -21,7 +21,7 @@ class ClumpFetcherSpec extends Spec {
   }
 
   "memoizes the results of previous fetches" in new Context {
-    val source = Clump.sourceFrom(repo.fetch)
+    val source = Clump.source(repo.fetch _)
 
     when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
     when(repo.fetch(Set(3))).thenReturn(Future(Map(3 -> 30)))
@@ -40,7 +40,7 @@ class ClumpFetcherSpec extends Spec {
   }
 
   "limits the batch size" in new Context {
-    val source = Clump.sourceFrom(repo.fetch).maxBatchSize(2)
+    val source = Clump.source(repo.fetch _).maxBatchSize(2)
 
     when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
     when(repo.fetch(Set(3))).thenReturn(Future(Map(3 -> 30)))
@@ -57,7 +57,7 @@ class ClumpFetcherSpec extends Spec {
   "retries failed fetches" >> {
     "success (below the retries limit)" in new Context {
       val source =
-        Clump.sourceFrom(repo.fetch).maxRetries {
+        Clump.source(repo.fetch _).maxRetries {
           case e: IllegalStateException => 1
         }
 
@@ -73,7 +73,7 @@ class ClumpFetcherSpec extends Spec {
 
     "failure (above the retries limit)" in new Context {
       val source =
-        Clump.sourceFrom(repo.fetch).maxRetries {
+        Clump.source(repo.fetch _).maxRetries {
           case e: IllegalStateException => 1
         }
 
