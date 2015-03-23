@@ -61,36 +61,36 @@ protected[getclump] trait Sources extends Tuples {
   def sourceZip[A, B, C, D, K, V](fetch: (A, B, C, D, List[K]) => Future[List[V]]): ClumpSource[(A, B, C, D, K), V] =
     new ClumpSource(FunctionIdentity(fetch), parameterizeFetchZip(normalize4, fetch4(fetch)))
 
-  private def parameterizeFetch[I, P, O, T, C](normalize: I => (P, T), denormalize: (P, T) => I, fetch: (P, C) => Future[Iterable[O]], extractKey: O => T)
-                                              (implicit cbf: CanBuildFrom[Nothing, T, C]): Set[I] => Future[Map[I, O]] =
+  private[this] def parameterizeFetch[I, P, O, T, C](normalize: I => (P, T), denormalize: (P, T) => I, fetch: (P, C) => Future[Iterable[O]], extractKey: O => T)
+                                                    (implicit cbf: CanBuildFrom[Nothing, T, C]): Set[I] => Future[Map[I, O]] =
     parameterizeFetch[I, P, O, T, C](normalize, denormalize, fetch = (params: P, coll: C) => fetch(params, coll).map(_.map(v => extractKey(v) -> v).toMap))
 
-  private def parameterizeFetch[I, P, O, T, C](normalize: I => (P, T), denormalize: (P, T) => I, fetch: (P, C) => Future[Iterable[(T, O)]])
-                                                  (implicit cbf: CanBuildFrom[Nothing, T, C]): Set[I] => Future[Map[I, O]] =
+  private[this] def parameterizeFetch[I, P, O, T, C](normalize: I => (P, T), denormalize: (P, T) => I, fetch: (P, C) => Future[Iterable[(T, O)]])
+                                                    (implicit cbf: CanBuildFrom[Nothing, T, C]): Set[I] => Future[Map[I, O]] =
     (inputs: Set[I]) => {
       val futures =
-        inputs.map(normalize).groupBy(_._1).map {
-          case (params, values) =>
-            fetch(params, cbf.apply().++=(values.map(_._2)).result()).map {
-              _.map(kv => denormalize(params, kv._1) -> kv._2)
+        inputs.map(normalize).groupBy { case (params, _) => params }.map {
+          case (params, paramsAndKeys) =>
+            fetch(params, cbf.apply().++=(paramsAndKeys.map { case (_, keys) => keys }).result()).map {
+              _.map { case (key, value) => denormalize(params, key) -> value }
             }
         }.toSeq
       Future.collect(futures).map(_.reduce(_ ++ _).toMap)
     }
 
-  private def parameterizeFetchZip[I, P, O, T](normalize: I => (P, T), fetch: (P, List[T]) => Future[Iterable[O]]): Set[I] => Future[Map[I, O]] =
+  private[this] def parameterizeFetchZip[I, P, O, T](normalize: I => (P, T), fetch: (P, List[T]) => Future[Iterable[O]]): Set[I] => Future[Map[I, O]] =
     (inputs: Set[I]) => {
       val listInputs = inputs.toList
       val futures =
-        listInputs.map(normalize).groupBy(_._1).map {
-          case (params, values) =>
-            fetch(params, values.map(_._2))
+        listInputs.map(normalize).groupBy { case (params, _) => params }.map {
+          case (params, paramsAndKeys) =>
+            fetch(params, paramsAndKeys.map { case (_, keys) => keys })
         }.toSeq
       val listOutputs = Future.collect(futures).map(_.reduce(_ ++ _)).map(_.toList)
       listOutputs.map(listInputs.zip(_).toMap)
     }
 
-  private def zipped[T, U](fetch: List[T] => Future[List[U]]) = {
+  private[this] def zipped[T, U](fetch: List[T] => Future[List[U]]) = {
     val zip: List[T] => Future[Map[T, U]] = { inputs =>
       fetch(inputs).map(inputs.zip(_).toMap)
     }
@@ -98,16 +98,16 @@ protected[getclump] trait Sources extends Tuples {
     setToList.andThen(zip)
   }
 
-  private def extractKeys[T, U](fetch: Set[T] => Future[Iterable[U]], keyExtractor: U => T) =
+  private[this] def extractKeys[T, U](fetch: Set[T] => Future[Iterable[U]], keyExtractor: U => T) =
     fetch.andThen(_.map(resultsToKeys(keyExtractor, _)))
 
-  private def resultsToKeys[U, T](keyExtractor: (U) => T, results: Iterable[U]) =
+  private[this] def resultsToKeys[U, T](keyExtractor: (U) => T, results: Iterable[U]) =
     results.map(v => (keyExtractor(v), v)).toMap
 
-  private def adaptInput[T, C, R](fetch: C => Future[R])(implicit cbf: CanBuildFrom[Nothing, T, C]) =
+  private[this] def adaptInput[T, C, R](fetch: C => Future[R])(implicit cbf: CanBuildFrom[Nothing, T, C]) =
     (c: Set[T]) => fetch(cbf.apply().++=(c).result())
 
-  private def adaptOutput[T, U, C](fetch: C => Future[Iterable[(T, U)]]) =
+  private[this] def adaptOutput[T, U, C](fetch: C => Future[Iterable[(T, U)]]) =
     fetch.andThen(_.map(_.toMap))
 
 }
