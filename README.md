@@ -735,4 +735,4 @@ Clump adheres to Semantic Versioning 2.0.0. If there is a violation of this sche
 
 # License #
 
-See the [LICENSE-LGPL](https://github.com/getclump/clump/blob/master/LICENSE-LGPL.txt) file for details.
+See the [LICENSE](https://github.com/getclump/clump/blob/master/LICENSE.txt) file for details.
