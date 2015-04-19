@@ -9,8 +9,19 @@ import scala.util.Success
 import com.twitter.util.{Future => TwitterFuture}
 import com.twitter.util.{Promise => TwitterPromise}
 
+/**
+ * Provides bidirectional implicit conversions between Twitter Futures and Scala Futures
+ *
+ * Usage:
+ * {{{
+ *   import io.getclump.FutureBridge._
+ * }}}
+ */
 object FutureBridge {
 
+  /**
+   * Convert a Twitter Future to a Scala Future
+   */
   implicit def twitterToScala[T](future: TwitterFuture[T]): ScalaFuture[T] = {
     val promise = ScalaPromise[T]()
     future.onSuccess(promise.success)
@@ -18,6 +29,9 @@ object FutureBridge {
     promise.future
   }
 
+  /**
+   * Convert a Scala Future to a Twitter Future given an execution context
+   */
   implicit def scalaToTwitter[T](future: ScalaFuture[T])(implicit ctx: ExecutionContext): TwitterFuture[T] = {
     val promise = TwitterPromise[T]()
     future.onComplete {
