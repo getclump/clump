@@ -13,6 +13,8 @@ import org.specs2.runner.JUnitRunner
 class ClumpExecutionSpec extends Spec {
 
   trait Context extends Scope {
+    implicit val context = new ClumpContext
+
     val source1Fetches = ListBuffer[Set[Int]]()
     val source2Fetches = ListBuffer[Set[Int]]()
 

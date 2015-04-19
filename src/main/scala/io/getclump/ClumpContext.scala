@@ -1,10 +1,12 @@
 package io.getclump
 
+import scala.annotation.implicitNotFound
 import scala.collection.mutable.HashMap
 
 import com.twitter.util.Future
 import com.twitter.util.Local
 
+@implicitNotFound("Cannot find an implicit ClumpContext, either import io.getclump.ClumpContext.Implicits.default to get from ThreadLocal or use a custom one")
 private[getclump] final class ClumpContext {
 
   private[this] val fetchers =
@@ -45,14 +47,18 @@ private[getclump] final class ClumpContext {
     }.distinct
 }
 
-private[getclump] object ClumpContext {
+object ClumpContext {
 
   private[this] val local = new Local[ClumpContext]
 
-  def apply(): ClumpContext =
-    local().getOrElse {
-      val context = new ClumpContext
-      local.set(Some(context))
-      context
-    }
+  def default: ClumpContext = Implicits.default
+
+  object Implicits {
+    implicit def default: ClumpContext =
+      local().getOrElse {
+        val context = new ClumpContext
+        local.set(Some(context))
+        context
+      }
+  }
 }

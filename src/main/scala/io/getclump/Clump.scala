@@ -9,8 +9,6 @@ import scala.reflect.ClassTag
 
 sealed trait Clump[+T] {
 
-  private[this] val context = ClumpContext()
-
   /**
    * Create a new clump by applying a function to the result of this clump
    */
@@ -56,6 +54,7 @@ sealed trait Clump[+T] {
    */
   def optional: Clump[Option[T]] = new ClumpOptional(this)
 
+<<<<<<< HEAD
   /**
    * A utility method for automatically unwrapping the underlying value
    * @throws NoSuchElementException if the underlying value is not defined
@@ -78,6 +77,16 @@ sealed trait Clump[+T] {
    * than requested.
    */
   def get: Future[Option[T]] =
+=======
+  def apply()(implicit context: ClumpContext): Future[T] = get.map(_.get)
+
+  def getOrElse[B >: T](default: => B)(implicit context: ClumpContext): Future[B] = get.map(_.getOrElse(default))
+
+  def list[B >: T](implicit context: ClumpContext, cbf: CanBuildFrom[Nothing, Nothing, B]): Future[B] =
+    get.map(_.getOrElse(cbf().result))
+
+  def get(implicit context: ClumpContext): Future[Option[T]] =
+>>>>>>> Allow ClumpContext to be passed in explictly instead of using ThreadLocal
     context
       .flush(List(this))
       .flatMap { _ =>

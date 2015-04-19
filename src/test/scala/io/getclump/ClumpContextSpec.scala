@@ -15,12 +15,12 @@ class ClumpContextSpec extends Spec {
       context.fetcherFor(source)
   }
 
-  "is stored using a local value" >> {
+  "default context is stored using a local value" >> {
 
     "that is propagated to downstream futures" in {
       Await.result {
-        Future.value(ClumpContext()).map {
-          _ mustEqual ClumpContext()
+        Future.value(ClumpContext.default).map {
+          _ mustEqual ClumpContext.default
         }
       }
     }
@@ -28,7 +28,7 @@ class ClumpContextSpec extends Spec {
     "that is created for each new execution context" in {
       def context =
         Future.Unit.map { _ =>
-          ClumpContext()
+          ClumpContext.default
         }
       Await.result(context) mustNotEqual
         Await.result(context)
