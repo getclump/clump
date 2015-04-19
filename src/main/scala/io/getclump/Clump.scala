@@ -132,9 +132,19 @@ object Clump extends Joins with Sources {
   def value[T](value: Option[T]): Clump[T] = future(Future.value(value))
 
   /**
+  * Alias for [[value]]
+  */
+  def successful[T](value: T): Clump[T] = this.value(value)
+
+  /**
    * Create a failed clump with the given exception
    */
   def exception[T](exception: Throwable): Clump[T] = future(Future.exception(exception))
+
+  /**
+   * Alias for [[exception]]
+   */
+  def failed[T](exception: Throwable): Clump[T] = this.exception(exception)
 
   /**
    * Create a clump whose value will be the result of the inputted future
