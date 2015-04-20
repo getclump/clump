@@ -122,6 +122,16 @@ object Clump extends Joins with Sources {
   def empty[T]: Clump[T] = value(scala.None)
 
   /**
+   * Alias for [[value]]
+   */
+  def apply[T](value: T): Clump[T] = this.value(value)
+
+  /**
+   * Alias for [[value]]
+   */
+  def apply[T](value: Option[T]): Clump[T] = this.value(value)
+
+  /**
    * The unit method: create a clump whose value has already been resolved to the input
    */
   def value[T](value: T): Clump[T] = future(Future.value(Option(value)))
