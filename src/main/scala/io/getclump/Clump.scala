@@ -127,11 +127,6 @@ object Clump extends Joins with Sources {
   def apply[T](value: => T): Clump[T] = this.value(value)
 
   /**
-   * Alias for [[value]] except that it propagates exceptions inside a clump instance
-   */
-  def apply[T](value: => Option[T]): Clump[T] = this.value(value)
-
-  /**
    * The unit method: create a clump whose value has already been resolved to the input
    */
   def value[T](value: T): Clump[T] = future(Future.value(Option(value)))
