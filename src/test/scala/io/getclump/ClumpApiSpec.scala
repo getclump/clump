@@ -209,6 +209,30 @@ class ClumpApiSpec extends Spec {
           clumpResult(clump) must throwA[NullPointerException]
         }
       }
+
+      "using a function that recovers using a new value (clump.fallback) on any exception" >> {
+        "exception happens" in {
+          val clump = Clump.exception(new IllegalStateException).fallback(Some(1))
+          clumpResult(clump) mustEqual Some(1)
+        }
+
+        "exception doesn't happen" in {
+          val clump = Clump.value(1).fallback(Some(2))
+          clumpResult(clump) mustEqual Some(1)
+        }
+      }
+
+      "using a function that recovers using a new clump (clump.fallback) on any exception" >> {
+        "exception happens" in {
+          val clump = Clump.exception(new IllegalStateException).fallbackTo(Clump.value(1))
+          clumpResult(clump) mustEqual Some(1)
+        }
+
+        "exception doesn't happen" in {
+          val clump = Clump.value(1).fallbackTo(Clump.value(2))
+          clumpResult(clump) mustEqual Some(1)
+        }
+      }
     }
 
     "can have its result filtered (clump.filter)" in {
@@ -225,6 +249,15 @@ class ClumpApiSpec extends Spec {
     }
 
     "allows to defined a fallback value (clump.orElse)" >> {
+      "undefined" in {
+        clumpResult(Clump.empty.orElse(1)) ==== Some(1)
+      }
+      "defined" in {
+        clumpResult(Clump.value(Some(1)).orElse(2)) ==== Some(1)
+      }
+    }
+
+    "allows to defined a fallback clump (clump.orElse)" >> {
       "undefined" in {
         clumpResult(Clump.empty.orElse(Clump.value(1))) ==== Some(1)
       }
