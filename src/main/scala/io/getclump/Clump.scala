@@ -54,39 +54,28 @@ sealed trait Clump[+T] {
    */
   def optional: Clump[Option[T]] = new ClumpOptional(this)
 
-<<<<<<< HEAD
   /**
    * A utility method for automatically unwrapping the underlying value
    * @throws NoSuchElementException if the underlying value is not defined
    */
-  def apply(): Future[T] = get.map(_.get)
+  def apply()(implicit context: ClumpContext): Future[T] = get.map(_.get)
 
   /**
    * Get the result of the clump or provide a fallback value in the case where the result is not defined
    */
-  def getOrElse[B >: T](default: => B): Future[B] = get.map(_.getOrElse(default))
+  def getOrElse[B >: T](default: => B)(implicit context: ClumpContext): Future[B] = get.map(_.getOrElse(default))
 
   /**
    * If the underlying value is a list, then this will return Nil instead of None when the result is not defined
    */
-  def list[B >: T](implicit cbf: CanBuildFrom[Nothing, Nothing, B]): Future[B] =
+  def list[B >: T](implicit context: ClumpContext, cbf: CanBuildFrom[Nothing, Nothing, B]): Future[B] =
     get.map(_.getOrElse(cbf().result))
 
   /**
    * Trigger execution of a clump. The result will not be defined if any of the clump sources returned less elements
    * than requested.
    */
-  def get: Future[Option[T]] =
-=======
-  def apply()(implicit context: ClumpContext): Future[T] = get.map(_.get)
-
-  def getOrElse[B >: T](default: => B)(implicit context: ClumpContext): Future[B] = get.map(_.getOrElse(default))
-
-  def list[B >: T](implicit context: ClumpContext, cbf: CanBuildFrom[Nothing, Nothing, B]): Future[B] =
-    get.map(_.getOrElse(cbf().result))
-
   def get(implicit context: ClumpContext): Future[Option[T]] =
->>>>>>> Allow ClumpContext to be passed in explictly instead of using ThreadLocal
     context
       .flush(List(this))
       .flatMap { _ =>
