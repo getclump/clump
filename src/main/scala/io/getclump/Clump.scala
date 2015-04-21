@@ -9,7 +9,7 @@ import scala.reflect.ClassTag
 
 sealed trait Clump[+T] {
 
-  private[this] implicit val defaultContext = ClumpContext.default
+  private[this] val defaultContext = implicitly[ClumpContext]
 
   /**
    * Create a new clump by applying a function to the result of this clump
@@ -60,24 +60,24 @@ sealed trait Clump[+T] {
    * A utility method for automatically unwrapping the underlying value
    * @throws NoSuchElementException if the underlying value is not defined
    */
-  def apply()(implicit context: ClumpContext): Future[T] = get.map(_.get)
+  def apply()(implicit context: ClumpContext = defaultContext): Future[T] = get.map(_.get)
 
   /**
    * Get the result of the clump or provide a fallback value in the case where the result is not defined
    */
-  def getOrElse[B >: T](default: => B)(implicit context: ClumpContext): Future[B] = get.map(_.getOrElse(default))
+  def getOrElse[B >: T](default: => B)(implicit context: ClumpContext = defaultContext): Future[B] = get.map(_.getOrElse(default))
 
   /**
    * If the underlying value is a list, then this will return Nil instead of None when the result is not defined
    */
-  def list[B >: T](implicit context: ClumpContext, cbf: CanBuildFrom[Nothing, Nothing, B]): Future[B] =
+  def list[B >: T](implicit context: ClumpContext = defaultContext, cbf: CanBuildFrom[Nothing, Nothing, B]): Future[B] =
     get.map(_.getOrElse(cbf().result))
 
   /**
    * Trigger execution of a clump. The result will not be defined if any of the clump sources returned less elements
    * than requested.
    */
-  def get(implicit context: ClumpContext): Future[Option[T]] =
+  def get(implicit context: ClumpContext = defaultContext): Future[Option[T]] =
     context
       .flush(List(this))
       .flatMap { _ =>
