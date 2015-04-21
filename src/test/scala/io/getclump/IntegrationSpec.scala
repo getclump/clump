@@ -4,7 +4,6 @@ import org.junit.runner.RunWith
 import com.twitter.util.Await
 import com.twitter.util.Future
 import org.specs2.runner.JUnitRunner
-import org.specs2.specification.Scope
 
 @RunWith(classOf[JUnitRunner])
 class IntegrationSpec extends Spec {
@@ -24,11 +23,7 @@ class IntegrationSpec extends Spec {
   val likes = Clump.source(likeRepository.likesFor _)(_.likeId)
   val tracks = Clump.source(trackRepository.tracksFor _)(_.trackId)
 
-  trait Context extends Scope {
-    implicit val context = new ClumpContext
-  }
-
-  "A Clump should batch calls to services" in new Context {
+  "A Clump should batch calls to services" in {
     val tweetRepositoryMock = mock[TweetRepository]
     val tweets = Clump.source(tweetRepositoryMock.tweetsFor _)
 
@@ -62,7 +57,7 @@ class IntegrationSpec extends Spec {
       (Tweet("Tweet3", 30), User(30, "User30"))))
   }
 
-  "A Clump should batch calls to parameterized services" in new Context {
+  "A Clump should batch calls to parameterized services" in {
     val parameterizedTweetRepositoryMock = mock[ParameterizedTweetRepository]
     val tweets = Clump.source(parameterizedTweetRepositoryMock.tweetsFor _)
 
@@ -96,7 +91,7 @@ class IntegrationSpec extends Spec {
       (Tweet("Tweet3", 30), User(30, "User30"))))
   }
 
-  "it should be able to be used in complex nested fetches" in new Context {
+  "it should be able to be used in complex nested fetches" in {
     val timelineIds = List(1, 3)
     val enrichedTimelines = Clump.traverse(timelineIds) { id =>
         for {
@@ -119,7 +114,7 @@ class IntegrationSpec extends Spec {
         (Like(60, List(600, 1200), List(6000, 12000)), List(Track(600, "Track600"), Track(1200, "Track1200")), List(User(6000, "User6000"), User(12000, "User12000")))))))
   }
 
-  "it should be usable with regular maps and flatMaps" in new Context {
+  "it should be usable with regular maps and flatMaps" in {
     val tweetIds = List(1L, 2L, 3L)
     val enrichedTweets: Clump[List[(Tweet, User)]] =
       Clump.traverse(tweetIds) { tweetId =>
@@ -133,7 +128,7 @@ class IntegrationSpec extends Spec {
       (Tweet("Tweet3", 30), User(30, "User30"))))
   }
 
-  "it should allow unwrapping Clumped lists with clump.list" in new Context {
+  "it should allow unwrapping Clumped lists with clump.list" in {
     val enrichedTweets: Clump[List[(Tweet, User)]] = Clump.traverse(1, 2, 3) { tweetId =>
       for {
         tweet <- tweets.get(tweetId)
@@ -147,7 +142,7 @@ class IntegrationSpec extends Spec {
       (Tweet("Tweet3", 30), User(30, "User30")))
   }
 
-  "it should work with Clump.sourceZip" in new Context {
+  "it should work with Clump.sourceZip" in {
     val enrichedTweets = Clump.traverse(1, 2, 3) { tweetId =>
       for {
         tweet <- tweets.get(tweetId)
@@ -161,7 +156,7 @@ class IntegrationSpec extends Spec {
       (Tweet("Tweet3", 30), User(30, "User30"))))
   }
 
-  "A Clump can have a partial result" in new Context {
+  "A Clump can have a partial result" in {
     val onlyFullObjectGraph: Clump[List[(Tweet, User)]] = Clump.traverse(1, 2, 3) { tweetId =>
       for {
         tweet <- tweets.get(tweetId)

@@ -9,6 +9,8 @@ import scala.reflect.ClassTag
 
 sealed trait Clump[+T] {
 
+  private[this] implicit val defaultContext = ClumpContext.default
+
   /**
    * Create a new clump by applying a function to the result of this clump
    */

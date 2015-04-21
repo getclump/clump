@@ -15,7 +15,7 @@ class ClumpContextSpec extends Spec {
       context.fetcherFor(source)
   }
 
-  "default context is stored using a local value" >> {
+  "is stored using a local value" >> {
 
     "that is propagated to downstream futures" in {
       Await.result {

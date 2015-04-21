@@ -13,8 +13,6 @@ import org.specs2.runner.JUnitRunner
 class ClumpFetcherSpec extends Spec {
 
   trait Context extends Scope {
-    implicit val context = new ClumpContext
-
     trait TestRepository {
       def fetch(inputs: Set[Int]): Future[Map[Int, Int]]
     }
