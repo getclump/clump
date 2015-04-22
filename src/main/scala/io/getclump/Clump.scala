@@ -124,7 +124,7 @@ object Clump extends Joins with Sources {
   /**
    * Alias for [[value]] except that it propagates exceptions inside a clump instance
    */
-  def apply[T](value: => T): Clump[T] = this.value(value)
+  def apply[T](value: => T): Clump[T] = try { this.value(value) } catch { case e: Throwable => this.exception(e) }
 
   /**
    * The unit method: create a clump whose value has already been resolved to the input

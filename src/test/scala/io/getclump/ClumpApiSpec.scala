@@ -33,8 +33,23 @@ class ClumpApiSpec extends Spec {
         }
       }
 
+      "from a value (Clump.apply)" >> {
+        "propogates exceptions" in {
+          val clump = Clump { throw new IllegalStateException }
+          clumpResult(clump) must throwA[IllegalStateException]
+        }
+
+        "no exception" in {
+          clumpResult(Clump(1)) mustEqual Some(1)
+        }
+      }
+
       "from a value (Clump.value)" in {
         clumpResult(Clump.value(1)) mustEqual Some(1)
+      }
+
+      "from a value (Clump.successful)" in {
+        clumpResult(Clump.successful(1)) mustEqual Some(1)
       }
 
       "from an option (Clump.value)" >> {
@@ -50,6 +65,10 @@ class ClumpApiSpec extends Spec {
 
       "failed (Clump.exception)" in {
         clumpResult(Clump.exception(new IllegalStateException)) must throwA[IllegalStateException]
+      }
+
+      "failed (Clump.failed)" in {
+        clumpResult(Clump.failed(new IllegalStateException)) must throwA[IllegalStateException]
       }
     }
 
@@ -186,6 +205,30 @@ class ClumpApiSpec extends Spec {
         }
       }
 
+      "using a function that recovers using a new value (clump.recover)" >> {
+        "exception happens" in {
+          val clump =
+            Clump.exception(new IllegalStateException).recover {
+              case e: IllegalStateException => Some(2)
+            }
+          clumpResult(clump) mustEqual Some(2)
+        }
+        "exception doesn't happen" in {
+          val clump =
+            Clump.value(1).recover {
+              case e: IllegalStateException => None
+            }
+          clumpResult(clump) mustEqual Some(1)
+        }
+        "exception isn't caught" in {
+          val clump =
+            Clump.exception(new NullPointerException).recover {
+              case e: IllegalStateException => Some(1)
+            }
+          clumpResult(clump) must throwA[NullPointerException]
+        }
+      }
+
       "using a function that recovers the failure using a new clump (clump.rescue)" >> {
         "exception happens" in {
           val clump =
@@ -210,6 +253,30 @@ class ClumpApiSpec extends Spec {
         }
       }
 
+      "using a function that recovers the failure using a new clump (clump.recoverWith)" >> {
+        "exception happens" in {
+          val clump =
+            Clump.exception(new IllegalStateException).recoverWith {
+              case e: IllegalStateException => Clump.value(2)
+            }
+          clumpResult(clump) mustEqual Some(2)
+        }
+        "exception doesn't happen" in {
+          val clump =
+            Clump.value(1).recoverWith {
+              case e: IllegalStateException => Clump.value(None)
+            }
+          clumpResult(clump) mustEqual Some(1)
+        }
+        "exception isn't caught" in {
+          val clump =
+            Clump.exception(new NullPointerException).recoverWith {
+              case e: IllegalStateException => Clump.value(1)
+            }
+          clumpResult(clump) must throwA[NullPointerException]
+        }
+      }
+
       "using a function that recovers using a new value (clump.fallback) on any exception" >> {
         "exception happens" in {
           val clump = Clump.exception(new IllegalStateException).fallback(Some(1))
@@ -222,7 +289,7 @@ class ClumpApiSpec extends Spec {
         }
       }
 
-      "using a function that recovers using a new clump (clump.fallback) on any exception" >> {
+      "using a function that recovers using a new clump (clump.fallbackTo) on any exception" >> {
         "exception happens" in {
           val clump = Clump.exception(new IllegalStateException).fallbackTo(Clump.value(1))
           clumpResult(clump) mustEqual Some(1)
