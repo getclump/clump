@@ -32,9 +32,29 @@ sealed trait Clump[+T] {
   def handle[B >: T](f: PartialFunction[Throwable, Option[B]]): Clump[B] = new ClumpHandle(this, f)
 
   /**
+   * Alias for [[handle]]
+   */
+  def recover[B >: T](f: PartialFunction[Throwable, Option[B]]): Clump[B] = handle(f)
+
+  /**
    * Define a fallback clump to use in the case of specified exceptions
    */
   def rescue[B >: T](f: PartialFunction[Throwable, Clump[B]]): Clump[B] = new ClumpRescue(this, f)
+
+  /**
+   * Alias for [[rescue]]
+   */
+  def recoverWith[B >: T](f: PartialFunction[Throwable, Clump[B]]): Clump[B] = rescue(f)
+
+  /**
+   * On any exception, fallback to a default value
+   */
+  def fallback[B >: T](default: => Option[B]): Clump[B] = handle(PartialFunction(_ => default))
+
+  /**
+   * On any exception, fallback to a default clump
+   */
+  def fallbackTo[B >: T](default: => Clump[B]): Clump[B] = rescue(PartialFunction(_ => default))
 
   /**
    * Alias for [[filter]] used by for-comprehensions
@@ -45,6 +65,11 @@ sealed trait Clump[+T] {
    * Apply a filter to this clump so that the result will only be defined if the predicate function returns true
    */
   def filter[B >: T](f: B => Boolean): Clump[B] = new ClumpFilter(this, f)
+
+  /**
+   * If this clump does not return a value then use the default instead
+   */
+  def orElse[B >: T: ClassTag](default: => B): Clump[B] = new ClumpOrElse(this, Clump.value(default))
 
   /**
    * If this clump does not return a value then use the value from a default clump instead
@@ -97,6 +122,11 @@ object Clump extends Joins with Sources {
   def empty[T]: Clump[T] = value(scala.None)
 
   /**
+   * Alias for [[value]] except that it propagates exceptions inside a clump instance
+   */
+  def apply[T](value: => T): Clump[T] = try { this.value(value) } catch { case e: Throwable => this.exception(e) }
+
+  /**
    * The unit method: create a clump whose value has already been resolved to the input
    */
   def value[T](value: T): Clump[T] = future(Future.value(Option(value)))
@@ -107,9 +137,19 @@ object Clump extends Joins with Sources {
   def value[T](value: Option[T]): Clump[T] = future(Future.value(value))
 
   /**
+  * Alias for [[value]]
+  */
+  def successful[T](value: T): Clump[T] = this.value(value)
+
+  /**
    * Create a failed clump with the given exception
    */
   def exception[T](exception: Throwable): Clump[T] = future(Future.exception(exception))
+
+  /**
+   * Alias for [[exception]]
+   */
+  def failed[T](exception: Throwable): Clump[T] = this.exception(exception)
 
   /**
    * Create a clump whose value will be the result of the inputted future

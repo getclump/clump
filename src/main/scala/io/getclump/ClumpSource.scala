@@ -1,7 +1,6 @@
 package io.getclump
 
 import com.twitter.util.Future
-import scala.collection.generic.CanBuildFrom
 
 class ClumpSource[T, U] private[getclump] (val functionIdentity: FunctionIdentity,
                                               val fetch: Set[T] => Future[Map[T, U]],
