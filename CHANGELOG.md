@@ -1,3 +1,9 @@
+# 0.0.11 / 27-Apr-2015
+
+* Add a couple inferred methods and aliases to clump api (https://github.com/getclump/clump/pull/88)
+* Add scaladoc to all public methods (https://github.com/getclump/clump/pull/87)
+* Use the Apache license (https://github.com/getclump/clump/pull/85)
+
 # 0.0.10 / 23-Mar-2015
 
 * `Clump.sourceFrom` renamed to `Clump.source` for consistency
