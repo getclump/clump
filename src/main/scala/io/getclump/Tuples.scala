@@ -1,6 +1,5 @@
 package io.getclump
 
-import com.twitter.util.Future
 
 protected[getclump] trait Tuples {
   protected[getclump] def normalize1[A, B] = (inputs: (A, B)) => inputs match {

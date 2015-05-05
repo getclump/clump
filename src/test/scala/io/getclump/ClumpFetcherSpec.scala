@@ -6,7 +6,6 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.Mockito.when
 import org.specs2.specification.Scope
-import com.twitter.util.Future
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])

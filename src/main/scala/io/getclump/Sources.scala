@@ -1,7 +1,5 @@
 package io.getclump
 
-import com.twitter.util.Future
-
 import scala.collection.generic.CanBuildFrom
 
 protected[getclump] trait Sources extends Tuples {

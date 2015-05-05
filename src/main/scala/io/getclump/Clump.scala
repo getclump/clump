@@ -2,7 +2,6 @@ package io.getclump
 
 import scala.collection.generic.CanBuildFrom
 
-import com.twitter.util.Future
 import com.twitter.util.Return
 import com.twitter.util.Throw
 import scala.reflect.ClassTag

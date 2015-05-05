@@ -1,6 +1,5 @@
 package io.getclump
 
-import com.twitter.util.Future
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 
