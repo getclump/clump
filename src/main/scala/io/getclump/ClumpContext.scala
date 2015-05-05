@@ -8,12 +8,12 @@ import com.twitter.util.Local
 private[getclump] final class ClumpContext {
 
   private[this] val fetchers =
-    new HashMap[FunctionIdentity, ClumpFetcher[_, _]]()
+    new HashMap[ClumpSource[_, _], ClumpFetcher[_, _]]()
 
   def fetcherFor[T, U](source: ClumpSource[T, U]): ClumpFetcher[T, U] =
     synchronized {
       fetchers
-        .getOrElseUpdate(source.functionIdentity, new ClumpFetcher(source))
+        .getOrElseUpdate(source, new ClumpFetcher(source))
         .asInstanceOf[ClumpFetcher[T, U]]
     }
 

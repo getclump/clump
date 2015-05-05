@@ -21,7 +21,7 @@ class ClumpExecutionSpec extends Spec {
       Future.value(inputs.map(i => i -> i * 10).toMap)
     }
 
-    protected def source1 = Clump.source((i: Set[Int]) => fetchFunction(source1Fetches, i))
+    protected val source1 = Clump.source((i: Set[Int]) => fetchFunction(source1Fetches, i))
     val source2 = Clump.source((i: Set[Int]) => fetchFunction(source2Fetches, i))
   }
 
