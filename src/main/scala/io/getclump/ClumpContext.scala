@@ -9,13 +9,6 @@ private[getclump] final class ClumpContext {
   private[this] val fetchers =
     new HashMap[ClumpSource[_, _], ClumpFetcher[_, _]]()
 
-  def fetcherFor[T, U](source: ClumpSource[T, U]): ClumpFetcher[T, U] =
-    synchronized {
-      fetchers
-        .getOrElseUpdate(source, new ClumpFetcher(source))
-        .asInstanceOf[ClumpFetcher[T, U]]
-    }
-
   def flush(clumps: List[Clump[_]]): Future[Unit] =
     clumps match {
       case Nil => Future.Unit
@@ -35,23 +28,23 @@ private[getclump] final class ClumpContext {
       flush(down.flatten.toList)
     }
 
-  private[this] def flushFetches(clumps: List[Clump[_]]) =
-    Future.collect(fetchersFor(clumps).map(_.flush))
+  private[this] def flushFetches(clumps: List[Clump[_]]) = {
+    val fetches = filterFetches(clumps)
+    val byFetcher = fetches.groupBy(fetch => fetcherFor(fetch.source))
+    for ((fetcher, fetches) <- byFetcher)
+      fetches.foreach(_.attachTo(fetcher))
+    Future.collect(byFetcher.keys.map(_.flush).toSeq)
+  }
 
-  private[this] def fetchersFor(clumps: List[Clump[_]]) =
+  private[this] def filterFetches(clumps: List[Clump[_]]) =
     clumps.collect {
-      case clump: ClumpFetch[_, _] => clump.fetcher
-    }.distinct
-}
+      case clump: ClumpFetch[_, _] =>
+        clump.asInstanceOf[ClumpFetch[Any, Any]]
+    }
 
-private[getclump] object ClumpContext {
-
-  private[this] val local = new Local[ClumpContext]
-
-  def apply(): ClumpContext =
-    local().getOrElse {
-      val context = new ClumpContext
-      local.set(Some(context))
-      context
+  private[this] def fetcherFor(source: ClumpSource[_, _]) =
+    synchronized {
+      fetchers.getOrElseUpdate(source, new ClumpFetcher(source))
+        .asInstanceOf[ClumpFetcher[Any, Any]]
     }
 }

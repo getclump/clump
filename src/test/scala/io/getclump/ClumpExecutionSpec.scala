@@ -4,7 +4,6 @@ import scala.collection.mutable.ListBuffer
 import org.junit.runner.RunWith
 import org.specs2.specification.Scope
 import com.twitter.util.JavaTimer
-import com.twitter.util.Promise
 import com.twitter.util.TimeConversions.intToTimeableNumber
 import org.specs2.runner.JUnitRunner
 

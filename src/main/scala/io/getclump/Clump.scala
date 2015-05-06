@@ -8,8 +8,6 @@ import scala.reflect.ClassTag
 
 sealed trait Clump[+T] {
 
-  private[this] val context = ClumpContext()
-
   /**
    * Create a new clump by applying a function to the result of this clump
    */
@@ -102,7 +100,7 @@ sealed trait Clump[+T] {
    * than requested.
    */
   def get: Future[Option[T]] =
-    context
+    new ClumpContext()
       .flush(List(this))
       .flatMap { _ =>
         result
@@ -136,8 +134,8 @@ object Clump extends Joins with Sources {
   def value[T](value: Option[T]): Clump[T] = future(Future.value(value))
 
   /**
-  * Alias for [[value]]
-  */
+   * Alias for [[value]]
+   */
   def successful[T](value: T): Clump[T] = this.value(value)
 
   /**
@@ -199,10 +197,12 @@ private[getclump] class ClumpFuture[T](val result: Future[Option[T]]) extends Cl
   val downstream = result.liftToTry.map(_ => List())
 }
 
-private[getclump] class ClumpFetch[T, U](input: T, val fetcher: ClumpFetcher[T, U]) extends Clump[U] {
+private[getclump] class ClumpFetch[T, U](input: T, val source: ClumpSource[T, U]) extends Clump[U] {
   val upstream = List()
   val downstream = Future.value(List())
-  val result = fetcher.get(input)
+  val result = Promise[Option[U]]
+  def attachTo(fetcher: ClumpFetcher[T, U]) =
+    fetcher.get(input).proxyTo(result)
 }
 
 private[getclump] class ClumpJoin[A, B](a: Clump[A], b: Clump[B]) extends Clump[(A, B)] {
