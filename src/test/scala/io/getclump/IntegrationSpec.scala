@@ -29,14 +29,14 @@ class IntegrationSpec extends Spec {
     val users = Clump.source(userRepositoryMock.usersFor _)
 
     tweetRepositoryMock.tweetsFor(Set(1L, 2L, 3L)) returns
-      Future.value(Map(
+      Future.successful(Map(
         1L -> Tweet("Tweet1", 10),
         2L -> Tweet("Tweet2", 20),
         3L -> Tweet("Tweet3", 30)
       ))
 
     userRepositoryMock.usersFor(Set(10L, 20L, 30L)) returns
-      Future.value(Map(
+      Future.successful(Map(
         10L -> User(10, "User10"),
         20L -> User(20, "User20"),
         30L -> User(30, "User30")
@@ -63,14 +63,14 @@ class IntegrationSpec extends Spec {
     val users = Clump.source(parameterizedUserRepositoryMock.usersFor _)(_.userId)
 
     parameterizedTweetRepositoryMock.tweetsFor("foo", Set(1, 2, 3)) returns
-      Future.value(Map(
+      Future.successful(Map(
         1L -> Tweet("Tweet1", 10),
         2L -> Tweet("Tweet2", 20),
         3L -> Tweet("Tweet3", 30)
       ))
 
     parameterizedUserRepositoryMock.usersFor("bar", Set(10, 20, 30)) returns
-      Future.value(Set(
+      Future.successful(Set(
         User(10, "User10"),
         User(20, "User20"),
         User(30, "User30")
@@ -190,7 +190,7 @@ case class Track(trackId: Long, name: String)
 
 class TweetRepository {
   def tweetsFor(ids: Set[Long]): Future[Map[Long, Tweet]] = {
-    Future.value(ids.map(id => id -> Tweet(s"Tweet$id", id * 10)).toMap)
+    Future.successful(ids.map(id => id -> Tweet(s"Tweet$id", id * 10)).toMap)
   }
 }
 
@@ -200,7 +200,7 @@ trait ParameterizedTweetRepository {
 
 class UserRepository {
   def usersFor(ids: Set[Long]): Future[Map[Long, User]] = {
-    Future.value(ids.map(id => id -> User(id, s"User$id")).toMap)
+    Future.successful(ids.map(id => id -> User(id, s"User$id")).toMap)
   }
 }
 
@@ -210,30 +210,30 @@ trait ParameterizedUserRepository {
 
 class ZipUserRepository {
   def usersFor(ids: List[Long]): Future[List[User]] = {
-    Future.value(ids.map(id => User(id, s"User$id")))
+    Future.successful(ids.map(id => User(id, s"User$id")))
   }
 }
 
 class FilteredUserRepository {
   def usersFor(ids: Set[Long]): Future[Set[User]] = {
-    Future.value(ids.filter(_ % 20 == 0).map(id => User(id, s"User$id")))
+    Future.successful(ids.filter(_ % 20 == 0).map(id => User(id, s"User$id")))
   }
 }
 
 class TimelineRepository {
   def timelinesFor(ids: Set[Int]): Future[Set[Timeline]] = {
-    Future.value(ids.map(id => Timeline(id, List(id * 10, id * 20))))
+    Future.successful(ids.map(id => Timeline(id, List(id * 10, id * 20))))
   }
 }
 
 class LikeRepository {
   def likesFor(ids: Set[Long]): Future[Set[Like]] = {
-    Future.value(ids.map(id => Like(id, List(id * 10, id * 20), List(id * 100, id * 200))))
+    Future.successful(ids.map(id => Like(id, List(id * 10, id * 20), List(id * 100, id * 200))))
   }
 }
 
 class TrackRepository {
   def tracksFor(ids: Set[Long]): Future[Set[Track]] = {
-    Future.value(ids.map(id => Track(id, s"Track$id")))
+    Future.successful(ids.map(id => Track(id, s"Track$id")))
   }
 }

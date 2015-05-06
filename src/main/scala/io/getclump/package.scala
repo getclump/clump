@@ -1,13 +1,16 @@
 package io
 
+import scala.concurrent.duration.Duration
 package object getclump {
+  
+  private[getclump] implicit val executionContext = scala.concurrent.ExecutionContext.global
 
-  private[getclump]type Promise[T] = com.twitter.util.Promise[T]
-  private[getclump] val Promise = com.twitter.util.Promise
+  private[getclump]type Promise[T] = scala.concurrent.Promise[T]
+  private[getclump] val Promise = scala.concurrent.Promise
 
-  private[getclump]type Future[+T] = com.twitter.util.Future[T]
-  private[getclump] val Future = com.twitter.util.Future
+  private[getclump]type Future[+T] = scala.concurrent.Future[T]
+  private[getclump] val Future = scala.concurrent.Future
 
   private[getclump] def blockOn[T](future: Future[T]) =
-    com.twitter.util.Await.result(future)
+    scala.concurrent.Await.result(future, Duration.Inf)
 }

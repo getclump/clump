@@ -14,7 +14,7 @@ class ClumpExecutionSpec extends Spec {
 
     protected def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) = {
       fetches += inputs
-      Future.value(inputs.map(i => i -> i * 10).toMap)
+      Future.successful(inputs.map(i => i -> i * 10).toMap)
     }
 
     protected val source1 = Clump.source((i: Set[Int]) => fetchFunction(source1Fetches, i))
@@ -107,7 +107,7 @@ class ClumpExecutionSpec extends Spec {
       "using a future clump as base" in new Context {
         val clump =
           for {
-            int <- Clump.future(Future.value(Some(1)))
+            int <- Clump.future(Future.successful(Some(1)))
             collect1 <- Clump.collect(source1.get(int))
             collect2 <- Clump.collect(source2.get(int))
           } yield (collect1, collect2)
@@ -141,7 +141,7 @@ class ClumpExecutionSpec extends Spec {
     val promisesIterator = promises.iterator
 
     protected override def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) =
-      promisesIterator.next
+      promisesIterator.next.future
 
     val clump = source1.get(1).join(source2.get(2))
 

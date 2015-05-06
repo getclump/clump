@@ -122,7 +122,7 @@ protected[getclump] trait Sources extends Tuples {
               _.map { case (key, value) => denormalize(params, key) -> value }
             }
         }.toSeq
-      Future.collect(futures).map(_.reduce(_ ++ _).toMap)
+      Future.sequence(futures).map(_.reduce(_ ++ _).toMap)
     }
 
   private[this] def parameterizeFetchZip[I, P, O, T](normalize: I => (P, T), fetch: (P, List[T]) => Future[Iterable[O]]): Set[I] => Future[Map[I, O]] =
@@ -133,7 +133,7 @@ protected[getclump] trait Sources extends Tuples {
           case (params, paramsAndKeys) =>
             fetch(params, paramsAndKeys.map { case (_, keys) => keys })
         }.toSeq
-      val listOutputs = Future.collect(futures).map(_.reduce(_ ++ _)).map(_.toList)
+      val listOutputs = Future.sequence(futures).map(_.reduce(_ ++ _)).map(_.toList)
       listOutputs.map(listInputs.zip(_).toMap)
     }
 

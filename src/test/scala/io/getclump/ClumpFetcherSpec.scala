@@ -64,7 +64,7 @@ class ClumpFetcherSpec extends Spec {
         }
 
       when(repo.fetch(Set(1)))
-        .thenReturn(Future.exception(new IllegalStateException))
+        .thenReturn(Future.failed(new IllegalStateException))
         .thenReturn(Future(Map(1 -> 10)))
 
       clumpResult(source.get(1)) mustEqual Some(10)
@@ -80,8 +80,8 @@ class ClumpFetcherSpec extends Spec {
         }
 
       when(repo.fetch(Set(1)))
-        .thenReturn(Future.exception(new IllegalStateException))
-        .thenReturn(Future.exception(new IllegalStateException))
+        .thenReturn(Future.failed(new IllegalStateException))
+        .thenReturn(Future.failed(new IllegalStateException))
 
       clumpResult(source.get(1)) must throwA[IllegalStateException]
 

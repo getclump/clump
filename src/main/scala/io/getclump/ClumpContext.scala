@@ -9,7 +9,7 @@ private[getclump] final class ClumpContext {
 
   def flush(clumps: List[Clump[_]]): Future[Unit] =
     clumps match {
-      case Nil => Future.Unit
+      case Nil => Future.successful(Unit)
       case _ =>
         flushUpstream(clumps).flatMap { _ =>
           flushFetches(clumps).flatMap { _ =>
@@ -22,7 +22,7 @@ private[getclump] final class ClumpContext {
     flush(clumps.map(_.upstream).flatten)
 
   private[this] def flushDownstream(clumps: List[Clump[_]]) =
-    Future.collect(clumps.map(_.downstream)).flatMap { down =>
+    Future.sequence(clumps.map(_.downstream)).flatMap { down =>
       flush(down.flatten.toList)
     }
 
@@ -31,7 +31,7 @@ private[getclump] final class ClumpContext {
     val byFetcher = fetches.groupBy(fetch => fetcherFor(fetch.source))
     for ((fetcher, fetches) <- byFetcher)
       fetches.foreach(_.attachTo(fetcher))
-    Future.collect(byFetcher.keys.map(_.flush).toSeq)
+    Future.sequence(byFetcher.keys.map(_.flush).toSeq)
   }
 
   private[this] def filterFetches(clumps: List[Clump[_]]) =
