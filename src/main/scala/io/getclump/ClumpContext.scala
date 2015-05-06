@@ -2,8 +2,6 @@ package io.getclump
 
 import scala.collection.mutable.HashMap
 
-import com.twitter.util.Local
-
 private[getclump] final class ClumpContext {
 
   private[this] val fetchers =

@@ -3,8 +3,6 @@ package io.getclump
 import scala.collection.mutable.ListBuffer
 import org.junit.runner.RunWith
 import org.specs2.specification.Scope
-import com.twitter.util.JavaTimer
-import com.twitter.util.TimeConversions.intToTimeableNumber
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
@@ -55,25 +53,6 @@ class ClumpExecutionSpec extends Spec {
       clumpResult(Clump.collect(clump1, clump2)) mustEqual Some(List(100, 200))
       source1Fetches mustEqual List(Set(1, 2))
       source2Fetches mustEqual List(Set(20, 10))
-    }
-
-    "for composition branches with different latencies" in new Context {
-      implicit val timer = new JavaTimer
-      val clump1 =
-        Clump.value(1).flatMap { int =>
-          Clump.future(Future.value(Some(int)))
-            .flatMap(source1.get)
-        }
-      val clump2 =
-        Clump.value(2).flatMap { int =>
-          Clump.future(Future.value(Some(int)).delayed(100 millis))
-            .flatMap(source1.get)
-        }
-
-      val clump = Clump.collect(clump1, clump2)
-
-      clumpResult(clump) mustEqual Some((List(10, 20)))
-      source1Fetches mustEqual List(Set(1, 2))
     }
 
     "for clumps composed using for comprehension" >> {

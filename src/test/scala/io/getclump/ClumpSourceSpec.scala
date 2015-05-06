@@ -5,7 +5,6 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.Mockito.when
 import org.specs2.specification.Scope
-import com.twitter.util.Await
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
@@ -60,7 +59,7 @@ class ClumpSourceSpec extends Spec {
           }).toList
         }
 
-      Await.result(clump.get)
+      blockOn(clump.get)
 
       verify(repo).fetch(Set(1))
       verifyNoMoreInteractions(repo)
@@ -79,7 +78,7 @@ class ClumpSourceSpec extends Spec {
           }).toList
         }
 
-      Await.result(clump.get)
+      blockOn(clump.get)
 
       verify(repo).fetchWithScope(1, Set(1))
       verifyNoMoreInteractions(repo)

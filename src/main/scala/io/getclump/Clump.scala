@@ -2,8 +2,6 @@ package io.getclump
 
 import scala.collection.generic.CanBuildFrom
 
-import com.twitter.util.Return
-import com.twitter.util.Throw
 import scala.reflect.ClassTag
 
 sealed trait Clump[+T] {
@@ -259,10 +257,9 @@ private[getclump] class ClumpHandle[T](clump: Clump[T], f: PartialFunction[Throw
 private[getclump] class ClumpRescue[T](clump: Clump[T], rescue: PartialFunction[Throwable, Clump[T]]) extends Clump[T] {
   val upstream = List(clump)
   val partial =
-    clump.result.liftToTry.map {
-      case Throw(exception) if (rescue.isDefinedAt(exception)) => rescue(exception)
-      case Throw(exception)                                    => Clump.exception(exception)
-      case Return(value)                                       => Clump.value(value)
+    clump.result.map(Clump.value).handle {
+      case exception if (rescue.isDefinedAt(exception)) => rescue(exception)
+      case exception                                    => Clump.exception(exception)
     }
   val downstream =
     partial.map(List(_))
