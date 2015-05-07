@@ -212,7 +212,7 @@ private[getclump] class ClumpJoin[A, B](a: Clump[A], b: Clump[B]) extends Clump[
   val result =
     a.result.zip(b.result)
       .map {
-        case (Some(valueA), Some(valueB)) => Some(valueA, valueB)
+        case (Some(valueA), Some(valueB)) => Some((valueA, valueB))
         case _                            => None
       }
 }

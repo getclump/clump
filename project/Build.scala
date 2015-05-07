@@ -11,6 +11,14 @@ object Build extends Build {
     libraryDependencies ++= Seq(
       "org.specs2" %% "specs2" % "2.4.2" % "test",
       "org.mockito" % "mockito-core" % "1.9.5" % "test"
+    ),
+    scalacOptions ++= Seq(
+      "-deprecation",
+      "-encoding", "UTF-8",
+      "-feature",
+      "-language:higherKinds",
+      "-language:implicitConversions",
+      "-language:reflectiveCalls"
     )
   ) ++ releaseSettings ++ Seq(
     ReleaseKeys.crossBuild := true,
@@ -54,10 +62,22 @@ object Build extends Build {
     .settings(name := "clump-scala")
     .settings(commonSettings: _*)
     .settings(target <<= target(_ / "clump-scala"))
+    .settings(sourceGenerators in Compile += Def.task {
+      val source = sourceDirectory.value / "main" / "scala" / "io" / "getclump" / "package-scala.scala.tmpl"
+      val file = sourceDirectory.value / "main" / "scala" / "io" / "getclump" / "package.scala"
+      IO.copyFile(source, file)
+      Seq(file)
+    }.taskValue)
 
   val clumpTwitter = Project(id = "clump-twitter", base = file("."))
     .settings(name := "clump-twitter")
     .settings(commonSettings: _*)
     .settings(libraryDependencies += "com.twitter" %% "util-core" % "6.22.0")
     .settings(target <<= target(_ / "clump-twitter"))
+    .settings(sourceGenerators in Compile += Def.task {
+      val source = sourceDirectory.value / "main" / "scala" / "io" / "getclump" / "package-twitter.scala.tmpl"
+      val file = sourceDirectory.value / "main" / "scala" / "io" / "getclump" / "package.scala"
+      IO.copyFile(source, file)
+      Seq(file)
+    }.taskValue)
 }

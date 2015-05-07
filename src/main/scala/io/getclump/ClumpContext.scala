@@ -9,7 +9,7 @@ private[getclump] final class ClumpContext {
 
   def flush(clumps: List[Clump[_]]): Future[Unit] =
     clumps match {
-      case Nil => Future.successful(Unit)
+      case Nil => Future.successful(())
       case _ =>
         flushUpstream(clumps).flatMap { _ =>
           flushFetches(clumps).flatMap { _ =>
