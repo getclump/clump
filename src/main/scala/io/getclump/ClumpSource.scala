@@ -9,14 +9,14 @@ class ClumpSource[T, U] private[getclump] (val fetch: Set[T] => Future[Map[T, U]
   /**
    * Get a list of values from a clump source
    */
-  def get(inputs: List[T]): Clump[List[U]] =
+  def get(inputs: List[T])(implicit context: ClumpContext): Clump[List[U]] =
     Clump.collect(inputs.map(get))
 
   /**
    * Get a single value from a clump source
    */
-  def get(input: T): Clump[U] =
-    new ClumpFetch(input, ClumpContext().fetcherFor(this))
+  def get(input: T)(implicit context: ClumpContext): Clump[U] =
+    new ClumpFetch(input, context.fetcherFor(this))
 
   /**
    * Set the maximum batch size for fetching values from this clump source

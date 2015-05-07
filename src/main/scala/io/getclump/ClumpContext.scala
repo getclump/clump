@@ -5,6 +5,10 @@ import scala.collection.mutable.HashMap
 import com.twitter.util.Future
 import com.twitter.util.Local
 
+/**
+ * A Clump Context stores the result of different fetches to sources. Clumps that are inside different clump contexts
+ * will not have their remote calls batched together.
+ */
 private[getclump] final class ClumpContext {
 
   private[this] val fetchers =
@@ -45,14 +49,18 @@ private[getclump] final class ClumpContext {
     }.distinct
 }
 
-private[getclump] object ClumpContext {
+object ClumpContext {
 
   private[this] val local = new Local[ClumpContext]
 
-  def apply(): ClumpContext =
-    local().getOrElse {
-      val context = new ClumpContext
-      local.set(Some(context))
-      context
-    }
+  /**
+   * Create a new empty Clump Context
+   */
+  def apply(): ClumpContext = new ClumpContext
+
+  protected[getclump] implicit def default: ClumpContext = local().getOrElse {
+    val context = new ClumpContext
+    local.set(Some(context))
+    context
+  }
 }
