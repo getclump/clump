@@ -13,7 +13,7 @@ private[getclump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
 
   def flush: Future[Unit] =
     synchronized {
-      Future.sequence(flushInBatches).map(_ => Unit)
+      Future.sequence(flushInBatches).map(_ => ())
     }
 
   private[this] def flushInBatches =
