@@ -58,25 +58,21 @@ object Build extends Build {
       </developers>
   )
 
-  val clumpScala = Project(id = "clump-scala", base = file("."))
+  lazy val clumpScala = Project(id = "clump-scala", base = file("."))
     .settings(name := "clump-scala")
     .settings(commonSettings: _*)
     .settings(target <<= target(_ / "clump-scala"))
-    .settings(sourceGenerators in Compile += Def.task {
-      val source = sourceDirectory.value / "main" / "scala" / "io" / "getclump" / "package-scala.scala.tmpl"
-      val file = sourceDirectory.value / "main" / "scala" / "io" / "getclump" / "package.scala"
-      IO.copyFile(source, file)
-      Seq(file)
-    }.taskValue)
+    .aggregate(clumpTwitter)
 
-  val clumpTwitter = Project(id = "clump-twitter", base = file("."))
+  lazy val clumpTwitter = Project(id = "clump-twitter", base = file("."))
     .settings(name := "clump-twitter")
     .settings(commonSettings: _*)
     .settings(libraryDependencies += "com.twitter" %% "util-core" % "6.22.0")
     .settings(target <<= target(_ / "clump-twitter"))
+    .settings(excludeFilter in unmanagedSources := "package.scala")
     .settings(sourceGenerators in Compile += Def.task {
       val source = sourceDirectory.value / "main" / "scala" / "io" / "getclump" / "package-twitter.scala.tmpl"
-      val file = sourceDirectory.value / "main" / "scala" / "io" / "getclump" / "package.scala"
+      val file = sourceManaged.value / "main" / "scala" / "io" / "getclump" / "package.scala"
       IO.copyFile(source, file)
       Seq(file)
     }.taskValue)
