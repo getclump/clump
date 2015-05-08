@@ -10,6 +10,6 @@ package object getclump {
   private[getclump]type Future[+T] = scala.concurrent.Future[T]
   private[getclump] val Future = scala.concurrent.Future
 
-  private[getclump] def blockOn[T](future: Future[T]) =
+  private[getclump] def awaitResult[T](future: Future[T]) =
     scala.concurrent.Await.result(future, scala.concurrent.duration.Duration.Inf)
 }

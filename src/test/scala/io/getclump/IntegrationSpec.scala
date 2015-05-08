@@ -49,7 +49,7 @@ class IntegrationSpec extends Spec {
       } yield (tweet, user)
     }
 
-    blockOn(enrichedTweets.get) ==== Some(List(
+    awaitResult(enrichedTweets.get) ==== Some(List(
       (Tweet("Tweet1", 10), User(10, "User10")),
       (Tweet("Tweet2", 20), User(20, "User20")),
       (Tweet("Tweet3", 30), User(30, "User30"))))
@@ -83,7 +83,7 @@ class IntegrationSpec extends Spec {
       } yield (tweet, user)
     }
 
-    blockOn(enrichedTweets.get) ==== Some(List(
+    awaitResult(enrichedTweets.get) ==== Some(List(
       (Tweet("Tweet1", 10), User(10, "User10")),
       (Tweet("Tweet2", 20), User(20, "User20")),
       (Tweet("Tweet3", 30), User(30, "User30"))))
@@ -103,7 +103,7 @@ class IntegrationSpec extends Spec {
         } yield (timeline, enrichedLikes)
       }
 
-    blockOn(enrichedTimelines.get) ==== Some(List(
+    awaitResult(enrichedTimelines.get) ==== Some(List(
       (Timeline(1, List(10, 20)), List(
         (Like(10, List(100, 200), List(1000, 2000)), List(Track(100, "Track100"), Track(200, "Track200")), List(User(1000, "User1000"), User(2000, "User2000"))),
         (Like(20, List(200, 400), List(2000, 4000)), List(Track(200, "Track200"), Track(400, "Track400")), List(User(2000, "User2000"), User(4000, "User4000"))))),
@@ -120,7 +120,7 @@ class IntegrationSpec extends Spec {
           users.get(tweet.userId).map(user => (tweet, user)))
       }
 
-    blockOn(enrichedTweets.get) ==== Some(List(
+    awaitResult(enrichedTweets.get) ==== Some(List(
       (Tweet("Tweet1", 10), User(10, "User10")),
       (Tweet("Tweet2", 20), User(20, "User20")),
       (Tweet("Tweet3", 30), User(30, "User30"))))
@@ -134,7 +134,7 @@ class IntegrationSpec extends Spec {
       } yield (tweet, user)
     }
 
-    blockOn(enrichedTweets.list) ==== List(
+    awaitResult(enrichedTweets.list) ==== List(
       (Tweet("Tweet1", 10), User(10, "User10")),
       (Tweet("Tweet2", 20), User(20, "User20")),
       (Tweet("Tweet3", 30), User(30, "User30")))
@@ -148,7 +148,7 @@ class IntegrationSpec extends Spec {
       } yield (tweet, user)
     }
 
-    blockOn(enrichedTweets.get) ==== Some(List(
+    awaitResult(enrichedTweets.get) ==== Some(List(
       (Tweet("Tweet1", 10), User(10, "User10")),
       (Tweet("Tweet2", 20), User(20, "User20")),
       (Tweet("Tweet3", 30), User(30, "User30"))))
@@ -162,7 +162,7 @@ class IntegrationSpec extends Spec {
       } yield (tweet, user)
     }
 
-    blockOn(onlyFullObjectGraph.get) ==== Some(List((Tweet("Tweet2", 20), User(20, "User20"))))
+    awaitResult(onlyFullObjectGraph.get) ==== Some(List((Tweet("Tweet2", 20), User(20, "User20"))))
 
     val partialResponses: Clump[List[(Tweet, Option[User])]] = Clump.traverse(1, 2, 3) { tweetId =>
       for {
@@ -171,7 +171,7 @@ class IntegrationSpec extends Spec {
       } yield (tweet, user)
     }
 
-    blockOn(partialResponses.get) ==== Some(List(
+    awaitResult(partialResponses.get) ==== Some(List(
       (Tweet("Tweet1", 10), None),
       (Tweet("Tweet2", 20), Some(User(20, "User20"))),
       (Tweet("Tweet3", 30), None)))

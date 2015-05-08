@@ -59,7 +59,7 @@ class ClumpSourceSpec extends Spec {
           }).toList
         }
 
-      blockOn(clump.get)
+      awaitResult(clump.get)
 
       verify(repo).fetch(Set(1))
       verifyNoMoreInteractions(repo)
@@ -78,7 +78,7 @@ class ClumpSourceSpec extends Spec {
           }).toList
         }
 
-      blockOn(clump.get)
+      awaitResult(clump.get)
 
       verify(repo).fetchWithScope(1, Set(1))
       verifyNoMoreInteractions(repo)

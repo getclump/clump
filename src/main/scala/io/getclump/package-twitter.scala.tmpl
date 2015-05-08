@@ -27,6 +27,6 @@ package object getclump {
     def sequence[T](futures: Seq[Future[T]]) = Future.collect(futures)
   }
 
-  private[getclump] def blockOn[T](future: Future[T]) =
+  private[getclump] def awaitResult[T](future: Future[T]) =
     com.twitter.util.Await.result(future)
 }

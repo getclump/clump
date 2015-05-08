@@ -333,30 +333,30 @@ class ClumpApiSpec extends Spec {
 
     "can represent its result as a collection (clump.list) when its type is a collection" >> {
       "list" in {
-        blockOn(Clump.value(List(1, 2)).list) ==== List(1, 2)
+        awaitResult(Clump.value(List(1, 2)).list) ==== List(1, 2)
       }
       "set" in {
-        blockOn(Clump.value(Set(1, 2)).list) ==== Set(1, 2)
+        awaitResult(Clump.value(Set(1, 2)).list) ==== Set(1, 2)
       }
       "seq" in {
-        blockOn(Clump.value(Seq(1, 2)).list) ==== Seq(1, 2)
+        awaitResult(Clump.value(Seq(1, 2)).list) ==== Seq(1, 2)
       }
       // Clump.value(1).flatten //doesn't compile
     }
 
     "can provide a result falling back to a default (clump.getOrElse)" >> {
       "initial clump is undefined" in {
-        blockOn(Clump.value(None).getOrElse(1)) ==== 1
+        awaitResult(Clump.value(None).getOrElse(1)) ==== 1
       }
 
       "initial clump is defined" in {
-        blockOn(Clump.value(Some(2)).getOrElse(1)) ==== 2
+        awaitResult(Clump.value(Some(2)).getOrElse(1)) ==== 2
       }
     }
 
     "has a utility method (clump.apply) for unwrapping optional result" in {
-      blockOn(Clump.value(1).apply()) ==== 1
-      blockOn(Clump.value[Int](None)()) must throwA[NoSuchElementException]
+      awaitResult(Clump.value(1).apply()) ==== 1
+      awaitResult(Clump.value[Int](None)()) must throwA[NoSuchElementException]
     }
 
     "can be made optional (clump.optional) to avoid lossy joins" in {
