@@ -1,3 +1,7 @@
+# 0.0.12 / 9-May-2015
+
+* Generate artifact without the twitter-util dependency (https://github.com/getclump/clump/pull/91)
+
 # 0.0.11 / 27-Apr-2015
 
 * Add a couple inferred methods and aliases to clump api (https://github.com/getclump/clump/pull/88)
