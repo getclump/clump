@@ -166,21 +166,38 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 <h1>
 <a id="getting-started" class="anchor" href="#getting-started" aria-hidden="true"><span class="octicon octicon-link"></span></a>Getting started</h1>
 
-<p>To use clump, just add the dependency to the project's build configuration.</p>
+<p>To use clump, just add the dependency to the project's build configuration. There are two versions of the project:</p>
+
+<ol>
+<li>
+<code>clump-scala</code>, that uses Scala Futures and doesn't have external dependencies.</li>
+<li>
+<code>clump-twitter</code>, that uses Twitter Futures and has the dependency to <code>twitter-util</code>.</li>
+</ol>
 
 <p><strong>Important</strong>: Change <code>x.x.x</code> with the latest version listed by the <a href="https://github.com/getclump/clump/blob/master/CHANGELOG.md">CHANGELOG.md</a> file.</p>
 
 <p>SBT</p>
 
 <div class="highlight highlight-scala"><pre>libraryDependencies <span class="pl-k">++</span><span class="pl-k">=</span> <span class="pl-en">Seq</span>(
-  <span class="pl-s"><span class="pl-pds">"</span>io.getclump<span class="pl-pds">"</span></span> <span class="pl-k">%%</span> <span class="pl-s"><span class="pl-pds">"</span>clump<span class="pl-pds">"</span></span> <span class="pl-k">%</span> <span class="pl-s"><span class="pl-pds">"</span>x.x.x<span class="pl-pds">"</span></span>
+  <span class="pl-s"><span class="pl-pds">"</span>io.getclump<span class="pl-pds">"</span></span> <span class="pl-k">%%</span> <span class="pl-s"><span class="pl-pds">"</span>clump-scala<span class="pl-pds">"</span></span> <span class="pl-k">%</span> <span class="pl-s"><span class="pl-pds">"</span>x.x.x<span class="pl-pds">"</span></span>
+)</pre></div>
+
+<div class="highlight highlight-scala"><pre>libraryDependencies <span class="pl-k">++</span><span class="pl-k">=</span> <span class="pl-en">Seq</span>(
+  <span class="pl-s"><span class="pl-pds">"</span>io.getclump<span class="pl-pds">"</span></span> <span class="pl-k">%%</span> <span class="pl-s"><span class="pl-pds">"</span>clump-twitter<span class="pl-pds">"</span></span> <span class="pl-k">%</span> <span class="pl-s"><span class="pl-pds">"</span>x.x.x<span class="pl-pds">"</span></span>
 )</pre></div>
 
 <p>Maven</p>
 
 <div class="highlight highlight-xml"><pre>&lt;<span class="pl-ent">dependency</span>&gt;
     &lt;<span class="pl-ent">groupId</span>&gt;io.getclump&lt;/<span class="pl-ent">groupId</span>&gt;
-    &lt;<span class="pl-ent">artifactId</span>&gt;clump&lt;/<span class="pl-ent">artifactId</span>&gt;
+    &lt;<span class="pl-ent">artifactId</span>&gt;clump-scala&lt;/<span class="pl-ent">artifactId</span>&gt;
+    &lt;<span class="pl-ent">version</span>&gt;x.x.x&lt;/<span class="pl-ent">version</span>&gt;
+&lt;/<span class="pl-ent">dependency</span>&gt;</pre></div>
+
+<div class="highlight highlight-xml"><pre>&lt;<span class="pl-ent">dependency</span>&gt;
+    &lt;<span class="pl-ent">groupId</span>&gt;io.getclump&lt;/<span class="pl-ent">groupId</span>&gt;
+    &lt;<span class="pl-ent">artifactId</span>&gt;clump-twitter&lt;/<span class="pl-ent">artifactId</span>&gt;
     &lt;<span class="pl-ent">version</span>&gt;x.x.x&lt;/<span class="pl-ent">version</span>&gt;
 &lt;/<span class="pl-ent">dependency</span>&gt;</pre></div>
 
@@ -469,18 +486,6 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
     }</pre></div>
 
 <h1>
-<a id="scala-futures" class="anchor" href="#scala-futures" aria-hidden="true"><span class="octicon octicon-link"></span></a>Scala Futures</h1>
-
-<p>Clump uses Twitter Futures by default, but it is possible to use Scala Futures by importing the <code>FutureBridge</code>:</p>
-
-<div class="highlight highlight-scala"><pre><span class="pl-k">import</span> <span class="pl-v">clump.FutureBridge.</span><span class="pl-v">_</span>
-
-<span class="pl-k">val</span> <span class="pl-en">userClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">User</span>] <span class="pl-k">=</span> ...
-<span class="pl-k">val</span> <span class="pl-en">future</span><span class="pl-k">:</span> scala.concurrent.<span class="pl-en">Future</span>[<span class="pl-en">User</span>] <span class="pl-k">=</span> userClump.get</pre></div>
-
-<p>It provides bidirectional implicit conversions. </p>
-
-<h1>
 <a id="internals" class="anchor" href="#internals" aria-hidden="true"><span class="octicon octicon-link"></span></a>Internals</h1>
 
 <p>This section explains how Clump works under the hood.</p>
@@ -520,7 +525,7 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 <div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(usersService.fetch _)(_.id)
 <span class="pl-k">val</span> <span class="pl-en">tracksSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(tracksService.fetch _)(_.id)</pre></div>
 
-<p>The <code>ClumpSource</code> instances are created using one of the shortcuts that the <code>Clump</code> object <a href="https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L112">provides</a>. They don't hold any state and allow to create Clump instances representing the <a href="https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/ClumpSource.scala#L18">fetch</a>. Clump uses the fetch function's <a href="https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/FunctionIdentity.scala">identity</a> to group requests and perform batched fetches, so it is possible to have multiple instances of the same source within a clump composition and execution.</p>
+<p>The <code>ClumpSource</code> instances are created using one of the shortcuts that the <code>Clump</code> object <a href="https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L112">provides</a>. They don't hold any state and allow to create Clump instances representing the <a href="https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/ClumpSource.scala#L18">fetch</a>. Clump uses the source's identity to group requests and perform batched fetches, so it is <strong>not</strong> possible to have multiple instances of the same source within a clump composition and execution.</p>
 
 <h2>
 <a id="composition-1" class="anchor" href="#composition-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Composition</h2>
@@ -561,8 +566,6 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 <li><p><code>flatMap</code> creates a <code>ClumpFlatMap</code> instance <a href="https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L168">representing the operation</a>. It just <a href="https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L174">composes a new future</a> that is based on the result of the initial Clump and the result of the nested Clump.</p></li>
 <li><p><code>map</code> creates a <code>ClumpMap</code> instance <a href="https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L161">representing the map operation</a>. It <a href="https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L164">composes a new future</a> by applying the specified transformation.</p></li>
 </ol>
-
-<p>Note that <strong>any</strong> Clump composition creates a <code>ClumpContext</code> <a href="https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L11">implicitly</a> if it doesn't exist yet. The <code>ClumpContext</code> is maintained using a <code>Local</code> <a href="https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/ClumpContext.scala#L50">value</a>, that is a <a href="https://github.com/twitter/util/blob/util-6.23.0/util-core/src/main/scala/com/twitter/util/Local.scala#L91">mechanism</a> similar to a <code>ThreadLocal</code> but for asynchronous compositions.  </p>
 
 <h2>
 <a id="execution-1" class="anchor" href="#execution-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Execution</h2>
@@ -745,7 +748,7 @@ get--&gt; |   (line 2)   |                                   +-------&gt; Empty
 <h1>
 <a id="license" class="anchor" href="#license" aria-hidden="true"><span class="octicon octicon-link"></span></a>License</h1>
 
-<p>See the <a href="https://github.com/getclump/clump/blob/master/LICENSE-LGPL.txt">LICENSE-LGPL</a> file for details.</p>
+<p>See the <a href="https://github.com/getclump/clump/blob/master/LICENSE.txt">LICENSE</a> file for details.</p>
         </section>
 
         <aside id="sidebar">
