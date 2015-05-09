@@ -1,6 +1,5 @@
 package io.getclump
 
-import com.twitter.util.Future
 
 class ClumpSource[T, U] private[getclump] (val fetch: Set[T] => Future[Map[T, U]],
                                            val maxBatchSize: Int = Int.MaxValue,
@@ -16,7 +15,7 @@ class ClumpSource[T, U] private[getclump] (val fetch: Set[T] => Future[Map[T, U]
    * Get a single value from a clump source
    */
   def get(input: T): Clump[U] =
-    new ClumpFetch(input, ClumpContext().fetcherFor(this))
+    new ClumpFetch(input, this)
 
   /**
    * Set the maximum batch size for fetching values from this clump source

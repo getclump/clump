@@ -1,6 +1,5 @@
 package io.getclump
 
-import com.twitter.util.Future
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 
@@ -9,12 +8,12 @@ class SourcesSpec extends Spec {
 
   "creates a clump source" >> {
     "set input" in {
-      def fetch(inputs: Set[Int]) = Future.value(inputs.map(i => i -> i.toString).toMap)
+      def fetch(inputs: Set[Int]) = Future.successful(inputs.map(i => i -> i.toString).toMap)
       val source = Clump.source(fetch _)
       clumpResult(source.get(1)) mustEqual Some("1")
     }
     "list input" in {
-      def fetch(inputs: List[Int]) = Future.value(inputs.map(i => i -> i.toString).toMap)
+      def fetch(inputs: List[Int]) = Future.successful(inputs.map(i => i -> i.toString).toMap)
       val source = Clump.source(fetch _)
       clumpResult(source.get(1)) mustEqual Some("1")
     }
@@ -52,12 +51,12 @@ class SourcesSpec extends Spec {
 
   "creates a clump source with key function" >> {
     "set input" in {
-      def fetch(inputs: Set[Int]) = Future.value(inputs.map(_.toString))
+      def fetch(inputs: Set[Int]) = Future.successful(inputs.map(_.toString))
       val source = Clump.source(fetch _)(_.toInt)
       clumpResult(source.get(1)) mustEqual Some("1")
     }
     "seq input" in {
-      def fetch(inputs: Seq[Int]) = Future.value(inputs.map(_.toString))
+      def fetch(inputs: Seq[Int]) = Future.successful(inputs.map(_.toString))
       val source = Clump.source(fetch _)(_.toInt)
       clumpResult(source.get(1)) mustEqual Some("1")
     }
@@ -93,28 +92,28 @@ class SourcesSpec extends Spec {
 
   "creates a clump source with zip as the key function" >> {
     "list input" in {
-      def fetch(inputs: List[Int]) = Future.value(inputs.map(_.toString))
+      def fetch(inputs: List[Int]) = Future.successful(inputs.map(_.toString))
       val source = Clump.sourceZip(fetch _)
       clumpResult(source.get(1)) mustEqual Some("1")
     }
     "extra params" >> {
       "one" in {
-        def fetch(param1: Int, inputs: List[Int]) = Future.value(inputs.map(_ + param1).map(_.toString))
+        def fetch(param1: Int, inputs: List[Int]) = Future.successful(inputs.map(_ + param1).map(_.toString))
         val source = Clump.sourceZip(fetch _)
         clumpResult(source.get(1, 2)) mustEqual Some("3")
       }
       "two" in {
-        def fetch(param1: Int, param2: String, inputs: List[Int]) = Future.value(inputs.map(_ + param1).map(_ + param2))
+        def fetch(param1: Int, param2: String, inputs: List[Int]) = Future.successful(inputs.map(_ + param1).map(_ + param2))
         val source = Clump.sourceZip(fetch _)
         clumpResult(source.get(1, "a", 2)) mustEqual Some("3a")
       }
       "three" in {
-        def fetch(param1: Int, param2: String, param3: List[String], inputs: List[Int]) = Future.value(inputs.map(_ + param1).map(_ + param2).map(_ + param3.fold("")(_ + _)))
+        def fetch(param1: Int, param2: String, param3: List[String], inputs: List[Int]) = Future.successful(inputs.map(_ + param1).map(_ + param2).map(_ + param3.fold("")(_ + _)))
         val source = Clump.sourceZip(fetch _)
         clumpResult(source.get(1, "a", List("b", "c"), 2)) mustEqual Some("3abc")
       }
       "four" in {
-        def fetch(param1: Int, param2: String, param3: List[String], param4: Boolean, inputs: List[Int]) = Future.value(inputs.map(_ + param1).map(_ + param2).map(_ + param3.fold("")(_ + _)).map(_ + s"-$param4"))
+        def fetch(param1: Int, param2: String, param3: List[String], param4: Boolean, inputs: List[Int]) = Future.successful(inputs.map(_ + param1).map(_ + param2).map(_ + param3.fold("")(_ + _)).map(_ + s"-$param4"))
         val source = Clump.sourceZip(fetch _)
         clumpResult(source.get(1, "a", List("b", "c"), true, 2)) mustEqual Some("3abc-true")
       }
@@ -122,15 +121,15 @@ class SourcesSpec extends Spec {
   }
 
   "creates a clump source from various input/ouput type fetch functions (ClumpSource.apply)" in {
-    def setToSet: Set[Int] => Future[Set[String]] = { inputs => Future.value(inputs.map(_.toString)) }
-    def listToList: List[Int] => Future[List[String]] = { inputs => Future.value(inputs.map(_.toString)) }
-    def iterableToIterable: Iterable[Int] => Future[Iterable[String]] = { inputs => Future.value(inputs.map(_.toString)) }
-    def setToList: Set[Int] => Future[List[String]] = { inputs => Future.value(inputs.map(_.toString).toList) }
-    def listToSet: List[Int] => Future[Set[String]] = { inputs => Future.value(inputs.map(_.toString).toSet) }
-    def setToIterable: Set[Int] => Future[Iterable[String]] = { inputs => Future.value(inputs.map(_.toString)) }
-    def listToIterable: List[Int] => Future[Iterable[String]] = { inputs => Future.value(inputs.map(_.toString)) }
-    def iterableToList: Iterable[Int] => Future[List[String]] = { inputs => Future.value(inputs.map(_.toString).toList) }
-    def iterableToSet: Iterable[Int] => Future[List[String]] = { inputs => Future.value(inputs.map(_.toString).toList) }
+    def setToSet: Set[Int] => Future[Set[String]] = { inputs => Future.successful(inputs.map(_.toString)) }
+    def listToList: List[Int] => Future[List[String]] = { inputs => Future.successful(inputs.map(_.toString)) }
+    def iterableToIterable: Iterable[Int] => Future[Iterable[String]] = { inputs => Future.successful(inputs.map(_.toString)) }
+    def setToList: Set[Int] => Future[List[String]] = { inputs => Future.successful(inputs.map(_.toString).toList) }
+    def listToSet: List[Int] => Future[Set[String]] = { inputs => Future.successful(inputs.map(_.toString).toSet) }
+    def setToIterable: Set[Int] => Future[Iterable[String]] = { inputs => Future.successful(inputs.map(_.toString)) }
+    def listToIterable: List[Int] => Future[Iterable[String]] = { inputs => Future.successful(inputs.map(_.toString)) }
+    def iterableToList: Iterable[Int] => Future[List[String]] = { inputs => Future.successful(inputs.map(_.toString).toList) }
+    def iterableToSet: Iterable[Int] => Future[List[String]] = { inputs => Future.successful(inputs.map(_.toString).toList) }
 
     def testSource(source: ClumpSource[Int, String]) =
       clumpResult(source.get(List(1, 2))) mustEqual Some(List("1", "2"))
@@ -150,9 +149,9 @@ class SourcesSpec extends Spec {
 
   "creates a clump source from various input/ouput type fetch functions (ClumpSource.from)" in {
 
-    def setToMap: Set[Int] => Future[Map[Int, String]] = { inputs => Future.value(inputs.map(input => (input, input.toString)).toMap) }
-    def listToMap: List[Int] => Future[Map[Int, String]] = { inputs => Future.value(inputs.map(input => (input, input.toString)).toMap) }
-    def iterableToMap: Iterable[Int] => Future[Map[Int, String]] = { inputs => Future.value(inputs.map(input => (input, input.toString)).toMap) }
+    def setToMap: Set[Int] => Future[Map[Int, String]] = { inputs => Future.successful(inputs.map(input => (input, input.toString)).toMap) }
+    def listToMap: List[Int] => Future[Map[Int, String]] = { inputs => Future.successful(inputs.map(input => (input, input.toString)).toMap) }
+    def iterableToMap: Iterable[Int] => Future[Map[Int, String]] = { inputs => Future.successful(inputs.map(input => (input, input.toString)).toMap) }
 
     def testSource(source: ClumpSource[Int, String]) =
       clumpResult(source.get(List(1, 2))) mustEqual Some(List("1", "2"))

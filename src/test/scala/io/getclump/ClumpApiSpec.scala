@@ -1,8 +1,6 @@
 package io.getclump
 
 import org.junit.runner.RunWith
-import com.twitter.util.Await
-import com.twitter.util.Future
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
@@ -17,19 +15,19 @@ class ClumpApiSpec extends Spec {
         "success" >> {
           "optional" >> {
             "defined" in {
-              clumpResult(Clump.future(Future.value(Some(1)))) mustEqual Some(1)
+              clumpResult(Clump.future(Future.successful(Some(1)))) mustEqual Some(1)
             }
             "undefined" in {
-              clumpResult(Clump.future(Future.value(None))) mustEqual None
+              clumpResult(Clump.future(Future.successful(None))) mustEqual None
             }
           }
           "non-optional" in {
-            clumpResult(Clump.future(Future.value(1))) mustEqual Some(1)
+            clumpResult(Clump.future(Future.successful(1))) mustEqual Some(1)
           }
         }
 
         "failure" in {
-          clumpResult(Clump.future(Future.exception(new IllegalStateException))) must throwA[IllegalStateException]
+          clumpResult(Clump.future(Future.failed(new IllegalStateException))) must throwA[IllegalStateException]
         }
       }
 
@@ -335,30 +333,30 @@ class ClumpApiSpec extends Spec {
 
     "can represent its result as a collection (clump.list) when its type is a collection" >> {
       "list" in {
-        Await.result(Clump.value(List(1, 2)).list) ==== List(1, 2)
+        awaitResult(Clump.value(List(1, 2)).list) ==== List(1, 2)
       }
       "set" in {
-        Await.result(Clump.value(Set(1, 2)).list) ==== Set(1, 2)
+        awaitResult(Clump.value(Set(1, 2)).list) ==== Set(1, 2)
       }
       "seq" in {
-        Await.result(Clump.value(Seq(1, 2)).list) ==== Seq(1, 2)
+        awaitResult(Clump.value(Seq(1, 2)).list) ==== Seq(1, 2)
       }
       // Clump.value(1).flatten //doesn't compile
     }
 
     "can provide a result falling back to a default (clump.getOrElse)" >> {
       "initial clump is undefined" in {
-        Await.result(Clump.value(None).getOrElse(1)) ==== 1
+        awaitResult(Clump.value(None).getOrElse(1)) ==== 1
       }
 
       "initial clump is defined" in {
-        Await.result(Clump.value(Some(2)).getOrElse(1)) ==== 2
+        awaitResult(Clump.value(Some(2)).getOrElse(1)) ==== 2
       }
     }
 
     "has a utility method (clump.apply) for unwrapping optional result" in {
-      Await.result(Clump.value(1).apply()) ==== 1
-      Await.result(Clump.value[Int](None)()) must throwA[NoSuchElementException]
+      awaitResult(Clump.value(1).apply()) ==== 1
+      awaitResult(Clump.value[Int](None)()) must throwA[NoSuchElementException]
     }
 
     "can be made optional (clump.optional) to avoid lossy joins" in {

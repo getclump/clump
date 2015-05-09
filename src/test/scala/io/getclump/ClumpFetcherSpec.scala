@@ -6,7 +6,6 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.Mockito.when
 import org.specs2.specification.Scope
-import com.twitter.util.Future
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
@@ -27,12 +26,15 @@ class ClumpFetcherSpec extends Spec {
     when(repo.fetch(Set(3))).thenReturn(Future(Map(3 -> 30)))
 
     val clump1 = Clump.traverse(List(1, 2))(source.get)
-
-    clumpResult(clump1) mustEqual Some(List(10, 20))
-
     val clump2 = Clump.traverse(List(2, 3))(source.get)
 
-    clumpResult(clump2) mustEqual Some(List(20, 30))
+    val clump =
+      for {
+        v1 <- clump1
+        v2 <- clump2
+      } yield (v1, v2)
+
+    clumpResult(clump) mustEqual Some((List(10, 20), List(20, 30)))
 
     verify(repo).fetch(Set(1, 2))
     verify(repo).fetch(Set(3))
@@ -62,7 +64,7 @@ class ClumpFetcherSpec extends Spec {
         }
 
       when(repo.fetch(Set(1)))
-        .thenReturn(Future.exception(new IllegalStateException))
+        .thenReturn(Future.failed(new IllegalStateException))
         .thenReturn(Future(Map(1 -> 10)))
 
       clumpResult(source.get(1)) mustEqual Some(10)
@@ -78,8 +80,8 @@ class ClumpFetcherSpec extends Spec {
         }
 
       when(repo.fetch(Set(1)))
-        .thenReturn(Future.exception(new IllegalStateException))
-        .thenReturn(Future.exception(new IllegalStateException))
+        .thenReturn(Future.failed(new IllegalStateException))
+        .thenReturn(Future.failed(new IllegalStateException))
 
       clumpResult(source.get(1)) must throwA[IllegalStateException]
 

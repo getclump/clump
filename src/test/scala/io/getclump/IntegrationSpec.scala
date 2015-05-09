@@ -1,8 +1,6 @@
 package io.getclump
 
 import org.junit.runner.RunWith
-import com.twitter.util.Await
-import com.twitter.util.Future
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
@@ -31,14 +29,14 @@ class IntegrationSpec extends Spec {
     val users = Clump.source(userRepositoryMock.usersFor _)
 
     tweetRepositoryMock.tweetsFor(Set(1L, 2L, 3L)) returns
-      Future.value(Map(
+      Future.successful(Map(
         1L -> Tweet("Tweet1", 10),
         2L -> Tweet("Tweet2", 20),
         3L -> Tweet("Tweet3", 30)
       ))
 
     userRepositoryMock.usersFor(Set(10L, 20L, 30L)) returns
-      Future.value(Map(
+      Future.successful(Map(
         10L -> User(10, "User10"),
         20L -> User(20, "User20"),
         30L -> User(30, "User30")
@@ -51,7 +49,7 @@ class IntegrationSpec extends Spec {
       } yield (tweet, user)
     }
 
-    Await.result(enrichedTweets.get) ==== Some(List(
+    awaitResult(enrichedTweets.get) ==== Some(List(
       (Tweet("Tweet1", 10), User(10, "User10")),
       (Tweet("Tweet2", 20), User(20, "User20")),
       (Tweet("Tweet3", 30), User(30, "User30"))))
@@ -65,14 +63,14 @@ class IntegrationSpec extends Spec {
     val users = Clump.source(parameterizedUserRepositoryMock.usersFor _)(_.userId)
 
     parameterizedTweetRepositoryMock.tweetsFor("foo", Set(1, 2, 3)) returns
-      Future.value(Map(
+      Future.successful(Map(
         1L -> Tweet("Tweet1", 10),
         2L -> Tweet("Tweet2", 20),
         3L -> Tweet("Tweet3", 30)
       ))
 
     parameterizedUserRepositoryMock.usersFor("bar", Set(10, 20, 30)) returns
-      Future.value(Set(
+      Future.successful(Set(
         User(10, "User10"),
         User(20, "User20"),
         User(30, "User30")
@@ -85,7 +83,7 @@ class IntegrationSpec extends Spec {
       } yield (tweet, user)
     }
 
-    Await.result(enrichedTweets.get) ==== Some(List(
+    awaitResult(enrichedTweets.get) ==== Some(List(
       (Tweet("Tweet1", 10), User(10, "User10")),
       (Tweet("Tweet2", 20), User(20, "User20")),
       (Tweet("Tweet3", 30), User(30, "User30"))))
@@ -105,7 +103,7 @@ class IntegrationSpec extends Spec {
         } yield (timeline, enrichedLikes)
       }
 
-    Await.result(enrichedTimelines.get) ==== Some(List(
+    awaitResult(enrichedTimelines.get) ==== Some(List(
       (Timeline(1, List(10, 20)), List(
         (Like(10, List(100, 200), List(1000, 2000)), List(Track(100, "Track100"), Track(200, "Track200")), List(User(1000, "User1000"), User(2000, "User2000"))),
         (Like(20, List(200, 400), List(2000, 4000)), List(Track(200, "Track200"), Track(400, "Track400")), List(User(2000, "User2000"), User(4000, "User4000"))))),
@@ -122,7 +120,7 @@ class IntegrationSpec extends Spec {
           users.get(tweet.userId).map(user => (tweet, user)))
       }
 
-    Await.result(enrichedTweets.get) ==== Some(List(
+    awaitResult(enrichedTweets.get) ==== Some(List(
       (Tweet("Tweet1", 10), User(10, "User10")),
       (Tweet("Tweet2", 20), User(20, "User20")),
       (Tweet("Tweet3", 30), User(30, "User30"))))
@@ -136,7 +134,7 @@ class IntegrationSpec extends Spec {
       } yield (tweet, user)
     }
 
-    Await.result(enrichedTweets.list) ==== List(
+    awaitResult(enrichedTweets.list) ==== List(
       (Tweet("Tweet1", 10), User(10, "User10")),
       (Tweet("Tweet2", 20), User(20, "User20")),
       (Tweet("Tweet3", 30), User(30, "User30")))
@@ -150,7 +148,7 @@ class IntegrationSpec extends Spec {
       } yield (tweet, user)
     }
 
-    Await.result(enrichedTweets.get) ==== Some(List(
+    awaitResult(enrichedTweets.get) ==== Some(List(
       (Tweet("Tweet1", 10), User(10, "User10")),
       (Tweet("Tweet2", 20), User(20, "User20")),
       (Tweet("Tweet3", 30), User(30, "User30"))))
@@ -164,7 +162,7 @@ class IntegrationSpec extends Spec {
       } yield (tweet, user)
     }
 
-    Await.result(onlyFullObjectGraph.get) ==== Some(List((Tweet("Tweet2", 20), User(20, "User20"))))
+    awaitResult(onlyFullObjectGraph.get) ==== Some(List((Tweet("Tweet2", 20), User(20, "User20"))))
 
     val partialResponses: Clump[List[(Tweet, Option[User])]] = Clump.traverse(1, 2, 3) { tweetId =>
       for {
@@ -173,7 +171,7 @@ class IntegrationSpec extends Spec {
       } yield (tweet, user)
     }
 
-    Await.result(partialResponses.get) ==== Some(List(
+    awaitResult(partialResponses.get) ==== Some(List(
       (Tweet("Tweet1", 10), None),
       (Tweet("Tweet2", 20), Some(User(20, "User20"))),
       (Tweet("Tweet3", 30), None)))
@@ -192,7 +190,7 @@ case class Track(trackId: Long, name: String)
 
 class TweetRepository {
   def tweetsFor(ids: Set[Long]): Future[Map[Long, Tweet]] = {
-    Future.value(ids.map(id => id -> Tweet(s"Tweet$id", id * 10)).toMap)
+    Future.successful(ids.map(id => id -> Tweet(s"Tweet$id", id * 10)).toMap)
   }
 }
 
@@ -202,7 +200,7 @@ trait ParameterizedTweetRepository {
 
 class UserRepository {
   def usersFor(ids: Set[Long]): Future[Map[Long, User]] = {
-    Future.value(ids.map(id => id -> User(id, s"User$id")).toMap)
+    Future.successful(ids.map(id => id -> User(id, s"User$id")).toMap)
   }
 }
 
@@ -212,30 +210,30 @@ trait ParameterizedUserRepository {
 
 class ZipUserRepository {
   def usersFor(ids: List[Long]): Future[List[User]] = {
-    Future.value(ids.map(id => User(id, s"User$id")))
+    Future.successful(ids.map(id => User(id, s"User$id")))
   }
 }
 
 class FilteredUserRepository {
   def usersFor(ids: Set[Long]): Future[Set[User]] = {
-    Future.value(ids.filter(_ % 20 == 0).map(id => User(id, s"User$id")))
+    Future.successful(ids.filter(_ % 20 == 0).map(id => User(id, s"User$id")))
   }
 }
 
 class TimelineRepository {
   def timelinesFor(ids: Set[Int]): Future[Set[Timeline]] = {
-    Future.value(ids.map(id => Timeline(id, List(id * 10, id * 20))))
+    Future.successful(ids.map(id => Timeline(id, List(id * 10, id * 20))))
   }
 }
 
 class LikeRepository {
   def likesFor(ids: Set[Long]): Future[Set[Like]] = {
-    Future.value(ids.map(id => Like(id, List(id * 10, id * 20), List(id * 100, id * 200))))
+    Future.successful(ids.map(id => Like(id, List(id * 10, id * 20), List(id * 100, id * 200))))
   }
 }
 
 class TrackRepository {
   def tracksFor(ids: Set[Long]): Future[Set[Track]] = {
-    Future.value(ids.map(id => Track(id, s"Track$id")))
+    Future.successful(ids.map(id => Track(id, s"Track$id")))
   }
 }

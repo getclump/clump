@@ -3,10 +3,6 @@ package io.getclump
 import scala.collection.mutable.ListBuffer
 import org.junit.runner.RunWith
 import org.specs2.specification.Scope
-import com.twitter.util.Future
-import com.twitter.util.JavaTimer
-import com.twitter.util.Promise
-import com.twitter.util.TimeConversions.intToTimeableNumber
 import org.specs2.runner.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
@@ -18,7 +14,7 @@ class ClumpExecutionSpec extends Spec {
 
     protected def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) = {
       fetches += inputs
-      Future.value(inputs.map(i => i -> i * 10).toMap)
+      Future.successful(inputs.map(i => i -> i * 10).toMap)
     }
 
     protected val source1 = Clump.source((i: Set[Int]) => fetchFunction(source1Fetches, i))
@@ -57,25 +53,6 @@ class ClumpExecutionSpec extends Spec {
       clumpResult(Clump.collect(clump1, clump2)) mustEqual Some(List(100, 200))
       source1Fetches mustEqual List(Set(1, 2))
       source2Fetches mustEqual List(Set(20, 10))
-    }
-
-    "for composition branches with different latencies" in new Context {
-      implicit val timer = new JavaTimer
-      val clump1 =
-        Clump.value(1).flatMap { int =>
-          Clump.future(Future.value(Some(int)))
-            .flatMap(source1.get)
-        }
-      val clump2 =
-        Clump.value(2).flatMap { int =>
-          Clump.future(Future.value(Some(int)).delayed(100 millis))
-            .flatMap(source1.get)
-        }
-
-      val clump = Clump.collect(clump1, clump2)
-
-      clumpResult(clump) mustEqual Some((List(10, 20)))
-      source1Fetches mustEqual List(Set(1, 2))
     }
 
     "for clumps composed using for comprehension" >> {
@@ -130,7 +107,7 @@ class ClumpExecutionSpec extends Spec {
       "using a future clump as base" in new Context {
         val clump =
           for {
-            int <- Clump.future(Future.value(Some(1)))
+            int <- Clump.future(Future.successful(Some(1)))
             collect1 <- Clump.collect(source1.get(int))
             collect2 <- Clump.collect(source2.get(int))
           } yield (collect1, collect2)
@@ -164,7 +141,7 @@ class ClumpExecutionSpec extends Spec {
     val promisesIterator = promises.iterator
 
     protected override def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) =
-      promisesIterator.next
+      promisesIterator.next.future
 
     val clump = source1.get(1).join(source2.get(2))
 

@@ -139,7 +139,10 @@ The execution model leverages on Applicative Functors to express the independenc
 
 # Getting started #
 
-To use clump, just add the dependency to the project's build configuration.
+To use clump, just add the dependency to the project's build configuration. There are two versions of the project:
+
+1. `clump-scala`, that uses Scala Futures and doesn't have external dependencies.
+2. `clump-twitter`, that uses Twitter Futures and has the dependency to `twitter-util`.
 
 __Important__: Change ```x.x.x``` with the latest version listed by the [CHANGELOG.md](https://github.com/getclump/clump/blob/master/CHANGELOG.md) file.
 
@@ -147,7 +150,13 @@ SBT
 
 ```scala
 libraryDependencies ++= Seq(
-  "io.getclump" %% "clump" % "x.x.x"
+  "io.getclump" %% "clump-scala" % "x.x.x"
+)
+```
+
+```scala
+libraryDependencies ++= Seq(
+  "io.getclump" %% "clump-twitter" % "x.x.x"
 )
 ```
 
@@ -156,7 +165,15 @@ Maven
 ```xml
 <dependency>
     <groupId>io.getclump</groupId>
-    <artifactId>clump</artifactId>
+    <artifactId>clump-scala</artifactId>
+    <version>x.x.x</version>
+</dependency>
+```
+
+```xml
+<dependency>
+    <groupId>io.getclump</groupId>
+    <artifactId>clump-twitter</artifactId>
     <version>x.x.x</version>
 </dependency>
 ```
@@ -487,19 +504,6 @@ val clump: Clump[User] =
     }
 ```
 
-# Scala Futures #
-
-Clump uses Twitter Futures by default, but it is possible to use Scala Futures by importing the ```FutureBridge```:
-
-```scala
-import io.getclump.FutureBridge._
-
-val userClump: Clump[User] = ...
-val future: scala.concurrent.Future[User] = userClump.get
-```
-
-It provides bidirectional implicit conversions. 
-
 # Internals #
 
 This section explains how Clump works under the hood.
@@ -590,8 +594,6 @@ There are three methods being used in this composition:
 2. ```flatMap``` creates a ```ClumpFlatMap``` instance [representing the operation](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L168). It just [composes a new future](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L174) that is based on the result of the initial Clump and the result of the nested Clump.
 
 3. ```map``` creates a ```ClumpMap``` instance [representing the map operation](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L161). It [composes a new future](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L164) by applying the specified transformation.
-
-Note that __any__ Clump composition creates a ```ClumpContext``` [implicitly](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/Clump.scala#L11) if it doesn't exist yet. The ```ClumpContext``` is maintained using a ```Local``` [value](https://github.com/getclump/clump/blob/v0.0.7/src/main/scala/io/getclump/ClumpContext.scala#L50), that is a [mechanism](https://github.com/twitter/util/blob/util-6.23.0/util-core/src/main/scala/com/twitter/util/Local.scala#L91) similar to a ```ThreadLocal``` but for asynchronous compositions.  
 
 ## Execution
 

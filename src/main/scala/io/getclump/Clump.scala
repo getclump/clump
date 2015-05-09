@@ -2,14 +2,9 @@ package io.getclump
 
 import scala.collection.generic.CanBuildFrom
 
-import com.twitter.util.Future
-import com.twitter.util.Return
-import com.twitter.util.Throw
 import scala.reflect.ClassTag
 
 sealed trait Clump[+T] {
-
-  private[this] val context = ClumpContext()
 
   /**
    * Create a new clump by applying a function to the result of this clump
@@ -103,7 +98,7 @@ sealed trait Clump[+T] {
    * than requested.
    */
   def get: Future[Option[T]] =
-    context
+    new ClumpContext()
       .flush(List(this))
       .flatMap { _ =>
         result
@@ -129,22 +124,22 @@ object Clump extends Joins with Sources {
   /**
    * The unit method: create a clump whose value has already been resolved to the input
    */
-  def value[T](value: T): Clump[T] = future(Future.value(Option(value)))
+  def value[T](value: T): Clump[T] = future(Future.successful(Option(value)))
 
   /**
    * The unit method: create a clump whose value has already been resolved to the input if it is defined
    */
-  def value[T](value: Option[T]): Clump[T] = future(Future.value(value))
+  def value[T](value: Option[T]): Clump[T] = future(Future.successful(value))
 
   /**
-  * Alias for [[value]]
-  */
+   * Alias for [[value]]
+   */
   def successful[T](value: T): Clump[T] = this.value(value)
 
   /**
    * Create a failed clump with the given exception
    */
-  def exception[T](exception: Throwable): Clump[T] = future(Future.exception(exception))
+  def exception[T](exception: Throwable): Clump[T] = future(Future.failed(exception))
 
   /**
    * Alias for [[exception]]
@@ -197,22 +192,27 @@ object Clump extends Joins with Sources {
 
 private[getclump] class ClumpFuture[T](val result: Future[Option[T]]) extends Clump[T] {
   val upstream = List()
-  val downstream = result.liftToTry.map(_ => List())
+  val downstream = result.map(_ => List()).recover {
+    case _ => List()
+  }
 }
 
-private[getclump] class ClumpFetch[T, U](input: T, val fetcher: ClumpFetcher[T, U]) extends Clump[U] {
+private[getclump] class ClumpFetch[T, U](input: T, val source: ClumpSource[T, U]) extends Clump[U] {
+  private val promise = Promise[Option[U]]
   val upstream = List()
-  val downstream = Future.value(List())
-  val result = fetcher.get(input)
+  val downstream = Future.successful(List())
+  val result = promise.future
+  def attachTo(fetcher: ClumpFetcher[T, U]) =
+    fetcher.get(input).onComplete(promise.complete)
 }
 
 private[getclump] class ClumpJoin[A, B](a: Clump[A], b: Clump[B]) extends Clump[(A, B)] {
   val upstream = List(a, b)
-  val downstream = Future.value(List())
+  val downstream = Future.successful(List())
   val result =
-    a.result.join(b.result)
+    a.result.zip(b.result)
       .map {
-        case (Some(valueA), Some(valueB)) => Some(valueA, valueB)
+        case (Some(valueA), Some(valueB)) => Some((valueA, valueB))
         case _                            => None
       }
 }
@@ -221,10 +221,10 @@ private[getclump] class ClumpCollect[T, C[_] <: Iterable[_]](clumps: C[Clump[T]]
   val upstream =
     clumps.toList.asInstanceOf[List[Clump[T]]]
   val downstream =
-    Future.value(List())
+    Future.successful(List())
   val result =
     Future
-      .collect(upstream.map(_.result))
+      .sequence(upstream.map(_.result))
       .map(_.flatten)
       .map(cbf.apply().++=(_).result)
       .map(Some(_))
@@ -232,7 +232,7 @@ private[getclump] class ClumpCollect[T, C[_] <: Iterable[_]](clumps: C[Clump[T]]
 
 private[getclump] class ClumpMap[T, U](clump: Clump[T], f: T => U) extends Clump[U] {
   val upstream = List(clump)
-  val downstream = Future.value(List())
+  val downstream = Future.successful(List())
   val result =
     clump.result.map(_.map(f))
 }
@@ -246,24 +246,23 @@ private[getclump] class ClumpFlatMap[T, U](clump: Clump[T], f: T => Clump[U]) ex
   val result =
     partial.flatMap {
       case Some(clump) => clump.result
-      case None        => Future.None
+      case None        => Future.successful(None)
     }
 }
 
 private[getclump] class ClumpHandle[T](clump: Clump[T], f: PartialFunction[Throwable, Option[T]]) extends Clump[T] {
   val upstream = List(clump)
-  val downstream = Future.value(List())
+  val downstream = Future.successful(List())
   val result =
-    clump.result.handle(f)
+    clump.result.recover(f)
 }
 
 private[getclump] class ClumpRescue[T](clump: Clump[T], rescue: PartialFunction[Throwable, Clump[T]]) extends Clump[T] {
   val upstream = List(clump)
   val partial =
-    clump.result.liftToTry.map {
-      case Throw(exception) if (rescue.isDefinedAt(exception)) => rescue(exception)
-      case Throw(exception)                                    => Clump.exception(exception)
-      case Return(value)                                       => Clump.value(value)
+    clump.result.map(Clump.value).recover {
+      case exception if (rescue.isDefinedAt(exception)) => rescue(exception)
+      case exception                                    => Clump.exception(exception)
     }
   val downstream =
     partial.map(List(_))
@@ -273,7 +272,7 @@ private[getclump] class ClumpRescue[T](clump: Clump[T], rescue: PartialFunction[
 
 private[getclump] class ClumpFilter[T](clump: Clump[T], f: T => Boolean) extends Clump[T] {
   val upstream = List(clump)
-  val downstream = Future.value(List())
+  val downstream = Future.successful(List())
   val result =
     clump.result.map(_.filter(f))
 }
@@ -293,6 +292,6 @@ private[getclump] class ClumpOrElse[T](clump: Clump[T], default: => Clump[T]) ex
 
 private[getclump] class ClumpOptional[T](clump: Clump[T]) extends Clump[Option[T]] {
   val upstream = List(clump)
-  val downstream = Future.value(List())
+  val downstream = Future.successful(List())
   val result = clump.result.map(Some(_))
 }

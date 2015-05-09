@@ -2,21 +2,18 @@ package io.getclump
 
 import scala.collection.mutable.{Map => MutableMap}
 
-import com.twitter.util.Future
-import com.twitter.util.Promise
-
 private[getclump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
 
   private[this] val fetches = MutableMap[T, Promise[Option[U]]]()
 
   def get(input: T): Future[Option[U]] =
     synchronized {
-      fetches.getOrElseUpdate(input, Promise[Option[U]])
+      fetches.getOrElseUpdate(input, Promise[Option[U]]).future
     }
 
   def flush: Future[Unit] =
     synchronized {
-      Future.collect(flushInBatches).unit
+      Future.sequence(flushInBatches).map(_ => ())
     }
 
   private[this] def flushInBatches =
@@ -30,13 +27,13 @@ private[getclump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
     for (input <- batch) {
       val fetch = fetches(input)
       val fetchResult = results.map(_.get(input))
-      fetchResult.proxyTo(fetch)
+      fetchResult.onComplete(fetch.complete)
     }
     results
   }
 
   private[this] def fetchWithRetries(batch: Set[T], retries: Int): Future[Map[T, U]] =
-    source.fetch(batch).rescue {
+    source.fetch(batch).recoverWith {
       case exception: Throwable if (maxRetries(exception) > retries) =>
         fetchWithRetries(batch, retries + 1)
     }
@@ -46,6 +43,6 @@ private[getclump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
 
   private[this] def pendingFetches =
     fetches.collect {
-      case (key, fetch) if (!fetch.poll.isDefined) => key
+      case (key, fetch) if (!fetch.isCompleted) => key
     }.toSet
 }
