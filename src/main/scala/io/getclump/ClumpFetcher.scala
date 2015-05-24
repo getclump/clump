@@ -1,10 +1,10 @@
 package io.getclump
 
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.mutable
 
 private[getclump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
 
-  private[this] val fetches = MutableMap[T, Promise[Option[U]]]()
+  private[this] val fetches = mutable.LinkedHashMap[T, Promise[Option[U]]]()
 
   def get(input: T): Future[Option[U]] =
     synchronized {
@@ -22,7 +22,7 @@ private[getclump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
       .toList
       .map(fetchBatch)
 
-  private[this] def fetchBatch(batch: Set[T]) = {
+  private[this] def fetchBatch(batch: List[T]) = {
     val results = fetchWithRetries(batch, 0)
     for (input <- batch) {
       val fetch = fetches(input)
@@ -32,7 +32,7 @@ private[getclump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
     results
   }
 
-  private[this] def fetchWithRetries(batch: Set[T], retries: Int): Future[Map[T, U]] =
+  private[this] def fetchWithRetries(batch: List[T], retries: Int): Future[Map[T, U]] =
     source.fetch(batch).recoverWith {
       case exception: Throwable if (maxRetries(exception) > retries) =>
         fetchWithRetries(batch, retries + 1)
@@ -44,5 +44,5 @@ private[getclump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
   private[this] def pendingFetches =
     fetches.collect {
       case (key, fetch) if (!fetch.isCompleted) => key
-    }.toSet
+    }.toList
 }
