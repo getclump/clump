@@ -11,7 +11,8 @@ import org.specs2.runner.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class ClumpFetcherSpec extends Spec {
 
-  trait Context extends Scope {
+  trait SetContext extends Scope {
+
     trait TestRepository {
       def fetch(inputs: Set[Int]): Future[Map[Int, Int]]
     }
@@ -19,7 +20,16 @@ class ClumpFetcherSpec extends Spec {
     val repo = smartMock[TestRepository]
   }
 
-  "memoizes the results of previous fetches" in new Context {
+  trait ListContext extends Scope {
+
+    trait TestRepository {
+      def fetch(inputs: List[Int]): Future[List[String]]
+    }
+
+    val repo = smartMock[TestRepository]
+  }
+
+  "memoizes the results of previous fetches" in new SetContext {
     val source = Clump.source(repo.fetch _)
 
     when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
@@ -41,7 +51,7 @@ class ClumpFetcherSpec extends Spec {
     verifyNoMoreInteractions(repo)
   }
 
-  "limits the batch size" in new Context {
+  "limits the batch size" in new SetContext {
     val source = Clump.source(repo.fetch _).maxBatchSize(2)
 
     when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
@@ -57,7 +67,7 @@ class ClumpFetcherSpec extends Spec {
   }
 
   "retries failed fetches" >> {
-    "success (below the retries limit)" in new Context {
+    "success (below the retries limit)" in new SetContext {
       val source =
         Clump.source(repo.fetch _).maxRetries {
           case e: IllegalStateException => 1
@@ -73,7 +83,7 @@ class ClumpFetcherSpec extends Spec {
       verifyNoMoreInteractions(repo)
     }
 
-    "failure (above the retries limit)" in new Context {
+    "failure (above the retries limit)" in new SetContext {
       val source =
         Clump.source(repo.fetch _).maxRetries {
           case e: IllegalStateException => 1
@@ -88,5 +98,17 @@ class ClumpFetcherSpec extends Spec {
       verify(repo, times(2)).fetch(Set(1))
       verifyNoMoreInteractions(repo)
     }
+  }
+
+  "honours call order for fetches" in new ListContext {
+    val source = Clump.source(repo.fetch _)(_.toInt)
+    when(repo.fetch(List(1, 2, 3))).thenReturn(Future(List("1", "2", "3")))
+    when(repo.fetch(List(1, 3, 2))).thenReturn(Future(List("1", "3", "2")))
+
+    clumpResult(Clump.traverse(List(1, 2, 3))(source.get))
+    verify(repo).fetch(List(1, 2, 3))
+
+    clumpResult(Clump.traverse(List(1, 3, 2))(source.get))
+    verify(repo).fetch(List(1, 3, 2))
   }
 }

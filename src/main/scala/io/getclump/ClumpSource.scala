@@ -1,7 +1,7 @@
 package io.getclump
 
 
-class ClumpSource[T, U] private[getclump] (val fetch: Set[T] => Future[Map[T, U]],
+class ClumpSource[T, U] private[getclump] (val fetch: List[T] => Future[Map[T, U]],
                                            val maxBatchSize: Int = Int.MaxValue,
                                            val _maxRetries: PartialFunction[Throwable, Int] = PartialFunction.empty) {
 
