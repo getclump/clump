@@ -1,6 +1,6 @@
 # 0.0.13 / 31-May-2015
 
-* `ClumpFetch` now honors original `ClumpSource` call order when fetching from underlying source
+* `ClumpFetch` now honors original `ClumpSource` call order when fetching from underlying source (https://github.com/getclump/clump/pull/92)
 
 # 0.0.12 / 9-May-2015
 
