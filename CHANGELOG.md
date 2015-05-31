@@ -1,3 +1,7 @@
+# 0.0.13 / 31-May-2015
+
+* `ClumpFetch` now honors original `ClumpSource` call order when fetching from underlying source
+
 # 0.0.12 / 9-May-2015
 
 * Generate artifact without the twitter-util dependency (https://github.com/getclump/clump/pull/91)
