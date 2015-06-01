@@ -9,10 +9,16 @@ protected[getclump] trait Sources extends Tuples {
    * Since the order of the list of values is undefined, also must provide a function that takes the value and returns
    * the key used to get that value.
    */
-  def source[KS, V, K](fetch: KS => Future[Iterable[V]])(keyExtractor: V => K)
-                      (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[K, V] =
+  def source[V, K, C[_] <: Iterable[_]](fetch: C[K] => Future[Iterable[V]])(keyExtractor: V => K)
+                      (implicit cbf: CanBuildFrom[Nothing, K, C[K]]): ClumpSource[K, V] =
     new ClumpSource(extractKeys(adaptInput(fetch), keyExtractor))
 
+
+  def source[K, V](fetch: K => Future[V]): ClumpSource[K, V] = {
+    def singletonFetch(keys: Set[K]) = fetch(keys.head).map(value => Map(keys.head -> value))
+    val clumpSource: ClumpSource[K, V] = source(singletonFetch _)
+    clumpSource.maxBatchSize(1)
+  }
   /**
    * Similar to [[source]] but also accepts 1 extra params
    */
@@ -44,8 +50,8 @@ protected[getclump] trait Sources extends Tuples {
   /**
    * Create a clump source from a function that accepts inputs and returns a future map from input to resulting value.
    */
-  def source[KS, K, V](fetch: KS => Future[Map[K, V]])
-                      (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[K, V] =
+  def source[K, V, C[_] <: Iterable[_]](fetch: C[K] => Future[Map[K, V]])
+                      (implicit cbf: CanBuildFrom[Nothing, K, C[K]]): ClumpSource[K, V] =
     new ClumpSource(adaptOutput(adaptInput(fetch)))
 
   /**

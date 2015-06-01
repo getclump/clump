@@ -12,6 +12,7 @@ class IntegrationSpec extends Spec {
   val timelineRepository = new TimelineRepository
   val likeRepository = new LikeRepository
   val trackRepository = new TrackRepository
+  val topTracksRepository = new TopTracksRepository
 
   val tweets = Clump.source(tweetRepository.tweetsFor _)
   val users = Clump.source(userRepository.usersFor _)
@@ -27,6 +28,7 @@ class IntegrationSpec extends Spec {
 
     val userRepositoryMock = mock[UserRepository]
     val users = Clump.source(userRepositoryMock.usersFor _)
+    val topTracks = Clump.source(topTracksRepository.topTracksFor _)
 
     tweetRepositoryMock.tweetsFor(Set(1L, 2L, 3L)) returns
       Future.successful(Map(
@@ -46,13 +48,14 @@ class IntegrationSpec extends Spec {
       for {
         tweet <- tweets.get(tweetId)
         user <- users.get(tweet.userId)
-      } yield (tweet, user)
+        tracks <- topTracks.get(user)
+      } yield (tweet, user, tracks)
     }
 
     awaitResult(enrichedTweets.get) ==== Some(List(
-      (Tweet("Tweet1", 10), User(10, "User10")),
-      (Tweet("Tweet2", 20), User(20, "User20")),
-      (Tweet("Tweet3", 30), User(30, "User30"))))
+      (Tweet("Tweet1", 10), User(10, "User10"), Set(Track(10, "Track10"), Track(11, "Track11"), Track(12, "Track12"))),
+      (Tweet("Tweet2", 20), User(20, "User20"), Set(Track(20, "Track20"), Track(21, "Track21"), Track(22, "Track22"))),
+      (Tweet("Tweet3", 30), User(30, "User30"), Set(Track(30, "Track30"), Track(31, "Track31"), Track(32, "Track32")))))
   }
 
   "A Clump should batch calls to parameterized services" in {
@@ -235,5 +238,13 @@ class LikeRepository {
 class TrackRepository {
   def tracksFor(ids: Set[Long]): Future[Set[Track]] = {
     Future.successful(ids.map(id => Track(id, s"Track$id")))
+  }
+}
+
+class TopTracksRepository {
+  def topTracksFor(user: User): Future[Set[Track]] = {
+    def track(id: Long): Track = Track(id, s"Track$id")
+    val userId = user.userId
+    Future.successful(Set(track(userId), track(userId + 1), track(userId + 2)))
   }
 }

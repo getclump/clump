@@ -120,6 +120,15 @@ class SourcesSpec extends Spec {
     }
   }
 
+  "creates a clump source from a singly keyed fetch function" in {
+    def fetch(input: Int) = Future.successful(Set(input, input + 1, input + 2))
+
+    val source = Clump.source(fetch _)
+
+    clumpResult(source.get(1)) ==== Some(Set(1, 2, 3))
+    clumpResult(source.get(2)) ==== Some(Set(2, 3, 4))
+  }
+
   "creates a clump source from various input/ouput type fetch functions (ClumpSource.apply)" in {
     def setToSet: Set[Int] => Future[Set[String]] = { inputs => Future.successful(inputs.map(_.toString)) }
     def listToList: List[Int] => Future[List[String]] = { inputs => Future.successful(inputs.map(_.toString)) }
