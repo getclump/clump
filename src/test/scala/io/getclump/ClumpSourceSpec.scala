@@ -39,7 +39,20 @@ class ClumpSourceSpec extends Spec {
 
       val clump = source.get(List(1, 2))
 
-      clumpResult(clump) mustEqual Some(List(10, 20))
+      clumpResult(clump) ==== Some(List(10, 20))
+
+      verify(repo).fetch(Set(1, 2))
+      verifyNoMoreInteractions(repo)
+    }
+
+    "using set" in new Context {
+      val source = Clump.source(repo.fetch _)
+
+      when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
+
+      val clump = source.get(Set(1, 2))
+
+      clumpResult(clump) ==== Some(Set(10, 20))
 
       verify(repo).fetch(Set(1, 2))
       verifyNoMoreInteractions(repo)
