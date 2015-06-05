@@ -1,5 +1,7 @@
 package io.getclump
 
+import scala.collection.generic.CanBuildFrom
+
 
 class ClumpSource[T, U] private[getclump] (val fetch: List[T] => Future[Map[T, U]],
                                            val maxBatchSize: Int = Int.MaxValue,
@@ -8,8 +10,11 @@ class ClumpSource[T, U] private[getclump] (val fetch: List[T] => Future[Map[T, U
   /**
    * Get a list of values from a clump source
    */
-  def get(inputs: List[T]): Clump[List[U]] =
-    Clump.collect(inputs.map(get))
+  def get[C[_] <: Iterable[_]](inputs: C[T])(implicit cbf: CanBuildFrom[Nothing, U, C[U]]): Clump[C[U]] = {
+    val listInputs = inputs.toList.asInstanceOf[List[T]]
+    val clumpList = Clump.collect(listInputs.map(get))
+    clumpList.map(list => cbf.apply().++=(list).result())
+  }
 
   /**
    * Get a single value from a clump source
