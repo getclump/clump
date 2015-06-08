@@ -28,7 +28,7 @@ class IntegrationSpec extends Spec {
 
     val userRepositoryMock = mock[UserRepository]
     val users = Clump.source(userRepositoryMock.usersFor _)
-    val topTracks = Clump.source(topTracksRepository.topTracksFor _)
+    val topTracks = Clump.sourceSingle(topTracksRepository.topTracksFor _)
 
     tweetRepositoryMock.tweetsFor(Set(1L, 2L, 3L)) returns
       Future.successful(Map(

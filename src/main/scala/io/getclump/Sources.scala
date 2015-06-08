@@ -9,18 +9,12 @@ protected[getclump] trait Sources extends Tuples {
    * Since the order of the list of values is undefined, also must provide a function that takes the value and returns
    * the key used to get that value.
    */
-  def source[V, K, C[_] <: Iterable[_]](fetch: C[K] => Future[Iterable[V]])(keyExtractor: V => K)
-                      (implicit cbf: CanBuildFrom[Nothing, K, C[K]]): ClumpSource[K, V] =
+  def source[KS, V, K](fetch: KS => Future[Iterable[V]])(keyExtractor: V => K)
+                      (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[K, V] =
     new ClumpSource(extractKeys(adaptInput(fetch), keyExtractor))
 
-
-  def source[K, V](fetch: K => Future[V]): ClumpSource[K, V] = {
-    def singletonFetch(keys: Set[K]) = fetch(keys.head).map(value => Map(keys.head -> value))
-    val clumpSource: ClumpSource[K, V] = source(singletonFetch _)
-    clumpSource.maxBatchSize(1)
-  }
   /**
-   * Similar to [[source]] but also accepts 1 extra params
+   * Similar to [[source]] but also accepts 1 extra param
    */
   def source[A, KS, V, K](fetch: (A, KS) => Future[Iterable[V]])(keyExtractor: V => K)
                          (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, K), V] =
@@ -50,12 +44,12 @@ protected[getclump] trait Sources extends Tuples {
   /**
    * Create a clump source from a function that accepts inputs and returns a future map from input to resulting value.
    */
-  def source[K, V, C[_] <: Iterable[_]](fetch: C[K] => Future[Map[K, V]])
-                      (implicit cbf: CanBuildFrom[Nothing, K, C[K]]): ClumpSource[K, V] =
+  def source[KS, K, V](fetch: KS => Future[Map[K, V]])
+                      (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[K, V] =
     new ClumpSource(adaptOutput(adaptInput(fetch)))
 
   /**
-   * Similar to [[source]] but also accepts 1 extra params
+   * Similar to [[source]] but also accepts 1 extra param
    */
   def source[A, KS, K, V](fetch: (A, KS) => Future[Map[K, V]])
                          (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, K), V] =
@@ -91,7 +85,7 @@ protected[getclump] trait Sources extends Tuples {
     new ClumpSource(zipped(fetch))
 
   /**
-   * Similar to [[sourceZip]] but also accepts 1 extra params
+   * Similar to [[sourceZip]] but also accepts 1 extra param
    */
   def sourceZip[A, K, V](fetch: (A, List[K]) => Future[List[V]]): ClumpSource[(A, K), V] =
     new ClumpSource(parameterizeFetchZip(normalize1, fetch1(fetch)))
@@ -113,6 +107,32 @@ protected[getclump] trait Sources extends Tuples {
    */
   def sourceZip[A, B, C, D, K, V](fetch: (A, B, C, D, List[K]) => Future[List[V]]): ClumpSource[(A, B, C, D, K), V] =
     new ClumpSource(parameterizeFetchZip(normalize4, fetch4(fetch)))
+
+  /**
+   * Create a clump source from a function that accepts a single input and returns a future value.
+   * This is for creating a clump source for an endpoint that doesn't support bulk fetches.
+   */
+  def sourceSingle[K, V](fetch: K => Future[V]): ClumpSource[K, V] = source(adapt(fetch))
+
+  /**
+   * Similar to [[sourceSingle]] but also accepts 1 extra param
+   */
+  def sourceSingle[A, K, V](fetch: (A, K) => Future[V]): ClumpSource[(A, K), V] = source(adapt1(fetch))
+
+  /**
+   * Similar to [[sourceSingle]] but also accepts 2 extra params
+   */
+  def sourceSingle[A, B, K, V](fetch: (A, B, K) => Future[V]): ClumpSource[(A, B, K), V] = source(adapt2(fetch))
+
+  /**
+   * Similar to [[sourceSingle]] but also accepts 3 extra params
+   */
+  def sourceSingle[A, B, C, K, V](fetch: (A, B, C, K) => Future[V]): ClumpSource[(A, B, C, K), V] = source(adapt3(fetch))
+
+  /**
+   * Similar to [[sourceSingle]] but also accepts 4 extra params
+   */
+  def sourceSingle[A, B, C, D, K, V](fetch: (A, B, C, D, K) => Future[V]): ClumpSource[(A, B, C, D, K), V] = source(adapt4(fetch))
 
   private[this] def parameterizeFetch[I, P, O, T, C](normalize: I => (P, T), denormalize: (P, T) => I, fetch: (P, C) => Future[Iterable[O]], extractKey: O => T)
                                                     (implicit cbf: CanBuildFrom[Nothing, T, C]): List[I] => Future[Map[I, O]] =
