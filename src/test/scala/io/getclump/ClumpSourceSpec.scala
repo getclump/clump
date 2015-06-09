@@ -97,4 +97,9 @@ class ClumpSourceSpec extends Spec {
       verifyNoMoreInteractions(repo)
     }
   }
+  
+  "limits the batch size to 100 by default" in new Context {
+    val source = Clump.source(repo.fetch _)
+    source.maxBatchSize mustEqual 100
+  }
 }
