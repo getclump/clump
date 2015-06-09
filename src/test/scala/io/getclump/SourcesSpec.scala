@@ -120,6 +120,40 @@ class SourcesSpec extends Spec {
     }
   }
 
+  "creates a clump source from a singly keyed fetch function" >> {
+    "single key input" in {
+      def fetch(input: Int) = Future.successful(Set(input, input + 1, input + 2))
+
+      val source = Clump.sourceSingle(fetch _)
+
+      clumpResult(source.get(1)) ==== Some(Set(1, 2, 3))
+      clumpResult(source.get(2)) ==== Some(Set(2, 3, 4))
+      clumpResult(source.get(List(1, 2))) ==== Some(List(Set(1, 2, 3), Set(2, 3, 4)))
+    }
+    "extra params" >> {
+      "one" in {
+        def fetch(param1: String, input: Int) = Future.successful(input + param1)
+        val source = Clump.sourceSingle(fetch _)
+        clumpResult(source.get("a", 2)) mustEqual Some("2a")
+      }
+      "two" in {
+        def fetch(param1: String, param2: List[Int], input: Int) = Future.successful(input + param1 + param2.mkString)
+        val source = Clump.sourceSingle(fetch _)
+        clumpResult(source.get("a", List(1, 2), 3)) mustEqual Some("3a12")
+      }
+      "three" in {
+        def fetch(param1: String, param2: List[Int], param3: Int, input: Int) = Future.successful(input + param1 + param2.mkString + param3)
+        val source = Clump.sourceSingle(fetch _)
+        clumpResult(source.get("a", List(1, 2), 3, 4)) mustEqual Some("4a123")
+      }
+      "four" in {
+        def fetch(param1: String, param2: List[Int], param3: Int, param4: List[String], input: Int) = Future.successful(input + param1 + param2.mkString + param3 + param4.mkString)
+        val source = Clump.sourceSingle(fetch _)
+        clumpResult(source.get("a", List(1, 2), 3, List("b","c"), 4)) mustEqual Some("4a123bc")
+      }
+    }
+  }
+
   "creates a clump source from various input/ouput type fetch functions (ClumpSource.apply)" in {
     def setToSet: Set[Int] => Future[Set[String]] = { inputs => Future.successful(inputs.map(_.toString)) }
     def listToList: List[Int] => Future[List[String]] = { inputs => Future.successful(inputs.map(_.toString)) }

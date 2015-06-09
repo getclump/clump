@@ -14,7 +14,7 @@ protected[getclump] trait Sources extends Tuples {
     new ClumpSource(extractKeys(adaptInput(fetch), keyExtractor))
 
   /**
-   * Similar to [[source]] but also accepts 1 extra params
+   * Similar to [[source]] but also accepts 1 extra param
    */
   def source[A, KS, V, K](fetch: (A, KS) => Future[Iterable[V]])(keyExtractor: V => K)
                          (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, K), V] =
@@ -49,7 +49,7 @@ protected[getclump] trait Sources extends Tuples {
     new ClumpSource(adaptOutput(adaptInput(fetch)))
 
   /**
-   * Similar to [[source]] but also accepts 1 extra params
+   * Similar to [[source]] but also accepts 1 extra param
    */
   def source[A, KS, K, V](fetch: (A, KS) => Future[Map[K, V]])
                          (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, K), V] =
@@ -85,7 +85,7 @@ protected[getclump] trait Sources extends Tuples {
     new ClumpSource(zipped(fetch))
 
   /**
-   * Similar to [[sourceZip]] but also accepts 1 extra params
+   * Similar to [[sourceZip]] but also accepts 1 extra param
    */
   def sourceZip[A, K, V](fetch: (A, List[K]) => Future[List[V]]): ClumpSource[(A, K), V] =
     new ClumpSource(parameterizeFetchZip(normalize1, fetch1(fetch)))
@@ -107,6 +107,32 @@ protected[getclump] trait Sources extends Tuples {
    */
   def sourceZip[A, B, C, D, K, V](fetch: (A, B, C, D, List[K]) => Future[List[V]]): ClumpSource[(A, B, C, D, K), V] =
     new ClumpSource(parameterizeFetchZip(normalize4, fetch4(fetch)))
+
+  /**
+   * Create a clump source from a function that accepts a single input and returns a future value.
+   * This is for creating a clump source for an endpoint that doesn't support bulk fetches.
+   */
+  def sourceSingle[K, V](fetch: K => Future[V]): ClumpSource[K, V] = source(adapt(fetch))
+
+  /**
+   * Similar to [[sourceSingle]] but also accepts 1 extra param
+   */
+  def sourceSingle[A, K, V](fetch: (A, K) => Future[V]): ClumpSource[(A, K), V] = source(adapt1(fetch))
+
+  /**
+   * Similar to [[sourceSingle]] but also accepts 2 extra params
+   */
+  def sourceSingle[A, B, K, V](fetch: (A, B, K) => Future[V]): ClumpSource[(A, B, K), V] = source(adapt2(fetch))
+
+  /**
+   * Similar to [[sourceSingle]] but also accepts 3 extra params
+   */
+  def sourceSingle[A, B, C, K, V](fetch: (A, B, C, K) => Future[V]): ClumpSource[(A, B, C, K), V] = source(adapt3(fetch))
+
+  /**
+   * Similar to [[sourceSingle]] but also accepts 4 extra params
+   */
+  def sourceSingle[A, B, C, D, K, V](fetch: (A, B, C, D, K) => Future[V]): ClumpSource[(A, B, C, D, K), V] = source(adapt4(fetch))
 
   private[this] def parameterizeFetch[I, P, O, T, C](normalize: I => (P, T), denormalize: (P, T) => I, fetch: (P, C) => Future[Iterable[O]], extractKey: O => T)
                                                     (implicit cbf: CanBuildFrom[Nothing, T, C]): List[I] => Future[Map[I, O]] =
