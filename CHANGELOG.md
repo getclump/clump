@@ -1,3 +1,8 @@
+# 0.0.14 / 19-Jun-2015
+
+* Set default max batch size of 100 for `ClumpSource` (https://github.com/getclump/clump/pull/95)
+* Add `Clump.sourceSingle` for creating a clump source for an endpoint that doesn't support bulk fetches. (https://github.com/getclump/clump/pull/93)
+
 # 0.0.13 / 31-May-2015
 
 * `ClumpFetch` now honors original `ClumpSource` call order when fetching from underlying source (https://github.com/getclump/clump/pull/92)
