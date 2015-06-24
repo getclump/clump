@@ -1,114 +1,100 @@
 package io.getclump
 
-import org.junit.runner.RunWith
-import org.mockito.Mockito.times
-import org.mockito.Mockito.verify
-import org.mockito.Mockito.verifyNoMoreInteractions
-import org.mockito.Mockito.when
-import org.specs2.specification.Scope
-import org.specs2.runner.JUnitRunner
+import utest._
 
-@RunWith(classOf[JUnitRunner])
-class ClumpFetcherSpec extends Spec {
+object ClumpFetcherSpec extends Spec {
 
-  trait SetContext extends Scope {
+  val tests = TestSuite {
 
-    trait TestRepository {
-      def fetch(inputs: Set[Int]): Future[Map[Int, Int]]
+    "memoizes the results of previous fetches" - {
+      object repo {
+        def fetch(inputs: List[Int]) =
+          inputs match {
+            case List(1, 2) => Future(Map(1 -> 10, 2 -> 20))
+            case List(3)    => Future(Map(3 -> 30))
+          }
+      }
+
+      val source = Clump.source(repo.fetch _)
+      val clump1 = Clump.traverse(List(1, 2))(source.get)
+      val clump2 = Clump.traverse(List(2, 3))(source.get)
+
+      val clump =
+        for {
+          v1 <- clump1
+          v2 <- clump2
+        } yield (v1, v2)
+
+      assert(clumpResult(clump) == Some((List(10, 20), List(20, 30))))
     }
 
-    val repo = smartMock[TestRepository]
-  }
+    "limits the batch size" - {
+      object repo {
+        def fetch(inputs: List[Int]) =
+          inputs match {
+            case List(1, 2) => Future(Map(1 -> 10, 2 -> 20))
+            case List(3)    => Future(Map(3 -> 30))
+          }
+      }
 
-  trait ListContext extends Scope {
+      val source = Clump.source(repo.fetch _).maxBatchSize(2)
 
-    trait TestRepository {
-      def fetch(inputs: List[Int]): Future[List[String]]
+      val clump = Clump.traverse(List(1, 2, 3))(source.get)
+
+      assert(clumpResult(clump) == Some(List(10, 20, 30)))
     }
 
-    val repo = smartMock[TestRepository]
-  }
-
-  "memoizes the results of previous fetches" in new SetContext {
-    val source = Clump.source(repo.fetch _)
-
-    when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
-    when(repo.fetch(Set(3))).thenReturn(Future(Map(3 -> 30)))
-
-    val clump1 = Clump.traverse(List(1, 2))(source.get)
-    val clump2 = Clump.traverse(List(2, 3))(source.get)
-
-    val clump =
-      for {
-        v1 <- clump1
-        v2 <- clump2
-      } yield (v1, v2)
-
-    clumpResult(clump) mustEqual Some((List(10, 20), List(20, 30)))
-
-    verify(repo).fetch(Set(1, 2))
-    verify(repo).fetch(Set(3))
-    verifyNoMoreInteractions(repo)
-  }
-
-  "limits the batch size" in new SetContext {
-    val source = Clump.source(repo.fetch _).maxBatchSize(2)
-
-    when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
-    when(repo.fetch(Set(3))).thenReturn(Future(Map(3 -> 30)))
-
-    val clump = Clump.traverse(List(1, 2, 3))(source.get)
-
-    clumpResult(clump) mustEqual Some(List(10, 20, 30))
-
-    verify(repo).fetch(Set(1, 2))
-    verify(repo).fetch(Set(3))
-    verifyNoMoreInteractions(repo)
-  }
-
-  "retries failed fetches" >> {
-    "success (below the retries limit)" in new SetContext {
-      val source =
-        Clump.source(repo.fetch _).maxRetries {
-          case e: IllegalStateException => 1
+    "retries failed fetches" - {
+      "success (below the retries limit)" - {
+        object repo {
+          private var firstCall = true
+          def fetch(inputs: List[Int]) =
+            if (firstCall) {
+              firstCall = false
+              Future.failed(new IllegalStateException)
+            } else
+              inputs match {
+                case List(1) => Future(Map(1 -> 10))
+              }
         }
 
-      when(repo.fetch(Set(1)))
-        .thenReturn(Future.failed(new IllegalStateException))
-        .thenReturn(Future(Map(1 -> 10)))
+        val source =
+          Clump.source(repo.fetch _).maxRetries {
+            case e: IllegalStateException => 1
+          }
 
-      clumpResult(source.get(1)) mustEqual Some(10)
+        assert(clumpResult(source.get(1)) == Some(10))
+      }
 
-      verify(repo, times(2)).fetch(Set(1))
-      verifyNoMoreInteractions(repo)
-    }
-
-    "failure (above the retries limit)" in new SetContext {
-      val source =
-        Clump.source(repo.fetch _).maxRetries {
-          case e: IllegalStateException => 1
+      "failure (above the retries limit)" - {
+        object repo {
+          def fetch(inputs: List[Int]): Future[Map[Int, Int]] =
+            Future.failed(new IllegalStateException)
         }
 
-      when(repo.fetch(Set(1)))
-        .thenReturn(Future.failed(new IllegalStateException))
-        .thenReturn(Future.failed(new IllegalStateException))
+        val source =
+          Clump.source(repo.fetch _).maxRetries {
+            case e: IllegalStateException => 1
+          }
 
-      clumpResult(source.get(1)) must throwA[IllegalStateException]
-
-      verify(repo, times(2)).fetch(Set(1))
-      verifyNoMoreInteractions(repo)
+        intercept[IllegalStateException] {
+          clumpResult(source.get(1))
+        }
+      }
     }
-  }
 
-  "honours call order for fetches" in new ListContext {
-    val source = Clump.source(repo.fetch _)(_.toInt)
-    when(repo.fetch(List(1, 2, 3))).thenReturn(Future(List("1", "2", "3")))
-    when(repo.fetch(List(1, 3, 2))).thenReturn(Future(List("1", "3", "2")))
+    "honours call order for fetches" - {
+      object repo {
+        def fetch(inputs: List[Int]) =
+          inputs match {
+            case List(1, 2, 3) => Future(List("1", "2", "3"))
+            case List(1, 3, 2) => Future(List("1", "3", "2"))
+          }
+      }
+      val source = Clump.source(repo.fetch _)(_.toInt)
 
-    clumpResult(Clump.traverse(List(1, 2, 3))(source.get))
-    verify(repo).fetch(List(1, 2, 3))
-
-    clumpResult(Clump.traverse(List(1, 3, 2))(source.get))
-    verify(repo).fetch(List(1, 3, 2))
+      clumpResult(Clump.traverse(List(1, 2, 3))(source.get))
+      clumpResult(Clump.traverse(List(1, 3, 2))(source.get))
+    }
   }
 }

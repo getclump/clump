@@ -1,105 +1,91 @@
 package io.getclump
 
-import org.junit.runner.RunWith
-import org.mockito.Mockito.verify
-import org.mockito.Mockito.verifyNoMoreInteractions
-import org.mockito.Mockito.when
-import org.specs2.specification.Scope
-import org.specs2.runner.JUnitRunner
+import utest._
 
-@RunWith(classOf[JUnitRunner])
-class ClumpSourceSpec extends Spec {
+object ClumpSourceSpec extends Spec {
 
-  trait Context extends Scope {
-    trait TestRepository {
-      def fetch(inputs: Set[Int]): Future[Map[Int, Int]]
-      def fetchWithScope(fromScope: Int, inputs: Set[Int]): Future[Map[Int, Int]]
-    }
+  val tests = TestSuite {
 
-    val repo = smartMock[TestRepository]
-  }
+    "fetches an individual clump" - {
+      object repo {
+        def fetch(inputs: List[Int]) =
+          inputs match {
+            case List(1) => Future(Map(1 -> 2))
+          }
+      }
 
-  "fetches an individual clump" in new Context {
-    val source = Clump.source(repo.fetch _)
-
-    when(repo.fetch(Set(1))).thenReturn(Future(Map(1 -> 2)))
-
-    clumpResult(source.get(1)) mustEqual Some(2)
-
-    verify(repo).fetch(Set(1))
-    verifyNoMoreInteractions(repo)
-  }
-
-  "fetches multiple clumps" >> {
-
-    "using list" in new Context {
       val source = Clump.source(repo.fetch _)
 
-      when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
-
-      val clump = source.get(List(1, 2))
-
-      clumpResult(clump) ==== Some(List(10, 20))
-
-      verify(repo).fetch(Set(1, 2))
-      verifyNoMoreInteractions(repo)
+      assert(clumpResult(source.get(1)) == Some(2))
     }
 
-    "using set" in new Context {
-      val source = Clump.source(repo.fetch _)
+    "fetches multiple clumps" - {
 
-      when(repo.fetch(Set(1, 2))).thenReturn(Future(Map(1 -> 10, 2 -> 20)))
-
-      val clump = source.get(Set(1, 2))
-
-      clumpResult(clump) ==== Some(Set(10, 20))
-
-      verify(repo).fetch(Set(1, 2))
-      verifyNoMoreInteractions(repo)
-    }
-  }
-
-  "can be used as a non-singleton" >> {
-    "without values from the outer scope" in new Context {
-      val source = Clump.source(repo.fetch _)
-
-      when(repo.fetch(Set(1))).thenReturn(Future(Map(1 -> 2)))
-
-      val clump =
-        Clump.collect {
-          (for (i <- 0 until 5) yield {
-            source.get(List(1))
-          }).toList
+      "using list" - {
+        object repo {
+          def fetch(inputs: List[Int]) =
+            inputs match {
+              case List(1, 2) => Future(Map(1 -> 10, 2 -> 20))
+            }
         }
 
-      awaitResult(clump.get)
+        val source = Clump.source(repo.fetch _)
 
-      verify(repo).fetch(Set(1))
-      verifyNoMoreInteractions(repo)
-    }
+        val clump = source.get(List(1, 2))
 
-    "with values from the outer scope" in new Context {
-      val scope = 1
-      val source = Clump.source((inputs: Set[Int]) => repo.fetchWithScope(scope, inputs))
+        assert(clumpResult(clump) == Some(List(10, 20)))
+      }
 
-      when(repo.fetchWithScope(scope, Set(1))).thenReturn(Future(Map(1 -> 2)))
+      "can be used as a non-singleton" - {
+        "without values from the outer scope" - {
+          object repo {
+            def fetch(inputs: List[Int]) =
+              inputs match {
+                case List(1) => Future(Map(1 -> 2))
+              }
+          }
+          val source = Clump.source(repo.fetch _)
 
-      val clump =
-        Clump.collect {
-          (for (i <- 0 until 5) yield {
-            source.get(List(1))
-          }).toList
+          val clump =
+            Clump.collect {
+              for (i <- 0 until 5) yield {
+                source.get(1)
+              }
+            }
+
+          assert(clumpResult(clump) == Some(List(2, 2, 2, 2, 2)))
         }
 
-      awaitResult(clump.get)
+        "with values from the outer scope" - {
+          val scope = 1
 
-      verify(repo).fetchWithScope(1, Set(1))
-      verifyNoMoreInteractions(repo)
+          object repo {
+            def fetchWithScope(fromScope: Int, inputs: List[Int]) =
+              (fromScope, inputs) match {
+                case (scope, List(1)) => Future(Map(1 -> 2))
+              }
+          }
+
+          val source = Clump.source((inputs: List[Int]) => repo.fetchWithScope(scope, inputs))
+
+          val clump =
+            Clump.collect {
+              for (i <- 0 until 5) yield {
+                source.get(1)
+              }
+            }
+
+          assert(clumpResult(clump) == Some(List(2, 2, 2, 2, 2)))
+        }
+      }
+
+      "limits the batch size to 100 by default" - {
+        object repo {
+          def fetch(inputs: List[Int]): Future[Map[Int, Int]] = ???
+        }
+        val source = Clump.source(repo.fetch _)
+        assert(source.maxBatchSize == 100)
+      }
     }
-  }
-  
-  "limits the batch size to 100 by default" in new Context {
-    val source = Clump.source(repo.fetch _)
-    source.maxBatchSize mustEqual 100
   }
 }
