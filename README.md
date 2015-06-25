@@ -143,7 +143,7 @@ To use clump, just add the dependency to the project's build configuration. Ther
 
 1. `clump-scalaJVM`, that uses Scala Futures and doesn't have external dependencies.
 2. `clump-scalaJS`, for usage with ScalaJS.
-2. `clump-twitter`, that uses Twitter Futures and has the dependency to `twitter-util`.
+3. `clump-twitter`, that uses Twitter Futures and has the dependency to `twitter-util`.
 
 __Important__: Change ```x.x.x``` with the latest version listed by the [CHANGELOG.md](https://github.com/getclump/clump/blob/master/CHANGELOG.md) file.
 
