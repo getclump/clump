@@ -139,21 +139,31 @@ The execution model leverages on Applicative Functors to express the independenc
 
 # Getting started #
 
-To use clump, just add the dependency to the project's build configuration. There are two versions of the project:
+To use clump, just add the dependency to the project's build configuration. There are three versions of the project:
 
-1. `clump-scala`, that uses Scala Futures and doesn't have external dependencies.
+1. `clump-scalaJVM`, that uses Scala Futures and doesn't have external dependencies.
+2. `clump-scalaJS`, for usage with ScalaJS.
 2. `clump-twitter`, that uses Twitter Futures and has the dependency to `twitter-util`.
 
 __Important__: Change ```x.x.x``` with the latest version listed by the [CHANGELOG.md](https://github.com/getclump/clump/blob/master/CHANGELOG.md) file.
 
 SBT
 
+clump-scalaJVM
 ```scala
 libraryDependencies ++= Seq(
   "io.getclump" %% "clump-scala" % "x.x.x"
 )
 ```
 
+clump-scalaJS
+```scala
+libraryDependencies ++= Seq(
+  "io.getclump" %%% "clump-scala" % "x.x.x"
+)
+```
+
+clump-twitter
 ```scala
 libraryDependencies ++= Seq(
   "io.getclump" %% "clump-twitter" % "x.x.x"
