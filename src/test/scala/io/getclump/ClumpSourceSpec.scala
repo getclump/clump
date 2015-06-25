@@ -16,7 +16,7 @@ object ClumpSourceSpec extends Spec {
 
       val source = Clump.source(repo.fetch _)
 
-      assert(clumpResult(source.get(1)) == Some(2))
+      assertResult(source.get(1), Some(2))
     }
 
     "fetches multiple clumps" - {
@@ -33,7 +33,7 @@ object ClumpSourceSpec extends Spec {
 
         val clump = source.get(List(1, 2))
 
-        assert(clumpResult(clump) == Some(List(10, 20)))
+        assertResult(clump, Some(List(10, 20)))
       }
 
       "can be used as a non-singleton" - {
@@ -53,7 +53,7 @@ object ClumpSourceSpec extends Spec {
               }
             }
 
-          assert(clumpResult(clump) == Some(List(2, 2, 2, 2, 2)))
+          assertResult(clump, Some(List(2, 2, 2, 2, 2)))
         }
 
         "with values from the outer scope" - {
@@ -75,7 +75,7 @@ object ClumpSourceSpec extends Spec {
               }
             }
 
-          assert(clumpResult(clump) == Some(List(2, 2, 2, 2, 2)))
+          assertResult(clump, Some(List(2, 2, 2, 2, 2)))
         }
       }
 

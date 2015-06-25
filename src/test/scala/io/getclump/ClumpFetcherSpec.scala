@@ -25,7 +25,7 @@ object ClumpFetcherSpec extends Spec {
           v2 <- clump2
         } yield (v1, v2)
 
-      assert(clumpResult(clump) == Some((List(10, 20), List(20, 30))))
+      assertResult(clump, Some((List(10, 20), List(20, 30))))
     }
 
     "limits the batch size" - {
@@ -41,7 +41,7 @@ object ClumpFetcherSpec extends Spec {
 
       val clump = Clump.traverse(List(1, 2, 3))(source.get)
 
-      assert(clumpResult(clump) == Some(List(10, 20, 30)))
+      assertResult(clump, Some(List(10, 20, 30)))
     }
 
     "retries failed fetches" - {
@@ -63,7 +63,7 @@ object ClumpFetcherSpec extends Spec {
             case e: IllegalStateException => 1
           }
 
-        assert(clumpResult(source.get(1)) == Some(10))
+        assertResult(source.get(1), Some(10))
       }
 
       "failure (above the retries limit)" - {
@@ -77,24 +77,31 @@ object ClumpFetcherSpec extends Spec {
             case e: IllegalStateException => 1
           }
 
-        intercept[IllegalStateException] {
-          clumpResult(source.get(1))
+        assertFailure[IllegalStateException] {
+          source.get(1)
         }
       }
     }
 
     "honours call order for fetches" - {
       object repo {
-        def fetch(inputs: List[Int]) =
+        var fetches = List[List[Int]]()
+        def fetch(inputs: List[Int]) = {
+          fetches :+= inputs
           inputs match {
             case List(1, 2, 3) => Future(List("1", "2", "3"))
             case List(1, 3, 2) => Future(List("1", "3", "2"))
           }
+        }
       }
       val source = Clump.source(repo.fetch _)(_.toInt)
 
-      clumpResult(Clump.traverse(List(1, 2, 3))(source.get))
-      clumpResult(Clump.traverse(List(1, 3, 2))(source.get))
+      for {
+        _ <- Clump.traverse(List(1, 2, 3))(source.get).get
+        _ <- Clump.traverse(List(1, 3, 2))(source.get).get
+      } yield {
+        assert(repo.fetches == List(List(1, 2, 3), List(1, 3, 2)))
+      }
     }
   }
 }

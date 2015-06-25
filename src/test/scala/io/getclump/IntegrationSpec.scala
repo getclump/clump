@@ -58,7 +58,7 @@ object IntegrationSpec extends Spec {
         } yield (tweet, user, tracks)
       }
 
-      assert(awaitResult(enrichedTweets.get) == Some(List(
+      assertResult(enrichedTweets, Some(List(
         (Tweet("Tweet1", 10), User(10, "User10"), Set(Track(10, "Track10"), Track(11, "Track11"), Track(12, "Track12"))),
         (Tweet("Tweet2", 20), User(20, "User20"), Set(Track(20, "Track20"), Track(21, "Track21"), Track(22, "Track22"))),
         (Tweet("Tweet3", 30), User(30, "User30"), Set(Track(30, "Track30"), Track(31, "Track31"), Track(32, "Track32"))))))
@@ -96,7 +96,7 @@ object IntegrationSpec extends Spec {
         } yield (tweet, user)
       }
 
-      assert(awaitResult(enrichedTweets.get) == Some(List(
+      assertResult(enrichedTweets, Some(List(
         (Tweet("Tweet1", 10), User(10, "User10")),
         (Tweet("Tweet2", 20), User(20, "User20")),
         (Tweet("Tweet3", 30), User(30, "User30")))))
@@ -116,7 +116,7 @@ object IntegrationSpec extends Spec {
         } yield (timeline, enrichedLikes)
       }
 
-      assert(awaitResult(enrichedTimelines.get) == Some(List(
+      assertResult(enrichedTimelines, Some(List(
         (Timeline(1, List(10, 20)), List(
           (Like(10, List(100, 200), List(1000, 2000)), List(Track(100, "Track100"), Track(200, "Track200")), List(User(1000, "User1000"), User(2000, "User2000"))),
           (Like(20, List(200, 400), List(2000, 4000)), List(Track(200, "Track200"), Track(400, "Track400")), List(User(2000, "User2000"), User(4000, "User4000"))))),
@@ -133,7 +133,7 @@ object IntegrationSpec extends Spec {
             users.get(tweet.userId).map(user => (tweet, user)))
         }
 
-      assert(awaitResult(enrichedTweets.get) == Some(List(
+      assertResult(enrichedTweets, Some(List(
         (Tweet("Tweet1", 10), User(10, "User10")),
         (Tweet("Tweet2", 20), User(20, "User20")),
         (Tweet("Tweet3", 30), User(30, "User30")))))
@@ -147,10 +147,12 @@ object IntegrationSpec extends Spec {
         } yield (tweet, user)
       }
 
-      assert(awaitResult(enrichedTweets.list) == List(
-        (Tweet("Tweet1", 10), User(10, "User10")),
-        (Tweet("Tweet2", 20), User(20, "User20")),
-        (Tweet("Tweet3", 30), User(30, "User30"))))
+      enrichedTweets.list.map { result =>
+        assert(result == List(
+          (Tweet("Tweet1", 10), User(10, "User10")),
+          (Tweet("Tweet2", 20), User(20, "User20")),
+          (Tweet("Tweet3", 30), User(30, "User30"))))
+      }
     }
 
     "it should work with Clump.sourceZip" - {
@@ -161,10 +163,13 @@ object IntegrationSpec extends Spec {
         } yield (tweet, user)
       }
 
-      assert(awaitResult(enrichedTweets.get) == Some(List(
-        (Tweet("Tweet1", 10), User(10, "User10")),
-        (Tweet("Tweet2", 20), User(20, "User20")),
-        (Tweet("Tweet3", 30), User(30, "User30")))))
+      enrichedTweets.list.map { result =>
+        println("aaa", result)
+        assert(result == List(
+          (Tweet("Tweet1", 10), User(10, "User10")),
+          (Tweet("Tweet2", 20), User(20, "User20")),
+          (Tweet("Tweet3", 30), User(30, "User30"))))
+      }
     }
 
     "A Clump can have a partial result" - {
@@ -175,7 +180,7 @@ object IntegrationSpec extends Spec {
         } yield (tweet, user)
       }
 
-      assert(awaitResult(onlyFullObjectGraph.get) == Some(List((Tweet("Tweet2", 20), User(20, "User20")))))
+      assertResult(onlyFullObjectGraph, Some(List((Tweet("Tweet2", 20), User(20, "User20")))))
 
       val partialResponses: Clump[List[(Tweet, Option[User])]] = Clump.traverse(1, 2, 3) { tweetId =>
         for {
@@ -184,7 +189,7 @@ object IntegrationSpec extends Spec {
         } yield (tweet, user)
       }
 
-      assert(awaitResult(partialResponses.get) == Some(List(
+      assertResult(partialResponses, Some(List(
         (Tweet("Tweet1", 10), None),
         (Tweet("Tweet2", 20), Some(User(20, "User20"))),
         (Tweet("Tweet3", 30), None))))

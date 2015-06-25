@@ -31,26 +31,29 @@ object ClumpExecutionSpec extends Spec {
                 source2.get(i)
           }
 
-        assert(clumpResult(clump) == Some(List(10, 20, 30, 40)))
-        assert(source1Fetches == List(Set(1, 2)))
-        assert(source2Fetches == List(Set(3, 4)))
+        assertResult(clump, Some(List(10, 20, 30, 40))).map { _ =>
+          assert(source1Fetches == List(Set(1, 2)))
+          assert(source2Fetches == List(Set(3, 4)))
+        }
       }
 
       "for multiple clumps collected into only one clump" - new Context {
         val clump = Clump.collect(source1.get(1), source1.get(2), source2.get(3), source2.get(4))
 
-        assert(clumpResult(clump) == Some(List(10, 20, 30, 40)))
+        assertResult(clump, Some(List(10, 20, 30, 40))).map { _ =>
         assert(source1Fetches == List(Set(1, 2)))
         assert(source2Fetches == List(Set(3, 4)))
+        }
       }
 
       "for clumps created inside nested flatmaps" - new Context {
         val clump1 = Clump.value(1).flatMap(source1.get(_)).flatMap(source2.get(_))
         val clump2 = Clump.value(2).flatMap(source1.get(_)).flatMap(source2.get(_))
 
-        assert(clumpResult(Clump.collect(clump1, clump2)) == Some(List(100, 200)))
+        assertResult(Clump.collect(clump1, clump2), Some(List(100, 200))).map { _ =>
         assert(source1Fetches == List(Set(1, 2)))
         assert(source2Fetches == List(Set(20, 10)))
+        }
       }
 
       "for clumps composed using for comprehension" - {
@@ -61,9 +64,10 @@ object ClumpExecutionSpec extends Spec {
               int <- Clump.collect(source1.get(1), source1.get(2), source2.get(3), source2.get(4))
             } yield int
 
-          assert(clumpResult(clump) == Some(List(10, 20, 30, 40)))
+          assertResult(clump, Some(List(10, 20, 30, 40))).map { _ =>
           assert(source1Fetches == List(Set(1, 2)))
           assert(source2Fetches == List(Set(3, 4)))
+            }
         }
 
         "two levels" - new Context {
@@ -73,9 +77,10 @@ object ClumpExecutionSpec extends Spec {
               ints2 <- Clump.collect(source2.get(3), source2.get(4))
             } yield (ints1, ints2)
 
-          assert(clumpResult(clump) == Some(List(10, 20), List(30, 40)))
+          assertResult(clump, Some(List(10, 20), List(30, 40))).map { _ =>
           assert(source1Fetches == List(Set(1, 2)))
           assert(source2Fetches == List(Set(3, 4)))
+            }
         }
 
         "with a filter condition" - new Context {
@@ -85,9 +90,10 @@ object ClumpExecutionSpec extends Spec {
               int2 <- source2.get(3) if (int2 != 999)
             } yield (ints1, int2)
 
-          assert(clumpResult(clump) == Some(List(10, 20), 30))
+          assertResult(clump, Some(List(10, 20), 30)).map { _ =>
           assert(source1Fetches == List(Set(1, 2)))
           assert(source2Fetches == List(Set(3)))
+            }
         }
 
         "using a join" - new Context {
@@ -97,9 +103,10 @@ object ClumpExecutionSpec extends Spec {
               ints2 <- source2.get(3).join(source2.get(4))
             } yield (ints1, ints2)
 
-          assert(clumpResult(clump) == Some(List(10, 20), (30, 40)))
+          assertResult(clump, Some(List(10, 20), (30, 40))).map { _ =>
           assert(source1Fetches == List(Set(1, 2)))
           assert(source2Fetches == List(Set(3, 4)))
+            }
         }
 
         "using a future clump as base" - new Context {
@@ -110,9 +117,10 @@ object ClumpExecutionSpec extends Spec {
               collect2 <- Clump.collect(source2.get(int))
             } yield (collect1, collect2)
 
-          assert(clumpResult(clump) == Some((List(10), List(10))))
+          assertResult(clump, Some((List(10), List(10)))).map { _ =>
           assert(source1Fetches == List(Set(1)))
           assert(source2Fetches == List(Set(1)))
+            }
         }
 
         "complex scenario" - new Context {
@@ -126,9 +134,10 @@ object ClumpExecutionSpec extends Spec {
               join2 <- source1.get(collect1).join(source2.get(join1b))
             } yield (const1, const2, collect1, collect2, (join1a, join1b), join2)
 
-          assert(clumpResult(clump) == Some((1, 2, List(10, 20), List(10, 20), (4, 5), (List(100, 200), 50))))
+          assertResult(clump, Some((1, 2, List(10, 20), List(10, 20), (4, 5), (List(100, 200), 50)))).map { _ =>
           assert(source1Fetches == List(Set(1), Set(10, 20)))
           assert(source2Fetches == List(Set(2), Set(5)))
+            }
         }
       }
     }
@@ -150,8 +159,8 @@ object ClumpExecutionSpec extends Spec {
 
     "short-circuits the computation - case of a failure" - new Context {
       val clump = Clump.exception[Int](new IllegalStateException).map(_ => throw new NullPointerException)
-      intercept[IllegalStateException] {
-        clumpResult(clump)
+      assertFailure[IllegalStateException] {
+        clump
       }
     }
   }
