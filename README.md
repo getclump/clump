@@ -17,7 +17,6 @@ A library for expressive and efficient service composition
   * [Composition behavior](#composition-behavior)
   * [Filtering](#filtering)
   * [Exception handling](#exception-handling)
-  * [Scala Futures](#scala-futures)
 * [Internals](#internals)
 * [Known limitations](#known-limitations)
 * [Acknowledgments](#acknowledgments)
