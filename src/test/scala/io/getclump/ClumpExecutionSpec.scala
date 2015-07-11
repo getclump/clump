@@ -149,7 +149,7 @@ class ClumpExecutionSpec extends Spec {
 
     val future: Future[Option[(Int, Int)]] = clump.get
 
-    promises.size mustEqual 2
+    promisesIterator.hasNext must beFalse
   }
 
   "executes 2 joined clumps in parallel at different levels of composition" in new Context {
@@ -164,7 +164,7 @@ class ClumpExecutionSpec extends Spec {
 
     val future: Future[Option[(Int, Int)]] = clump.get
 
-    promises.size mustEqual 2
+    promisesIterator.hasNext must beFalse
   }
 
   "executes 3 joined clumps in parallel" in new Context {
@@ -179,7 +179,7 @@ class ClumpExecutionSpec extends Spec {
 
     val future: Future[Option[(Int, Int, Int)]] = clump.get
 
-    promises.size mustEqual 3
+    promisesIterator.hasNext must beFalse
   }
 
   "short-circuits the computation in case of a failure" in new Context {

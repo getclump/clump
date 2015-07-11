@@ -42,7 +42,7 @@ private[getclump] final class ClumpContext {
   }
 
   // Flush all the ClumpFetch instances in a list of clumps, calling their associated fetch functions in parallel if possible
-  private[this] def flushFetches(clumps: List[Clump[_]]): Future[Unit] = {
+  private[this] def flushFetches(clumps: List[Clump[_]]) = {
     val fetches = filterFetches(clumps)
     val byFetcher = fetches.groupBy(fetch => fetcherFor(fetch.source))
     for ((fetcher, fetches) <- byFetcher)
@@ -50,13 +50,13 @@ private[getclump] final class ClumpContext {
     Future.sequence(byFetcher.keys.map(_.flush)).map(_ => ())
   }
 
-  private[this] def filterFetches(clumps: List[Clump[_]]): List[ClumpFetch[Any, Any]] =
+  private[this] def filterFetches(clumps: List[Clump[_]]) =
     clumps.collect {
       case clump: ClumpFetch[_, _] =>
         clump.asInstanceOf[ClumpFetch[Any, Any]]
     }
 
-  private[this] def fetcherFor(source: ClumpSource[_, _]): ClumpFetcher[Any, Any] =
+  private[this] def fetcherFor(source: ClumpSource[_, _]) =
     synchronized {
       fetchers.getOrElseUpdate(source, new ClumpFetcher(source))
         .asInstanceOf[ClumpFetcher[Any, Any]]
