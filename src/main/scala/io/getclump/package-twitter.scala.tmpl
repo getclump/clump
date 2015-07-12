@@ -2,6 +2,9 @@ package io
 
 package object getclump {
 
+  // Execution contexts are not used by twitter-util so this allows you not to have to specify it
+  private[getclump] implicit val ec = scala.concurrent.ExecutionContext.global
+
   private[getclump]type Promise[T] = com.twitter.util.Promise[T]
   private[getclump] val Promise = com.twitter.util.Promise
 

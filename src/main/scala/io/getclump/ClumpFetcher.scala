@@ -12,18 +12,18 @@ private[getclump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
       fetches.getOrElseUpdate(input, Promise[Option[U]]).future
     }
 
-  def flush(implicit executionContext: ExecutionContext): Future[Unit] =
+  def flush(implicit ec: ExecutionContext): Future[Unit] =
     synchronized {
       Future.sequence(flushInBatches).map(_ => ())
     }
 
-  private[this] def flushInBatches(implicit executionContext: ExecutionContext) =
+  private[this] def flushInBatches(implicit ec: ExecutionContext) =
     pendingFetches
       .grouped(source.maxBatchSize)
       .toList
       .map(fetchBatch)
 
-  private[this] def fetchBatch(batch: List[T])(implicit executionContext: ExecutionContext) = {
+  private[this] def fetchBatch(batch: List[T])(implicit ec: ExecutionContext) = {
     val results = fetchWithRetries(batch, 0)
     for (input <- batch) {
       val fetch = fetches(input)
@@ -33,7 +33,7 @@ private[getclump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
     results
   }
 
-  private[this] def fetchWithRetries(batch: List[T], retries: Int)(implicit executionContext: ExecutionContext): Future[Map[T, U]] =
+  private[this] def fetchWithRetries(batch: List[T], retries: Int)(implicit ec: ExecutionContext): Future[Map[T, U]] =
     source.fetch(batch).recoverWith {
       case exception: Throwable if (maxRetries(exception) > retries) =>
         fetchWithRetries(batch, retries + 1)
