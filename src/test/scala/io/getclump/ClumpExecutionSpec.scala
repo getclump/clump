@@ -78,11 +78,11 @@ class ClumpExecutionSpec extends Spec {
       "two levels" in new Context {
         val clump =
           for {
-            ints1 <- Clump.collect(source1.get(1), source1.get(2))
-            ints2 <- Clump.collect(source2.get(3), source2.get(4))
+            ints1 <- source1.get(1)
+            ints2 <- source2.get(3)
           } yield (ints1, ints2)
 
-        clumpResult(clump) mustEqual Some(List(10, 20), List(30, 40))
+        clump.get must beEqualTo(Some(List(10, 20), List(30, 40))).await
         source1Fetches mustEqual List(Set(1, 2))
         source2Fetches mustEqual List(Set(3, 4))
       }
