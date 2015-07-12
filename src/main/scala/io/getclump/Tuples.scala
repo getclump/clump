@@ -1,5 +1,7 @@
 package io.getclump
 
+import scala.concurrent.ExecutionContext
+
 
 protected[getclump] trait Tuples {
   protected[getclump] def normalize1[A, B] = (inputs: (A, B)) => inputs match {
@@ -50,18 +52,18 @@ protected[getclump] trait Tuples {
     case ((a, b, c, d), e) => fetch(a, b, c, d, e)
   }
 
-  protected[getclump] def adapt[A, B](fetch: A => Future[B]) = (keys: Iterable[A]) =>
+  protected[getclump] def adapt[A, B](fetch: A => Future[B])(implicit executionContext: ExecutionContext) = (keys: Iterable[A]) =>
     Future.sequence(keys.toSeq.map(key => fetch(key).map(value => key -> value))).map(_.toMap)
 
-  protected[getclump] def adapt1[A, B, C](fetch: (A, B) => Future[C]) = (a: A, keys: Iterable[B]) =>
+  protected[getclump] def adapt1[A, B, C](fetch: (A, B) => Future[C])(implicit executionContext: ExecutionContext) = (a: A, keys: Iterable[B]) =>
     Future.sequence(keys.toSeq.map(key => fetch(a, key).map(value => key -> value))).map(_.toMap)
 
-  protected[getclump] def adapt2[A, B, C, D](fetch: (A, B, C) => Future[D]) = (a: A, b: B, keys: Iterable[C]) =>
+  protected[getclump] def adapt2[A, B, C, D](fetch: (A, B, C) => Future[D])(implicit executionContext: ExecutionContext) = (a: A, b: B, keys: Iterable[C]) =>
     Future.sequence(keys.toSeq.map(key => fetch(a, b, key).map(value => key -> value))).map(_.toMap)
 
-  protected[getclump] def adapt3[A, B, C, D, E](fetch: (A, B, C, D) => Future[E]) = (a: A, b: B, c: C, keys: Iterable[D]) =>
+  protected[getclump] def adapt3[A, B, C, D, E](fetch: (A, B, C, D) => Future[E])(implicit executionContext: ExecutionContext) = (a: A, b: B, c: C, keys: Iterable[D]) =>
     Future.sequence(keys.toSeq.map(key => fetch(a, b, c, key).map(value => key -> value))).map(_.toMap)
 
-  protected[getclump] def adapt4[A, B, C, D, E, F](fetch: (A, B, C, D, E) => Future[F]) = (a: A, b: B, c: C, d: D, keys: Iterable[E]) =>
+  protected[getclump] def adapt4[A, B, C, D, E, F](fetch: (A, B, C, D, E) => Future[F])(implicit executionContext: ExecutionContext) = (a: A, b: B, c: C, d: D, keys: Iterable[E]) =>
     Future.sequence(keys.toSeq.map(key => fetch(a, b, c, d, key).map(value => key -> value))).map(_.toMap)
 }

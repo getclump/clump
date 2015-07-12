@@ -1,6 +1,7 @@
 package io.getclump
 
 import scala.collection.generic.CanBuildFrom
+import scala.concurrent.ExecutionContext
 
 protected[getclump] trait Sources extends Tuples {
 
@@ -10,70 +11,70 @@ protected[getclump] trait Sources extends Tuples {
    * the key used to get that value.
    */
   def source[KS, V, K](fetch: KS => Future[Iterable[V]])(keyExtractor: V => K)
-                      (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[K, V] =
+                      (implicit cbf: CanBuildFrom[Nothing, K, KS], executionContext: ExecutionContext): ClumpSource[K, V] =
     new ClumpSource(extractKeys(adaptInput(fetch), keyExtractor))
 
   /**
    * Similar to [[source]] but also accepts 1 extra param
    */
   def source[A, KS, V, K](fetch: (A, KS) => Future[Iterable[V]])(keyExtractor: V => K)
-                         (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, K), V] =
+                         (implicit cbf: CanBuildFrom[Nothing, K, KS], executionContext: ExecutionContext): ClumpSource[(A, K), V] =
     new ClumpSource(parameterizeFetch(normalize1, denormalize1[A, K], fetch1(fetch), keyExtractor))
 
   /**
    * Similar to [[source]] but also accepts 2 extra params
    */
   def source[A, B, KS, V, K](fetch: (A, B, KS) => Future[Iterable[V]])(keyExtractor: V => K)
-                            (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, B, K), V] =
+                            (implicit cbf: CanBuildFrom[Nothing, K, KS], executionContext: ExecutionContext): ClumpSource[(A, B, K), V] =
     new ClumpSource(parameterizeFetch(normalize2, denormalize2[A, B, K], fetch2(fetch), keyExtractor))
 
   /**
    * Similar to [[source]] but also accepts 3 extra params
    */
   def source[A, B, C, KS, V, K](fetch: (A, B, C, KS) => Future[Iterable[V]])(keyExtractor: V => K)
-                               (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, B, C, K), V] =
+                               (implicit cbf: CanBuildFrom[Nothing, K, KS], executionContext: ExecutionContext): ClumpSource[(A, B, C, K), V] =
     new ClumpSource(parameterizeFetch(normalize3, denormalize3[A, B, C, K], fetch3(fetch), keyExtractor))
 
   /**
    * Similar to [[source]] but also accepts 4 extra params
    */
   def source[A, B, C, D, KS, V, K](fetch: (A, B, C, D, KS) => Future[Iterable[V]])(keyExtractor: V => K)
-                                  (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, B, C, D, K), V] =
+                                  (implicit cbf: CanBuildFrom[Nothing, K, KS], executionContext: ExecutionContext): ClumpSource[(A, B, C, D, K), V] =
     new ClumpSource(parameterizeFetch(normalize4, denormalize4[A, B, C, D, K], fetch4(fetch), keyExtractor))
 
   /**
    * Create a clump source from a function that accepts inputs and returns a future map from input to resulting value.
    */
   def source[KS, K, V](fetch: KS => Future[Map[K, V]])
-                      (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[K, V] =
+                      (implicit cbf: CanBuildFrom[Nothing, K, KS], executionContext: ExecutionContext): ClumpSource[K, V] =
     new ClumpSource(adaptOutput(adaptInput(fetch)))
 
   /**
    * Similar to [[source]] but also accepts 1 extra param
    */
   def source[A, KS, K, V](fetch: (A, KS) => Future[Map[K, V]])
-                         (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, K), V] =
+                         (implicit cbf: CanBuildFrom[Nothing, K, KS], executionContext: ExecutionContext): ClumpSource[(A, K), V] =
     new ClumpSource(parameterizeFetch(normalize1, denormalize1[A, K], fetch1(fetch)))
 
   /**
    * Similar to [[source]] but also accepts 2 extra params
    */
   def source[A, B, KS, K, V](fetch: (A, B, KS) => Future[Map[K, V]])
-                            (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, B, K), V] =
+                            (implicit cbf: CanBuildFrom[Nothing, K, KS], executionContext: ExecutionContext): ClumpSource[(A, B, K), V] =
     new ClumpSource(parameterizeFetch(normalize2, denormalize2[A, B, K], fetch2(fetch)))
 
   /**
    * Similar to [[source]] but also accepts 3 extra params
    */
   def source[A, B, C, KS, K, V](fetch: (A, B, C, KS) => Future[Map[K, V]])
-                               (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, B, C, K), V] =
+                               (implicit cbf: CanBuildFrom[Nothing, K, KS], executionContext: ExecutionContext): ClumpSource[(A, B, C, K), V] =
     new ClumpSource(parameterizeFetch(normalize3, denormalize3[A, B, C, K], fetch3(fetch)))
 
   /**
    * Similar to [[source]] but also accepts 4 extra params
    */
   def source[A, B, C, D, KS, K, V](fetch: (A, B, C, D, KS) => Future[Map[K, V]])
-                                  (implicit cbf: CanBuildFrom[Nothing, K, KS]): ClumpSource[(A, B, C, D, K), V] =
+                                  (implicit cbf: CanBuildFrom[Nothing, K, KS], executionContext: ExecutionContext): ClumpSource[(A, B, C, D, K), V] =
     new ClumpSource(parameterizeFetch(normalize4, denormalize4[A, B, C, D, K], fetch4(fetch)))
 
   /**
@@ -81,65 +82,65 @@ protected[getclump] trait Sources extends Tuples {
    * Unlike in [[source]], the order of the returned values must be the same as the list of keys that was passed in as
    * the key and value lists will be zipped together to create a map from key to value.
    */
-  def sourceZip[K, V](fetch: List[K] => Future[List[V]]): ClumpSource[K, V] =
+  def sourceZip[K, V](fetch: List[K] => Future[List[V]])(implicit executionContext: ExecutionContext): ClumpSource[K, V] =
     new ClumpSource(zipped(fetch))
 
   /**
    * Similar to [[sourceZip]] but also accepts 1 extra param
    */
-  def sourceZip[A, K, V](fetch: (A, List[K]) => Future[List[V]]): ClumpSource[(A, K), V] =
+  def sourceZip[A, K, V](fetch: (A, List[K]) => Future[List[V]])(implicit executionContext: ExecutionContext): ClumpSource[(A, K), V] =
     new ClumpSource(parameterizeFetchZip(normalize1, fetch1(fetch)))
 
   /**
    * Similar to [[sourceZip]] but also accepts 2 extra params
    */
-  def sourceZip[A, B, K, V](fetch: (A, B, List[K]) => Future[List[V]]): ClumpSource[(A, B, K), V] =
+  def sourceZip[A, B, K, V](fetch: (A, B, List[K]) => Future[List[V]])(implicit executionContext: ExecutionContext): ClumpSource[(A, B, K), V] =
     new ClumpSource(parameterizeFetchZip(normalize2, fetch2(fetch)))
 
   /**
    * Similar to [[sourceZip]] but also accepts 3 extra params
    */
-  def sourceZip[A, B, C, K, V](fetch: (A, B, C, List[K]) => Future[List[V]]): ClumpSource[(A, B, C, K), V] =
+  def sourceZip[A, B, C, K, V](fetch: (A, B, C, List[K]) => Future[List[V]])(implicit executionContext: ExecutionContext): ClumpSource[(A, B, C, K), V] =
     new ClumpSource(parameterizeFetchZip(normalize3, fetch3(fetch)))
 
   /**
    * Similar to [[sourceZip]] but also accepts 4 extra params
    */
-  def sourceZip[A, B, C, D, K, V](fetch: (A, B, C, D, List[K]) => Future[List[V]]): ClumpSource[(A, B, C, D, K), V] =
+  def sourceZip[A, B, C, D, K, V](fetch: (A, B, C, D, List[K]) => Future[List[V]])(implicit executionContext: ExecutionContext): ClumpSource[(A, B, C, D, K), V] =
     new ClumpSource(parameterizeFetchZip(normalize4, fetch4(fetch)))
 
   /**
    * Create a clump source from a function that accepts a single input and returns a future value.
    * This is for creating a clump source for an endpoint that doesn't support bulk fetches.
    */
-  def sourceSingle[K, V](fetch: K => Future[V]): ClumpSource[K, V] = source(adapt(fetch))
+  def sourceSingle[K, V](fetch: K => Future[V])(implicit executionContext: ExecutionContext): ClumpSource[K, V] = source(adapt(fetch))
 
   /**
    * Similar to [[sourceSingle]] but also accepts 1 extra param
    */
-  def sourceSingle[A, K, V](fetch: (A, K) => Future[V]): ClumpSource[(A, K), V] = source(adapt1(fetch))
+  def sourceSingle[A, K, V](fetch: (A, K) => Future[V])(implicit executionContext: ExecutionContext): ClumpSource[(A, K), V] = source(adapt1(fetch))
 
   /**
    * Similar to [[sourceSingle]] but also accepts 2 extra params
    */
-  def sourceSingle[A, B, K, V](fetch: (A, B, K) => Future[V]): ClumpSource[(A, B, K), V] = source(adapt2(fetch))
+  def sourceSingle[A, B, K, V](fetch: (A, B, K) => Future[V])(implicit executionContext: ExecutionContext): ClumpSource[(A, B, K), V] = source(adapt2(fetch))
 
   /**
    * Similar to [[sourceSingle]] but also accepts 3 extra params
    */
-  def sourceSingle[A, B, C, K, V](fetch: (A, B, C, K) => Future[V]): ClumpSource[(A, B, C, K), V] = source(adapt3(fetch))
+  def sourceSingle[A, B, C, K, V](fetch: (A, B, C, K) => Future[V])(implicit executionContext: ExecutionContext): ClumpSource[(A, B, C, K), V] = source(adapt3(fetch))
 
   /**
    * Similar to [[sourceSingle]] but also accepts 4 extra params
    */
-  def sourceSingle[A, B, C, D, K, V](fetch: (A, B, C, D, K) => Future[V]): ClumpSource[(A, B, C, D, K), V] = source(adapt4(fetch))
+  def sourceSingle[A, B, C, D, K, V](fetch: (A, B, C, D, K) => Future[V])(implicit executionContext: ExecutionContext): ClumpSource[(A, B, C, D, K), V] = source(adapt4(fetch))
 
   private[this] def parameterizeFetch[I, P, O, T, C](normalize: I => (P, T), denormalize: (P, T) => I, fetch: (P, C) => Future[Iterable[O]], extractKey: O => T)
-                                                    (implicit cbf: CanBuildFrom[Nothing, T, C]): List[I] => Future[Map[I, O]] =
+                                                    (implicit cbf: CanBuildFrom[Nothing, T, C], executionContext: ExecutionContext): List[I] => Future[Map[I, O]] =
     parameterizeFetch[I, P, O, T, C](normalize, denormalize, fetch = (params: P, coll: C) => fetch(params, coll).map(_.map(v => extractKey(v) -> v).toMap))
 
   private[this] def parameterizeFetch[I, P, O, T, C](normalize: I => (P, T), denormalize: (P, T) => I, fetch: (P, C) => Future[Iterable[(T, O)]])
-                                                    (implicit cbf: CanBuildFrom[Nothing, T, C]): List[I] => Future[Map[I, O]] =
+                                                    (implicit cbf: CanBuildFrom[Nothing, T, C], executionContext: ExecutionContext): List[I] => Future[Map[I, O]] =
     (inputs: List[I]) => {
       val futures =
         inputs.map(normalize).groupBy { case (params, _) => params }.map {
@@ -151,7 +152,7 @@ protected[getclump] trait Sources extends Tuples {
       Future.sequence(futures).map(_.reduce(_ ++ _).toMap)
     }
 
-  private[this] def parameterizeFetchZip[I, P, O, T](normalize: I => (P, T), fetch: (P, List[T]) => Future[Iterable[O]]): List[I] => Future[Map[I, O]] =
+  private[this] def parameterizeFetchZip[I, P, O, T](normalize: I => (P, T), fetch: (P, List[T]) => Future[Iterable[O]])(implicit executionContext: ExecutionContext): List[I] => Future[Map[I, O]] =
     (inputs: List[I]) => {
       val futures =
         inputs.map(normalize).groupBy { case (params, _) => params }.map {
@@ -162,11 +163,11 @@ protected[getclump] trait Sources extends Tuples {
       listOutputs.map(inputs.zip(_).toMap)
     }
 
-  private[this] def zipped[T, U](fetch: List[T] => Future[List[U]]) = {
+  private[this] def zipped[T, U](fetch: List[T] => Future[List[U]])(implicit executionContext: ExecutionContext) = {
     (inputs: List[T]) => fetch(inputs).map(inputs.zip(_).toMap)
   }
 
-  private[this] def extractKeys[T, U](fetch: List[T] => Future[Iterable[U]], keyExtractor: U => T) =
+  private[this] def extractKeys[T, U](fetch: List[T] => Future[Iterable[U]], keyExtractor: U => T)(implicit executionContext: ExecutionContext) =
     fetch.andThen(_.map(resultsToKeys(keyExtractor, _)))
 
   private[this] def resultsToKeys[U, T](keyExtractor: (U) => T, results: Iterable[U]) =
@@ -175,7 +176,7 @@ protected[getclump] trait Sources extends Tuples {
   private[this] def adaptInput[T, C, R](fetch: C => Future[R])(implicit cbf: CanBuildFrom[Nothing, T, C]) =
     (c: List[T]) => fetch(cbf.apply().++=(c).result())
 
-  private[this] def adaptOutput[T, U, C](fetch: C => Future[Iterable[(T, U)]]) =
+  private[this] def adaptOutput[T, U, C](fetch: C => Future[Iterable[(T, U)]])(implicit executionContext: ExecutionContext) =
     fetch.andThen(_.map(_.toMap))
 
 }
