@@ -11,6 +11,7 @@ class ClumpExecutionSpec extends Spec {
   trait Context extends Scope {
     val source1Fetches = ListBuffer[Set[Int]]()
     val source2Fetches = ListBuffer[Set[Int]]()
+    val source3Fetches = ListBuffer[Set[Int]]()
 
     protected def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) = {
       fetches += inputs
@@ -19,6 +20,7 @@ class ClumpExecutionSpec extends Spec {
 
     protected val source1 = Clump.source((i: Set[Int]) => fetchFunction(source1Fetches, i))
     val source2 = Clump.source((i: Set[Int]) => fetchFunction(source2Fetches, i))
+    val source3 = Clump.source((i: Set[Int]) => fetchFunction(source3Fetches, i))
   }
 
   "batches requests" >> {
@@ -135,7 +137,7 @@ class ClumpExecutionSpec extends Spec {
     }
   }
 
-  "executes joined clumps in parallel" in new Context {
+  "executes 2 joined clumps in parallel" in new Context {
     val promises = List(Promise[Map[Int, Int]](), Promise[Map[Int, Int]]())
 
     val promisesIterator = promises.iterator
@@ -147,7 +149,37 @@ class ClumpExecutionSpec extends Spec {
 
     val future: Future[Option[(Int, Int)]] = clump.get
 
-    promises.size mustEqual 2
+    promisesIterator.hasNext must beFalse
+  }
+
+  "executes 2 joined clumps in parallel at different levels of composition" in new Context {
+    val promises = List(Promise[Map[Int, Int]](), Promise[Map[Int, Int]]())
+
+    val promisesIterator = promises.iterator
+
+    protected override def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) =
+      promisesIterator.next.future
+
+    val clump = source1.get(1).join(source2.get(2).map(identity))
+
+    val future: Future[Option[(Int, Int)]] = clump.get
+
+    promisesIterator.hasNext must beFalse
+  }
+
+  "executes 3 joined clumps in parallel" in new Context {
+    val promises = List(Promise[Map[Int, Int]](), Promise[Map[Int, Int]](), Promise[Map[Int, Int]]())
+
+    val promisesIterator = promises.iterator
+
+    protected override def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) =
+      promisesIterator.next.future
+
+    val clump = Clump.join(source1.get(1), source2.get(2), source3.get(3))
+
+    val future: Future[Option[(Int, Int, Int)]] = clump.get
+
+    promisesIterator.hasNext must beFalse
   }
 
   "short-circuits the computation in case of a failure" in new Context {

@@ -2,6 +2,9 @@ package io
 
 package object getclump {
 
+  // Execution contexts are not used by twitter-util so this allows you not to have to specify it
+  private[getclump] implicit val ec = scala.concurrent.ExecutionContext.global
+
   private[getclump]type Promise[T] = com.twitter.util.Promise[T]
   private[getclump] val Promise = com.twitter.util.Promise
 
@@ -24,7 +27,7 @@ package object getclump {
   implicit class FutureCompanionBridge(val companion: Future.type) extends AnyVal {
     def successful[T](value: T) = Future.value(value)
     def failed[T](exception: Throwable) = Future.exception[T](exception)
-    def sequence[T](futures: Seq[Future[T]]) = Future.collect(futures)
+    def sequence[T](futures: Iterable[Future[T]]) = Future.collect(futures.toSeq).map(_.toList)
   }
 
   private[getclump] def awaitResult[T](future: Future[T]) =
