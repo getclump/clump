@@ -67,7 +67,7 @@ object Build extends Build {
     .settings(name := "clump-scala")
     .settings(commonSettings: _*)
     .settings(target <<= target(_ / "clump-scala"))
-    .aggregate(clumpTwitter)
+//    .aggregate(clumpTwitter)
 
   lazy val clumpTwitter = Project(id = "clump-twitter", base = file("."))
     .settings(name := "clump-twitter")

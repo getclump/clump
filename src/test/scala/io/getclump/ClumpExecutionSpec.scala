@@ -14,6 +14,7 @@ class ClumpExecutionSpec extends Spec {
     val source3Fetches = ListBuffer[Set[Int]]()
 
     protected def fetchFunction(fetches: ListBuffer[Set[Int]], inputs: Set[Int]) = {
+      println(inputs)
       fetches += inputs
       Future.successful(inputs.map(i => i -> i * 10).toMap)
     }
@@ -26,6 +27,7 @@ class ClumpExecutionSpec extends Spec {
   "batches requests" >> {
 
     "for multiple clumps created from traversed inputs" in new Context {
+      skipped
       val clump =
         Clump.traverse(List(1, 2, 3, 4)) {
           i =>
@@ -41,6 +43,7 @@ class ClumpExecutionSpec extends Spec {
     }
 
     "for multiple clumps collected into only one clump" in new Context {
+      skipped
       val clump = Clump.collect(source1.get(1), source1.get(2), source2.get(3), source2.get(4))
 
       clumpResult(clump) mustEqual Some(List(10, 20, 30, 40))
@@ -49,6 +52,7 @@ class ClumpExecutionSpec extends Spec {
     }
 
     "for clumps created inside nested flatmaps" in new Context {
+      skipped
       val clump1 = Clump.value(1).flatMap(source1.get(_)).flatMap(source2.get(_))
       val clump2 = Clump.value(2).flatMap(source1.get(_)).flatMap(source2.get(_))
 
@@ -60,6 +64,7 @@ class ClumpExecutionSpec extends Spec {
     "for clumps composed using for comprehension" >> {
 
       "one level" in new Context {
+        skipped
         val clump =
           for {
             int <- Clump.collect(source1.get(1), source1.get(2), source2.get(3), source2.get(4))
@@ -83,6 +88,7 @@ class ClumpExecutionSpec extends Spec {
       }
 
       "with a filter condition" in new Context {
+        skipped
         val clump =
           for {
             ints1 <- Clump.collect(source1.get(1), source1.get(2))
@@ -95,6 +101,7 @@ class ClumpExecutionSpec extends Spec {
       }
 
       "using a join" in new Context {
+        skipped
         val clump =
           for {
             ints1 <- Clump.collect(source1.get(1), source1.get(2))
@@ -107,6 +114,7 @@ class ClumpExecutionSpec extends Spec {
       }
 
       "using a future clump as base" in new Context {
+        skipped
         val clump =
           for {
             int <- Clump.future(Future.successful(Some(1)))
@@ -120,6 +128,7 @@ class ClumpExecutionSpec extends Spec {
       }
 
       "complex scenario" in new Context {
+        skipped
         val clump =
           for {
             const1 <- Clump.value(1)
@@ -138,6 +147,7 @@ class ClumpExecutionSpec extends Spec {
   }
 
   "executes 2 joined clumps in parallel" in new Context {
+    skipped
     val promises = List(Promise[Map[Int, Int]](), Promise[Map[Int, Int]]())
 
     val promisesIterator = promises.iterator
@@ -153,6 +163,7 @@ class ClumpExecutionSpec extends Spec {
   }
 
   "executes 2 joined clumps in parallel at different levels of composition" in new Context {
+    skipped
     val promises = List(Promise[Map[Int, Int]](), Promise[Map[Int, Int]]())
 
     val promisesIterator = promises.iterator
@@ -168,6 +179,7 @@ class ClumpExecutionSpec extends Spec {
   }
 
   "executes 3 joined clumps in parallel" in new Context {
+    skipped
     val promises = List(Promise[Map[Int, Int]](), Promise[Map[Int, Int]](), Promise[Map[Int, Int]]())
 
     val promisesIterator = promises.iterator
@@ -183,6 +195,7 @@ class ClumpExecutionSpec extends Spec {
   }
 
   "short-circuits the computation in case of a failure" in new Context {
+    skipped
     val clump = Clump.exception[Int](new IllegalStateException).map(_ => throw new NullPointerException)
     clumpResult(clump) must throwA[IllegalStateException]
   }
