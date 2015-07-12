@@ -2,8 +2,6 @@ package io
 
 package object getclump {
 
-//  private[getclump] implicit val executionContext = scala.concurrent.ExecutionContext.global
-
   private[getclump]type Promise[T] = scala.concurrent.Promise[T]
   private[getclump] val Promise = scala.concurrent.Promise
 
