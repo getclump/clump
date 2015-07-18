@@ -99,14 +99,3 @@ It is common to have an object graph where the same resource is used in multiple
 
 This mechanism is not present in Stitch, but the its execution model is able to group deep nested fetches and thus reduce the impact of the missing cache.
 
-5. Execution model
-==================
-
-Stitch has an execution model capable of inspecting the AST definition and prepare an execution plan to allow batching. It also has logic to apply simplifications on the execution plan.
-
-Clump has a simpler execution model that favors parallelism. Basically, it uses four steps:
-
-1. Find the "roots" of the composition
-2. Expand the composition starting from the roots and register the pending fetches
-3. Flush all pending fetches in parallel for each source
-4. If there are nested structures, go back to 2 using them as the roots. If not, return the clump's value.

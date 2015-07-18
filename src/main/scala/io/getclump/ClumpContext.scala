@@ -1,24 +1,23 @@
 package io.getclump
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
 private[getclump] final class ClumpContext {
 
-  private[this] val fetchers =
-    new HashMap[ClumpSource[_, _], ClumpFetcher[_, _]]()
+  private[this] val fetchers = new mutable.HashMap[ClumpSource[_, _], ClumpFetcher[_, _]]()
 
   def flush(clumps: List[Clump[_]]): Future[Unit] = {
-    // 1. Get a list of all visible clumps grouped by level of composition
-    val clumpsByLevel = getClumpsByLevel(clumps)
+    // 1. Get a list of all visible clumps grouped by level of composition, starting at the highest level
+    val upstreamByLevel = getClumpsByLevel(clumps)
 
     // 2. Flush the fetches from all the visible clumps
-    flushFetches(clumpsByLevel.flatten).flatMap { _ =>
+    flushFetchesInParallel(upstreamByLevel.flatten).flatMap { _ =>
       // 3. Walk through the downstream clumps as well, starting at the deepest level
-      flushDownstreamByLevel(clumpsByLevel.reverse)
+      flushDownstreamByLevel(upstreamByLevel.reverse)
     }
   }
 
-  // Unfold all visible (ie. upstream) clumps
+  // Unfold all visible (ie. upstream) clumps from lowest to highest level
   private[this] def getClumpsByLevel(clumps: List[Clump[_]]): List[List[Clump[_]]] = {
     clumps match {
       case Nil => Nil
@@ -41,8 +40,8 @@ private[getclump] final class ClumpContext {
     }
   }
 
-  // Flush all the ClumpFetch instances in a list of clumps, calling their associated fetch functions in parallel if possible
-  private[this] def flushFetches(clumps: List[Clump[_]]) = {
+  // Flush all the ClumpFetch instances in a list of clumps, calling their associated fetch functions in parallel
+  private[this] def flushFetchesInParallel(clumps: List[Clump[_]]) = {
     val fetches = filterFetches(clumps)
     val byFetcher = fetches.groupBy(fetch => fetcherFor(fetch.source))
     for ((fetcher, fetches) <- byFetcher)
