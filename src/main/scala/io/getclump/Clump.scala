@@ -239,7 +239,7 @@ private[getclump] class ClumpMap[T, U](clump: Clump[T], f: T => U) extends Clump
 
 private[getclump] class ClumpFlatMap[T, U](clump: Clump[T], f: T => Clump[U]) extends Clump[U] {
   val upstream = List(clump)
-  val partial =
+  def partial =
     clump.result.map(_.map(f))
   val downstream =
     partial.map(_.toList)
@@ -259,7 +259,7 @@ private[getclump] class ClumpHandle[T](clump: Clump[T], f: PartialFunction[Throw
 
 private[getclump] class ClumpRescue[T](clump: Clump[T], rescue: PartialFunction[Throwable, Clump[T]]) extends Clump[T] {
   val upstream = List(clump)
-  val partial =
+  def partial =
     clump.result.map(Clump.value).recover {
       case exception if (rescue.isDefinedAt(exception)) => rescue(exception)
       case exception                                    => Clump.exception(exception)
@@ -279,7 +279,7 @@ private[getclump] class ClumpFilter[T](clump: Clump[T], f: T => Boolean) extends
 
 private[getclump] class ClumpOrElse[T](clump: Clump[T], default: => Clump[T]) extends Clump[T] {
   val upstream = List(clump)
-  val partial =
+  def partial =
     clump.result.map {
       case Some(value) => Clump.value(value)
       case None        => default
