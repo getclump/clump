@@ -1,37 +1,52 @@
 package io.getclump
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
 
 private[getclump] final class ClumpContext {
 
-  private[this] val fetchers =
-    new HashMap[ClumpSource[_, _], ClumpFetcher[_, _]]()
+  private[this] val fetchers = new mutable.HashMap[ClumpSource[_, _], ClumpFetcher[_, _]]()
 
-  def flush(clumps: List[Clump[_]]): Future[Unit] =
+  def flush(clumps: List[Clump[_]]): Future[Unit] = {
+    // 1. Get a list of all visible clumps grouped by level of composition, starting at the highest level
+    val upstreamByLevel = getClumpsByLevel(clumps)
+
+    // 2. Flush the fetches from all the visible clumps
+    flushFetchesInParallel(upstreamByLevel.flatten).flatMap { _ =>
+      // 3. Walk through the downstream clumps as well, starting at the deepest level
+      flushDownstreamByLevel(upstreamByLevel.reverse)
+    }
+  }
+
+  // Unfold all visible (ie. upstream) clumps from lowest to highest level
+  private[this] def getClumpsByLevel(clumps: List[Clump[_]]): List[List[Clump[_]]] = {
     clumps match {
+      case Nil => Nil
+      case _ => clumps :: getClumpsByLevel(clumps.flatMap(_.upstream))
+    }
+  }
+
+  private[this] def flushDownstreamByLevel(levels: List[List[Clump[_]]]): Future[Unit] = {
+    levels match {
       case Nil => Future.successful(())
-      case _ =>
-        flushUpstream(clumps).flatMap { _ =>
-          flushFetches(clumps).flatMap { _ =>
-            flushDownstream(clumps)
+      case head :: tail =>
+        // 1. Resolve the downstream clumps (will succeed because deeper downstream clumps have already been resolved)
+        Future.sequence(head.map(_.downstream)).flatMap { res =>
+          // 2. Flush the resulting clumps, thus completely resolving this subtree of the composition
+          flush(res.flatten).flatMap { _ =>
+            // 3. Move up one level of composition and repeat this process
+            flushDownstreamByLevel(tail)
           }
         }
     }
+  }
 
-  private[this] def flushUpstream(clumps: List[Clump[_]]) =
-    flush(clumps.map(_.upstream).flatten)
-
-  private[this] def flushDownstream(clumps: List[Clump[_]]) =
-    Future.sequence(clumps.map(_.downstream)).flatMap { down =>
-      flush(down.flatten.toList)
-    }
-
-  private[this] def flushFetches(clumps: List[Clump[_]]) = {
+  // Flush all the ClumpFetch instances in a list of clumps, calling their associated fetch functions in parallel
+  private[this] def flushFetchesInParallel(clumps: List[Clump[_]]) = {
     val fetches = filterFetches(clumps)
     val byFetcher = fetches.groupBy(fetch => fetcherFor(fetch.source))
     for ((fetcher, fetches) <- byFetcher)
       fetches.foreach(_.attachTo(fetcher))
-    Future.sequence(byFetcher.keys.map(_.flush).toSeq)
+    Future.sequence(byFetcher.keys.map(_.flush)).map(_ => ())
   }
 
   private[this] def filterFetches(clumps: List[Clump[_]]) =
