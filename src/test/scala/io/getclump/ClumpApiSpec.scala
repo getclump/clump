@@ -103,6 +103,21 @@ class ClumpApiSpec extends Spec {
       }
     }
 
+    "allows to collect multiple clumps in only one (Clump.sequence)" >> {
+      "list" in {
+        val clumps = List(Clump.value(1), Clump.value(2))
+        clumpResult(Clump.sequence(clumps)) mustEqual Some(List(1, 2))
+      }
+      "set" in {
+        val clumps = Set(Clump.value(1), Clump.value(2))
+        clumpResult(Clump.sequence(clumps)) mustEqual Some(Set(1, 2))
+      }
+      "seq" in {
+        val clumps = Seq(Clump.value(1), Clump.value(2))
+        clumpResult(Clump.sequence(clumps)) mustEqual Some(Seq(1, 2))
+      }
+    }
+
     "allows to create an empty Clump (Clump.empty)" in {
       clumpResult(Clump.empty) ==== None
     }
