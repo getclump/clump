@@ -86,35 +86,47 @@ class ClumpApiSpec extends Spec {
         val clump = Clump.traverse(inputs)(i => Clump.value(i + 1))
         clumpResult(clump) ==== Some(Seq(2, 3, 4))
       }
+      "varargs" in {
+        val clump = Clump.traverse(1, 2, 3)(i => Clump.value(i + 1))
+        clumpResult(clump) ==== Some(List(2, 3, 4))
+      }
     }
 
     "allows to collect multiple clumps in only one (Clump.collect)" >> {
       "list" in {
         val clumps = List(Clump.value(1), Clump.value(2))
-        clumpResult(Clump.collect(clumps)) mustEqual Some(List(1, 2))
+        clumpResult(Clump.collect(clumps)) ==== Some(List(1, 2))
       }
       "set" in {
         val clumps = Set(Clump.value(1), Clump.value(2))
-        clumpResult(Clump.collect(clumps)) mustEqual Some(Set(1, 2))
+        clumpResult(Clump.collect(clumps)) ==== Some(Set(1, 2))
       }
       "seq" in {
         val clumps = Seq(Clump.value(1), Clump.value(2))
-        clumpResult(Clump.collect(clumps)) mustEqual Some(Seq(1, 2))
+        clumpResult(Clump.collect(clumps)) ==== Some(Seq(1, 2))
+      }
+      "varargs" in {
+        val clump = Clump.collect(Clump.value(1), Clump.value(2))
+        clumpResult(clump) ==== Some(List(1, 2))
       }
     }
 
     "allows to collect multiple clumps in only one (Clump.sequence)" >> {
       "list" in {
         val clumps = List(Clump.value(1), Clump.value(2))
-        clumpResult(Clump.sequence(clumps)) mustEqual Some(List(1, 2))
+        clumpResult(Clump.sequence(clumps)) ==== Some(List(1, 2))
       }
       "set" in {
         val clumps = Set(Clump.value(1), Clump.value(2))
-        clumpResult(Clump.sequence(clumps)) mustEqual Some(Set(1, 2))
+        clumpResult(Clump.sequence(clumps)) ==== Some(Set(1, 2))
       }
       "seq" in {
         val clumps = Seq(Clump.value(1), Clump.value(2))
-        clumpResult(Clump.sequence(clumps)) mustEqual Some(Seq(1, 2))
+        clumpResult(Clump.sequence(clumps)) ==== Some(Seq(1, 2))
+      }
+      "varargs" in {
+        val clump = Clump.sequence(Clump.value(1), Clump.value(2))
+        clumpResult(clump) ==== Some(List(1, 2))
       }
     }
 
