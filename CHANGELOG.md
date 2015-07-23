@@ -1,3 +1,7 @@
+# 0.0.15 / 23-Jul-2015
+
+* Optimize ClumpContext execution algorithm to fetch in parallel at different levels of composition (https://github.com/getclump/clump/pull/99)
+
 # 0.0.14 / 19-Jun-2015
 
 * Set default max batch size of 100 for `ClumpSource` (https://github.com/getclump/clump/pull/95)
