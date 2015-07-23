@@ -1,8 +1,8 @@
 package io.getclump
 
 import scala.collection.generic.CanBuildFrom
-
 import scala.reflect.ClassTag
+import scala.util.control.NonFatal
 
 sealed trait Clump[+T] {
 
@@ -119,7 +119,7 @@ object Clump extends Joins with Sources {
   /**
    * Alias for [[value]] except that it propagates exceptions inside a clump instance
    */
-  def apply[T](value: => T): Clump[T] = try { this.value(value) } catch { case e: Throwable => this.exception(e) }
+  def apply[T](value: => T): Clump[T] = try { this.value(value) } catch { case NonFatal(e) => this.exception(e) }
 
   /**
    * The unit method: create a clump whose value has already been resolved to the input
@@ -198,11 +198,11 @@ private[getclump] class ClumpFuture[T](val result: Future[Option[T]]) extends Cl
 }
 
 private[getclump] class ClumpFetch[T, U](input: T, val source: ClumpSource[T, U]) extends Clump[U] {
-  private val promise = Promise[Option[U]]
+  private[this] val promise = Promise[Option[U]]
   val upstream = List()
   val downstream = Future.successful(List())
   val result = promise.future
-  def attachTo(fetcher: ClumpFetcher[T, U]) =
+  def attachTo(fetcher: ClumpFetcher[T, U]): Unit =
     fetcher.get(input).onComplete(promise.complete)
 }
 

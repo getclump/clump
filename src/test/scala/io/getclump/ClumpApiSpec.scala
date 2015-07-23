@@ -341,6 +341,9 @@ class ClumpApiSpec extends Spec {
       "seq" in {
         awaitResult(Clump.value(Seq(1, 2)).list) ==== Seq(1, 2)
       }
+      "empty" in {
+        awaitResult(Clump.value[List[Int]](None).list) ==== List()
+      }
       // Clump.value(1).flatten //doesn't compile
     }
 
