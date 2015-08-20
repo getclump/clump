@@ -80,7 +80,7 @@ sealed trait Clump[+T] {
    * A utility method for automatically unwrapping the underlying value
    * @throws NoSuchElementException if the underlying value is not defined
    */
-  def apply(): Future[T] = get.map(_.get)
+  def apply(): Future[T] = get.map(_.getOrElse { throw new NoSuchElementException("Clump result was not defined") })
 
   /**
    * Get the result of the clump or provide a fallback value in the case where the result is not defined
@@ -172,6 +172,11 @@ object Clump extends Joins with Sources {
   def collect[T](clumps: Clump[T]*): Clump[List[T]] = collect(clumps.toList)
 
   /**
+   * Alias for [[collect]]
+   */
+  def sequence[T](clumps: Clump[T]*): Clump[List[T]] = collect(clumps: _*)
+
+  /**
    * Transform a collection of clump instances into a single clump by first applying a function.
    *
    * Equivalent to:
@@ -187,6 +192,12 @@ object Clump extends Joins with Sources {
    */
   def collect[T, C[_] <: Iterable[_]](clumps: C[Clump[T]])(implicit cbf: CanBuildFrom[C[Clump[T]], T, C[T]]): Clump[C[T]] =
     new ClumpCollect(clumps)
+
+  /**
+   * Alias for [[collect]]
+   */
+  def sequence[T, C[_] <: Iterable[_]](clumps: C[Clump[T]])(implicit cbf: CanBuildFrom[C[Clump[T]], T, C[T]]): Clump[C[T]] =
+    collect(clumps)
 
 }
 

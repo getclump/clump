@@ -55,6 +55,11 @@ object Build extends Build {
           <name>William Boxhall</name>
           <url>http://github.com/williamboxhall/</url>
         </developer>
+        <developer>
+          <id>stevenheidel</id>
+          <name>Steven Heidel</name>
+          <url>http://github.com/stevenheidel/</url>
+        </developer>
       </developers>
   )
 
