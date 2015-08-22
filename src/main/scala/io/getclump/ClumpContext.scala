@@ -1,12 +1,13 @@
 package io.getclump
 
 import scala.collection.mutable
+import scala.concurrent.ExecutionContext
 
 private[getclump] final class ClumpContext {
 
   private[this] val fetchers = new mutable.HashMap[ClumpSource[_, _], ClumpFetcher[_, _]]()
 
-  def flush(clumps: List[Clump[_]]): Future[Unit] = {
+  def flush(clumps: List[Clump[_]])(implicit ec: ExecutionContext): Future[Unit] = {
     // 1. Get a list of all visible clumps grouped by level of composition, starting at the highest level
     val upstreamByLevel = getClumpsByLevel(clumps)
 
@@ -25,7 +26,7 @@ private[getclump] final class ClumpContext {
     }
   }
 
-  private[this] def flushDownstreamByLevel(levels: List[List[Clump[_]]]): Future[Unit] = {
+  private[this] def flushDownstreamByLevel(levels: List[List[Clump[_]]])(implicit ec: ExecutionContext): Future[Unit] = {
     levels match {
       case Nil => Future.successful(())
       case head :: tail =>
@@ -40,8 +41,8 @@ private[getclump] final class ClumpContext {
     }
   }
 
-  // Flush all the ClumpFetch instances in a list of clumps, calling their associated fetch functions in parallel
-  private[this] def flushFetchesInParallel(clumps: List[Clump[_]]) = {
+  // Flush all the ClumpFetch instances in a list of clumps, calling their associated fetch functions in parallel if possible
+  private[this] def flushFetchesInParallel(clumps: List[Clump[_]])(implicit ec: ExecutionContext) = {
     val fetches = filterFetches(clumps)
     val byFetcher = fetches.groupBy(fetch => fetcherFor(fetch.source))
     for ((fetcher, fetches) <- byFetcher)
