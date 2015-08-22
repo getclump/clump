@@ -1,3 +1,7 @@
+# 0.0.16 / 21-Aug-2015
+
+* Add sequence alias for collect, custom NoSuchElementException message (https://github.com/getclump/clump/pull/102)
+
 # 0.0.15 / 23-Jul-2015
 
 * Optimize ClumpContext execution algorithm to fetch in parallel at different levels of composition (https://github.com/getclump/clump/pull/99)
