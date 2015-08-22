@@ -203,7 +203,7 @@ object Clump extends Joins with Sources {
 
 }
 
-private[getclump] class ClumpFuture[T](val future: Future[Option[T]]) extends Clump[T] {
+private[getclump] class ClumpFuture[T](future: Future[Option[T]]) extends Clump[T] {
   override def downstream(implicit ec: ExecutionContext) = future.map(_ => None).recover {
     case _ => None
   }
@@ -211,10 +211,12 @@ private[getclump] class ClumpFuture[T](val future: Future[Option[T]]) extends Cl
 }
 
 private[getclump] class ClumpFetch[T, U](input: T, val source: ClumpSource[T, U]) extends Clump[U] {
-  private val promise = Promise[Option[U]]
-  override def result(implicit ec: ExecutionContext) = promise.future
+  private[this] val promise = Promise[Option[U]]
+
   def attachTo(fetcher: ClumpFetcher[T, U])(implicit ec: ExecutionContext) =
     fetcher.get(input).onComplete(promise.complete)
+
+  override def result(implicit ec: ExecutionContext) = promise.future
 }
 
 private[getclump] class ClumpJoin[A, B](a: Clump[A], b: Clump[B]) extends Clump[(A, B)] {
@@ -245,10 +247,11 @@ private[getclump] class ClumpMap[T, U](clump: Clump[T], f: T => U) extends Clump
 }
 
 private[getclump] class ClumpFlatMap[T, U](clump: Clump[T], f: T => Clump[U]) extends Clump[U] {
-  override val upstream = List(clump)
-  private val promise = Promise[Option[Clump[U]]]()
+  private[this] val promise = Promise[Option[Clump[U]]]()
   private def partial(implicit ec: ExecutionContext) =
     clump.result.map(_.map(f))
+
+  override val upstream = List(clump)
   override def downstream(implicit ec: ExecutionContext) =
     promise.tryCompleteWith(partial).future
   override def result(implicit ec: ExecutionContext) =
@@ -265,13 +268,14 @@ private[getclump] class ClumpHandle[T](clump: Clump[T], f: PartialFunction[Throw
 }
 
 private[getclump] class ClumpRescue[T](clump: Clump[T], rescue: PartialFunction[Throwable, Clump[T]]) extends Clump[T] {
-  override val upstream = List(clump)
-  private val promise = Promise[Clump[T]]()
+  private[this] val promise = Promise[Clump[T]]
   private def partial(implicit ec: ExecutionContext) =
     clump.result.map(Clump.value).recover {
       case exception if rescue.isDefinedAt(exception) => rescue(exception)
       case exception                                  => Clump.exception(exception)
     }
+
+  override val upstream = List(clump)
   override def downstream(implicit ec: ExecutionContext) =
     promise.tryCompleteWith(partial).future.map(Some(_))
   override def result(implicit ec: ExecutionContext) =
@@ -285,13 +289,14 @@ private[getclump] class ClumpFilter[T](clump: Clump[T], f: T => Boolean) extends
 }
 
 private[getclump] class ClumpOrElse[T](clump: Clump[T], default: => Clump[T]) extends Clump[T] {
-  override val upstream = List(clump)
-  private val promise = Promise[Clump[T]]
+  private[this] val promise = Promise[Clump[T]]
   private def partial(implicit ec: ExecutionContext) =
     clump.result.map {
       case Some(value) => Clump.value(value)
       case None        => default
     }
+
+  override val upstream = List(clump)
   override def downstream(implicit ec: ExecutionContext) =
     promise.tryCompleteWith(partial).future.map(Some(_))
   override def result(implicit ec: ExecutionContext) =
