@@ -1,3 +1,7 @@
+# 0.0.17 / 22-Aug-2015
+
+* Allow custom execution context to be passed in (https://github.com/getclump/clump/pull/104)
+
 # 0.0.16 / 21-Aug-2015
 
 * Add sequence alias for collect, custom NoSuchElementException message (https://github.com/getclump/clump/pull/102)
