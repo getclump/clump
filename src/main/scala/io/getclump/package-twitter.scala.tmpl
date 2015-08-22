@@ -12,8 +12,8 @@ package object getclump {
   private[getclump] val Future = com.twitter.util.Future
 
   implicit class PromiseBridge[T](val promise: Promise[T]) extends AnyVal {
-    def complete(result: com.twitter.util.Try[T]) =
-      promise.update(result)
+    def complete(result: com.twitter.util.Try[T]) = promise.update(result)
+    def tryCompleteWith(future: com.twitter.util.Future[T]) = { promise.become(future); promise }
   }
 
   implicit class FutureBridge[T](val future: Future[T]) extends AnyVal {
