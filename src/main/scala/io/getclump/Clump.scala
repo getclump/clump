@@ -186,8 +186,8 @@ object Clump extends Joins with Sources {
    *   Clump.collect(list.map(f))
    * }}}
    */
-  def traverse[T, U, C[_] <: Iterable[_]](inputs: C[T])(f: T => Clump[U])(implicit cbf: CanBuildFrom[Nothing, U, C[U]]): Clump[C[U]] =
-    collect(inputs.toList.asInstanceOf[List[T]].map(f)).map(cbf.apply().++=(_).result())
+  def traverse[T, U, C[_] <: Iterable[_]](inputs: C[T])(f: T => Clump[U])(implicit cbf: CanBuildFrom[C[T], U, C[U]]): Clump[C[U]] =
+    collect(inputs.toList.asInstanceOf[List[T]].map(f)).map(cbf.apply(inputs).++=(_).result())
 
   /**
    * Transform a collection of clump instances into a single clump
@@ -236,7 +236,7 @@ private[getclump] class ClumpCollect[T, C[_] <: Iterable[_]](clumps: C[Clump[T]]
     Future
       .sequence(upstream.map(_.result))
       .map(_.flatten)
-      .map(cbf.apply().++=(_).result())
+      .map(cbf.apply(clumps).++=(_).result())
       .map(Some(_))
 }
 
