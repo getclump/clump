@@ -1,3 +1,7 @@
+# 0.0.18 / 4-Sep-2015
+
+* Fix issue with CanBuildFrom and collections with metadata (https://github.com/getclump/clump/pull/105)
+
 # 0.0.17 / 22-Aug-2015
 
 * Allow custom execution context to be passed in (https://github.com/getclump/clump/pull/104)
