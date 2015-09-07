@@ -3,6 +3,7 @@ import sbt.Keys._
 import sbt._
 import sbtrelease.ReleasePlugin._
 import xerial.sbt.Sonatype.SonatypeKeys._
+import scoverage.ScoverageSbtPlugin
 
 object Build extends Build {
   val commonSettings = Seq(
@@ -32,6 +33,8 @@ object Build extends Build {
       else
         Some("releases"  at nexus + "service/local/staging/deploy/maven2")
     },
+    ScoverageSbtPlugin.ScoverageKeys.coverageMinimum := 100,
+    ScoverageSbtPlugin.ScoverageKeys.coverageFailOnMinimum := false,
     sonatypeProfileName := "io.getclump",
     pomExtra :=
       <url>http://github.com/getclump/clump</url>

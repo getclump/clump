@@ -2,9 +2,10 @@
 =========================
 A library for expressive and efficient service composition
 
-[![Build Status](https://secure.travis-ci.org/getclump/clump.png)](https://api.travis-ci.org/getclump/clump.svg?branch=master)
-[![Codacy Badge](https://www.codacy.com/project/badge/5fd8030f7c494b739f6ec5c1963371a8)](https://www.codacy.com/public/fwbrasil/clump)
-[![Join the chat at https://gitter.im/getclump/clump](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/getclump/clump?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://img.shields.io/travis/getclump/clump.svg)](https://api.travis-ci.org/getclump/clump.svg?branch=master)
+[![Codacy Badge](https://img.shields.io/codacy/5fd8030f7c494b739f6ec5c1963371a8.svg)](https://www.codacy.com/app/fwbrasil/clump)
+[![codecov.io](https://img.shields.io/codecov/c/github/getclump/clump.svg)](http://codecov.io/github/getclump/clump?branch=master)
+[![Join the chat at https://gitter.im/getclump/clump](https://img.shields.io/badge/gitter-join%20chat-green.svg)](https://gitter.im/getclump/clump?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 * [Introduction](#introduction) 
 * [Getting started](#getting-started)
