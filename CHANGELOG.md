@@ -1,3 +1,7 @@
+# 0.0.19 / 7-Sep-2015
+
+* Simplify API to no longer expose internal Option (https://github.com/getclump/clump/pull/106)
+
 # 0.0.18 / 4-Sep-2015
 
 * Fix issue with CanBuildFrom and collections with metadata (https://github.com/getclump/clump/pull/105)
