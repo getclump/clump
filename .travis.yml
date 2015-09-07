@@ -6,7 +6,7 @@ jdk:
   - oraclejdk7
   - openjdk7
 script:
-  - sbt clean coverage test &&
+  - travis_retry sbt clean coverage test &&
     sbt coverageAggregate
 after_success:
   - bash <(curl -s https://codecov.io/bash)
