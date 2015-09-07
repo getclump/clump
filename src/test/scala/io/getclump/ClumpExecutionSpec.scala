@@ -109,7 +109,7 @@ class ClumpExecutionSpec extends Spec {
       "using a future clump as base" in new Context {
         val clump =
           for {
-            int <- Clump.future(Future.successful(Some(1)))
+            int <- Clump.future(Future.successful(1))
             collect1 <- Clump.collect(source1.get(int))
             collect2 <- Clump.collect(source2.get(int))
           } yield (collect1, collect2)

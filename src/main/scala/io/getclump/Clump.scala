@@ -2,8 +2,6 @@ package io.getclump
 
 import scala.collection.generic.CanBuildFrom
 import scala.concurrent.ExecutionContext
-
-import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
 sealed trait Clump[+T] {
@@ -26,12 +24,12 @@ sealed trait Clump[+T] {
   /**
    * Define a fallback value to use in the case of specified exceptions
    */
-  def handle[B >: T](f: PartialFunction[Throwable, Option[B]]): Clump[B] = new ClumpHandle(this, f)
+  def handle[B >: T](f: PartialFunction[Throwable, B]): Clump[B] = new ClumpHandle(this, f)
 
   /**
    * Alias for [[handle]]
    */
-  def recover[B >: T](f: PartialFunction[Throwable, Option[B]]): Clump[B] = handle(f)
+  def recover[B >: T](f: PartialFunction[Throwable, B]): Clump[B] = handle(f)
 
   /**
    * Define a fallback clump to use in the case of specified exceptions
@@ -46,7 +44,7 @@ sealed trait Clump[+T] {
   /**
    * On any exception, fallback to a default value
    */
-  def fallback[B >: T](default: => Option[B]): Clump[B] = handle(PartialFunction(_ => default))
+  def fallback[B >: T](default: => B): Clump[B] = handle(PartialFunction(_ => default))
 
   /**
    * On any exception, fallback to a default clump
@@ -66,7 +64,7 @@ sealed trait Clump[+T] {
   /**
    * If this clump does not return a value then use the default instead
    */
-  def orElse[B >: T: ClassTag](default: => B): Clump[B] = new ClumpOrElse(this, Clump.value(default))
+  def orDefault[B >: T](default: => B): Clump[B] = new ClumpOrElse(this, Clump.value(default))
 
   /**
    * If this clump does not return a value then use the value from a default clump instead
@@ -116,7 +114,7 @@ object Clump extends Joins with Sources {
   /**
    * Create an empty clump
    */
-  def empty[T]: Clump[T] = value(scala.None)
+  def empty[T]: Clump[T] = new ClumpEmpty()
 
   /**
    * Alias for [[value]] except that it propagates exceptions inside a clump instance
@@ -126,12 +124,7 @@ object Clump extends Joins with Sources {
   /**
    * The unit method: create a clump whose value has already been resolved to the input
    */
-  def value[T](value: T): Clump[T] = future(Future.successful(Option(value)))
-
-  /**
-   * The unit method: create a clump whose value has already been resolved to the input if it is defined
-   */
-  def value[T](value: Option[T]): Clump[T] = future(Future.successful(value))
+  def value[T](value: T): Clump[T] = future(Future.successful(value))
 
   /**
    * Alias for [[value]]
@@ -151,12 +144,7 @@ object Clump extends Joins with Sources {
   /**
    * Create a clump whose value will be the result of the inputted future
    */
-  def future[T: ClassTag](future: Future[T])(implicit ec: ExecutionContext): Clump[T] = new ClumpFuture(future.map(Option(_)))
-
-  /**
-   * Create a clump whose value will be the result of the inputted future if it is defined
-   */
-  def future[T](future: Future[Option[T]]): Clump[T] = new ClumpFuture(future)
+  def future[T](future: Future[T]): Clump[T] = new ClumpFuture(future)
 
   /**
    * Transform a number of values into a single clump by first applying a function.
@@ -203,11 +191,15 @@ object Clump extends Joins with Sources {
 
 }
 
-private[getclump] class ClumpFuture[T](future: Future[Option[T]]) extends Clump[T] {
+private[getclump] class ClumpEmpty extends Clump[Nothing] {
+  override protected[getclump] def result(implicit ec: ExecutionContext) = Future.successful(None)
+}
+
+private[getclump] class ClumpFuture[T](future: Future[T]) extends Clump[T] {
   override protected[getclump] def downstream(implicit ec: ExecutionContext) = future.map(_ => None).recover {
     case _ => None
   }
-  override protected[getclump] def result(implicit ec: ExecutionContext) = future
+  override protected[getclump] def result(implicit ec: ExecutionContext) = future.map(Some(_))
 }
 
 private[getclump] class ClumpFetch[T, U](input: T, val source: ClumpSource[T, U]) extends Clump[U] {
@@ -261,16 +253,16 @@ private[getclump] class ClumpFlatMap[T, U](clump: Clump[T], f: T => Clump[U]) ex
     }
 }
 
-private[getclump] class ClumpHandle[T](clump: Clump[T], f: PartialFunction[Throwable, Option[T]]) extends Clump[T] {
+private[getclump] class ClumpHandle[T](clump: Clump[T], f: PartialFunction[Throwable, T]) extends Clump[T] {
   override protected[getclump] val upstream = List(clump)
   override protected[getclump] def result(implicit ec: ExecutionContext) =
-    clump.result.recover(f)
+    clump.result.recover(f.andThen(Some(_)))
 }
 
 private[getclump] class ClumpRescue[T](clump: Clump[T], rescue: PartialFunction[Throwable, Clump[T]]) extends Clump[T] {
   private[this] val promise = Promise[Clump[T]]
   private[this] def partial(implicit ec: ExecutionContext) =
-    clump.result.map(Clump.value).recover {
+    clump.result.map(_.map(Clump.value).getOrElse(Clump.empty)).recover {
       case exception if rescue.isDefinedAt(exception) => rescue(exception)
       case exception                                  => Clump.exception(exception)
     }

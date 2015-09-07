@@ -305,16 +305,10 @@ val usersSource =
 
 It is possible to create Clump instances based on values.
 
-From a non-optional value:
+From a value:
 
 ```scala
 val clump: Clump[Int] = Clump.value(111)
-```
-
-From an optional value:
-
-```scala
-val clump: Clump[Int] = Clump.value(Option(111))
 ```
 
 From a future:
@@ -323,8 +317,6 @@ From a future:
 // This method is useful as a bridge between Clump and non-batched services.
 val clump: Clump[Int] = Clump.future(counterService.currentValueFor(111))
 ```
-
-The `future` method is overloaded to be able to receive both `Future[T]` and `Future[Option[T]]`.
 
 It is possible to create a failed Clump instance:
 
