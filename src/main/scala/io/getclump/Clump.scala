@@ -2,8 +2,6 @@ package io.getclump
 
 import scala.collection.generic.CanBuildFrom
 import scala.concurrent.ExecutionContext
-
-import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
 sealed trait Clump[+T] {
@@ -66,7 +64,7 @@ sealed trait Clump[+T] {
   /**
    * If this clump does not return a value then use the default instead
    */
-  def orElse[B >: T: ClassTag](default: => B): Clump[B] = new ClumpOrElse(this, Clump.value(default))
+  def orDefault[B >: T](default: => B): Clump[B] = new ClumpOrElse(this, Clump.value(default))
 
   /**
    * If this clump does not return a value then use the value from a default clump instead

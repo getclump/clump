@@ -319,12 +319,12 @@ class ClumpApiSpec extends Spec {
       (clump: Clump[List[A]]) must beAnInstanceOf[Clump[List[A]]]
     }
 
-    "allows to defined a fallback value (clump.orElse)" >> {
+    "allows to defined a fallback value (clump.orDefault)" >> {
       "undefined" in {
-        clumpResult(Clump.empty.orElse(1)) ==== Some(1)
+        clumpResult(Clump.empty.orDefault(1)) ==== Some(1)
       }
       "defined" in {
-        clumpResult(Clump.value(1).orElse(2)) ==== Some(1)
+        clumpResult(Clump.value(1).orDefault(2)) ==== Some(1)
       }
     }
 
