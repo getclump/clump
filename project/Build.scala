@@ -8,7 +8,7 @@ import scoverage.ScoverageSbtPlugin
 object Build extends Build {
   val commonSettings = Seq(
     organization := "io.getclump",
-    scalaVersion := "2.10.4",
+    scalaVersion := "2.11.5",
     crossScalaVersions := Seq("2.10.4", "2.11.5"),
     libraryDependencies ++= Seq(
       "org.specs2" %% "specs2" % "2.4.2" % "test",
