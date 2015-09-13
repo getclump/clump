@@ -15,7 +15,7 @@ private[getclump] final class ClumpContext {
     // 2. Flush the fetches from all the visible clumps
     flushFetchesInParallel(upstream).flatMap { _ =>
       // 3. Walk through the downstream clumps as well, starting at the deepest level
-      flushDownstreamByLevel(getClumpsByLevel(upstream))
+      flushDownstreamByLevel(groupClumpsByLevel(upstream))
     }
   }
 
@@ -30,7 +30,7 @@ private[getclump] final class ClumpContext {
   // Strip the leaves at the bottom of the clump tree one level at a time so that these two conditions are satisfied:
   // - Clumps appear in later lists than all their upstream children
   // - Clumps appear as early in the list as possible
-  private[this] def getClumpsByLevel(clumps: List[Clump[_]]): List[List[Clump[_]]] = {
+  private[this] def groupClumpsByLevel(clumps: List[Clump[_]]): List[List[Clump[_]]] = {
     // 1. Get the longest distance from this Clump to the bottom of the tree (memoized function)
     val m = mutable.HashMap.empty[Clump[_], Int]
     def getDistanceFromBottom(clump: Clump[_]): Int = m.getOrElseUpdate(clump, {
