@@ -48,9 +48,22 @@ class ClumpExecutionSpec extends Spec {
       source2Fetches mustEqual List(Set(3, 4))
     }
 
+    // Implementation note: this test will fail if ClumpContext::getClumpsByLevel does not satisfy the requirement that
+    // "Clumps appear in later lists than all their upstream children"
     "for clumps created inside nested flatmaps" in new Context {
-      val clump1 = Clump.value(1).flatMap(source1.get(_)).flatMap(source2.get(_))
-      val clump2 = Clump.value(2).flatMap(source1.get(_)).flatMap(source2.get(_))
+      val clump1 = Clump.value(1).flatMap(source1.get).flatMap(source2.get)
+      val clump2 = Clump.value(2).flatMap(source1.get).flatMap(source2.get)
+
+      clumpResult(Clump.collect(clump1, clump2)) mustEqual Some(List(100, 200))
+      source1Fetches mustEqual List(Set(1, 2))
+      source2Fetches mustEqual List(Set(20, 10))
+    }
+
+    // Implementation note: this test will fail if ClumpContext::getClumpsByLevel does not satisfy the requirement that
+    // "Clumps appear as early in the list as possible"
+    "for clumps created inside nested flatmaps at different levels of composition" in new Context {
+      val clump1 = Clump.value(1).flatMap(source1.get).flatMap(source2.get).map(identity)
+      val clump2 = Clump.value(2).flatMap(source1.get).flatMap(source2.get)
 
       clumpResult(Clump.collect(clump1, clump2)) mustEqual Some(List(100, 200))
       source1Fetches mustEqual List(Set(1, 2))

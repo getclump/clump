@@ -1,29 +1,47 @@
 package io.getclump
 
+import scala.collection.immutable.SortedMap
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 
 private[getclump] final class ClumpContext {
 
-  private[this] val fetchers = new mutable.HashMap[ClumpSource[_, _], ClumpFetcher[_, _]]()
+  private[this] val fetchers = mutable.HashMap.empty[ClumpSource[_, _], ClumpFetcher[_, _]]
 
   def flush(clumps: List[Clump[_]])(implicit ec: ExecutionContext): Future[Unit] = {
-    // 1. Get a list of all visible clumps grouped by level of composition, starting at the highest level
-    val upstreamByLevel = getClumpsByLevel(clumps)
+    // 1. Get a list of all visible clumps
+    val upstream = getAllUpstream(clumps)
 
     // 2. Flush the fetches from all the visible clumps
-    flushFetchesInParallel(upstreamByLevel.flatten).flatMap { _ =>
+    flushFetchesInParallel(upstream).flatMap { _ =>
       // 3. Walk through the downstream clumps as well, starting at the deepest level
-      flushDownstreamByLevel(upstreamByLevel.reverse)
+      flushDownstreamByLevel(groupClumpsByLevel(upstream))
     }
   }
 
-  // Unfold all visible (ie. upstream) clumps from lowest to highest level
-  private[this] def getClumpsByLevel(clumps: List[Clump[_]]): List[List[Clump[_]]] = {
+  // Unfold all visible (ie. upstream) clumps
+  private[this] def getAllUpstream(clumps: List[Clump[_]]): List[Clump[_]] = {
     clumps match {
       case Nil => Nil
-      case _ => clumps :: getClumpsByLevel(clumps.flatMap(_.upstream))
+      case _ => clumps ::: getAllUpstream(clumps.flatMap(_.upstream))
     }
+  }
+
+  // Strip the leaves at the bottom of the clump tree one level at a time so that these two conditions are satisfied:
+  // - Clumps appear in later lists than all their upstream children
+  // - Clumps appear as early in the list as possible
+  private[this] def groupClumpsByLevel(clumps: List[Clump[_]]): List[List[Clump[_]]] = {
+    // 1. Get the longest distance from this Clump to the bottom of the tree (memoized function)
+    val m = mutable.HashMap.empty[Clump[_], Int]
+    def getDistanceFromBottom(clump: Clump[_]): Int = m.getOrElseUpdate(clump, {
+      clump.upstream match {
+        case Nil => 0
+        case list => list.map(getDistanceFromBottom).max + 1
+      }
+    })
+
+    // 2. Group clumps by these levels and return the deepest level first
+    SortedMap(clumps.groupBy(getDistanceFromBottom).toSeq:_*).values.toList
   }
 
   private[this] def flushDownstreamByLevel(levels: List[List[Clump[_]]])(implicit ec: ExecutionContext): Future[Unit] = {

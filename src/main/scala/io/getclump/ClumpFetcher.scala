@@ -5,7 +5,7 @@ import scala.concurrent.ExecutionContext
 
 private[getclump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
 
-  private[this] val fetches = mutable.LinkedHashMap[T, Promise[Option[U]]]()
+  private[this] val fetches = mutable.LinkedHashMap.empty[T, Promise[Option[U]]]
 
   def get(input: T): Future[Option[U]] =
     synchronized {
