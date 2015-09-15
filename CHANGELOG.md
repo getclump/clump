@@ -1,3 +1,7 @@
+# 0.0.20 / 15-Sep-2015
+
+* Fix batching for nested flatmaps at different levels of composition (https://github.com/getclump/clump/pull/108)
+
 # 0.0.19 / 7-Sep-2015
 
 * Simplify API to no longer expose internal Option (https://github.com/getclump/clump/pull/106)
