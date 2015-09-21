@@ -1,3 +1,7 @@
+# 1.0.0 / 21-Sep-2015
+
+* 1.0.0 Release
+
 # 0.0.20 / 15-Sep-2015
 
 * Fix batching for nested flatmaps at different levels of composition (https://github.com/getclump/clump/pull/108)
