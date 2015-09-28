@@ -73,6 +73,13 @@ Clump.traverse(trackIds) { trackId =>
   }
 ```
 
+## Users ##
+
+The following companies are running Clump in production:
+
+<img src="https://upload.wikimedia.org/wikipedia/en/9/92/SoundCloud_logo.svg" width="150" height="100"/>
+
+<img src="https://upload.wikimedia.org/wikipedia/commons/8/80/LinkedIn_Logo_2013.svg" width="150" height="100"/>
 
 ## Problem ##
 
