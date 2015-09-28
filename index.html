@@ -68,7 +68,7 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>An example of batching fetches using futures without Clump:</p>
 
-<div class="highlight highlight-scala"><pre>tracksService.get(trackIds).flatMap { tracks <span class="pl-k">=&gt;</span>
+<div class="highlight highlight-source-scala"><pre>tracksService.get(trackIds).flatMap { tracks <span class="pl-k">=&gt;</span>
   <span class="pl-k">val</span> <span class="pl-en">userIds</span> <span class="pl-k">=</span> tracks.map(_.creator)
   usersService.get(userIds).map { users <span class="pl-k">=&gt;</span>
     <span class="pl-k">val</span> <span class="pl-en">userMap</span> <span class="pl-k">=</span> userIds.zip(users).toMap
@@ -80,7 +80,7 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>The same composition using Clump:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-en">Clump</span>.traverse(trackIds) { trackId <span class="pl-k">=&gt;</span>
+<div class="highlight highlight-source-scala"><pre><span class="pl-en">Clump</span>.traverse(trackIds) { trackId <span class="pl-k">=&gt;</span>
   trackSource.get(trackId).flatMap { track <span class="pl-k">=&gt;</span>
     userSource.get(track.creator).map { user <span class="pl-k">=&gt;</span>
       <span class="pl-k">new</span> <span class="pl-en">EnrichedTrack</span>(track, user)
@@ -90,13 +90,22 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>Or expressed more elegantly with a for-comprehension:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-en">Clump</span>.traverse(trackIds) { trackId <span class="pl-k">=&gt;</span>
+<div class="highlight highlight-source-scala"><pre><span class="pl-en">Clump</span>.traverse(trackIds) { trackId <span class="pl-k">=&gt;</span>
   <span class="pl-k">for</span> {
     track <span class="pl-k">&lt;</span><span class="pl-k">-</span> trackSource.get(trackId)
     user <span class="pl-k">&lt;</span><span class="pl-k">-</span> userSource.get(track.creator)
   } <span class="pl-k">yield</span> {
     <span class="pl-k">new</span> <span class="pl-en">EnrichedTrack</span>(track, user)
   }</pre></div>
+
+<h2>
+<a id="users" class="anchor" href="#users" aria-hidden="true"><span class="octicon octicon-link"></span></a>Users</h2>
+
+<p>The following companies are running Clump in production:</p>
+
+<p><img src="https://upload.wikimedia.org/wikipedia/en/9/92/SoundCloud_logo.svg" width="150" height="100"></p>
+
+<p><img src="https://upload.wikimedia.org/wikipedia/commons/8/80/LinkedIn_Logo_2013.svg" width="150" height="100"></p>
 
 <h2>
 <a id="problem" class="anchor" href="#problem" aria-hidden="true"><span class="octicon octicon-link"></span></a>Problem</h2>
@@ -107,7 +116,7 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>An example of batching using futures:</p>
 
-<div class="highlight highlight-scala"><pre>tracksService.get(trackIds).flatMap { tracks <span class="pl-k">=&gt;</span>
+<div class="highlight highlight-source-scala"><pre>tracksService.get(trackIds).flatMap { tracks <span class="pl-k">=&gt;</span>
   <span class="pl-k">val</span> <span class="pl-en">userIds</span> <span class="pl-k">=</span> tracks.map(_.creator)
   usersService.get(userIds).map { users <span class="pl-k">=&gt;</span>
     <span class="pl-k">val</span> <span class="pl-en">userMap</span> <span class="pl-k">=</span> userIds.zip(users).toMap
@@ -178,23 +187,23 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>SBT</p>
 
-<div class="highlight highlight-scala"><pre>libraryDependencies <span class="pl-k">++</span><span class="pl-k">=</span> <span class="pl-en">Seq</span>(
+<div class="highlight highlight-source-scala"><pre>libraryDependencies <span class="pl-k">++</span><span class="pl-k">=</span> <span class="pl-en">Seq</span>(
   <span class="pl-s"><span class="pl-pds">"</span>io.getclump<span class="pl-pds">"</span></span> <span class="pl-k">%%</span> <span class="pl-s"><span class="pl-pds">"</span>clump-scala<span class="pl-pds">"</span></span> <span class="pl-k">%</span> <span class="pl-s"><span class="pl-pds">"</span>x.x.x<span class="pl-pds">"</span></span>
 )</pre></div>
 
-<div class="highlight highlight-scala"><pre>libraryDependencies <span class="pl-k">++</span><span class="pl-k">=</span> <span class="pl-en">Seq</span>(
+<div class="highlight highlight-source-scala"><pre>libraryDependencies <span class="pl-k">++</span><span class="pl-k">=</span> <span class="pl-en">Seq</span>(
   <span class="pl-s"><span class="pl-pds">"</span>io.getclump<span class="pl-pds">"</span></span> <span class="pl-k">%%</span> <span class="pl-s"><span class="pl-pds">"</span>clump-twitter<span class="pl-pds">"</span></span> <span class="pl-k">%</span> <span class="pl-s"><span class="pl-pds">"</span>x.x.x<span class="pl-pds">"</span></span>
 )</pre></div>
 
 <p>Maven</p>
 
-<div class="highlight highlight-xml"><pre>&lt;<span class="pl-ent">dependency</span>&gt;
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">dependency</span>&gt;
     &lt;<span class="pl-ent">groupId</span>&gt;io.getclump&lt;/<span class="pl-ent">groupId</span>&gt;
     &lt;<span class="pl-ent">artifactId</span>&gt;clump-scala&lt;/<span class="pl-ent">artifactId</span>&gt;
     &lt;<span class="pl-ent">version</span>&gt;x.x.x&lt;/<span class="pl-ent">version</span>&gt;
 &lt;/<span class="pl-ent">dependency</span>&gt;</pre></div>
 
-<div class="highlight highlight-xml"><pre>&lt;<span class="pl-ent">dependency</span>&gt;
+<div class="highlight highlight-text-xml"><pre>&lt;<span class="pl-ent">dependency</span>&gt;
     &lt;<span class="pl-ent">groupId</span>&gt;io.getclump&lt;/<span class="pl-ent">groupId</span>&gt;
     &lt;<span class="pl-ent">artifactId</span>&gt;clump-twitter&lt;/<span class="pl-ent">artifactId</span>&gt;
     &lt;<span class="pl-ent">version</span>&gt;x.x.x&lt;/<span class="pl-ent">version</span>&gt;
@@ -208,7 +217,7 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>Example usage of Clump:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">import</span> <span class="pl-v">io.getclump.</span><span class="pl-v">Clump</span>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">import</span> <span class="pl-v">io.getclump.</span><span class="pl-v">Clump</span>
 
 <span class="pl-c">// Creates sources using the batched interfaces</span>
 <span class="pl-k">val</span> <span class="pl-en">tracksSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(tracksService.fetch _)(_.id)
@@ -267,7 +276,7 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>The <code>Clump.source</code> method accepts a function that returns a <code>Map</code> with the values for the found inputs.</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">def</span> <span class="pl-en">fetch</span>(<span class="pl-v">ids</span>: <span class="pl-en">List</span>[<span class="pl-k">Int</span>])<span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">Map</span>[<span class="pl-k">Int</span>, <span class="pl-en">User</span>]] <span class="pl-k">=</span> ...
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">def</span> <span class="pl-en">fetch</span>(<span class="pl-v">ids</span>: <span class="pl-en">List</span>[<span class="pl-k">Int</span>])<span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">Map</span>[<span class="pl-k">Int</span>, <span class="pl-en">User</span>]] <span class="pl-k">=</span> ...
 
 <span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(fetch _)
 
@@ -278,7 +287,7 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>The <code>Clump.source</code> method also accepts a function that may return a collection with less elements or in a different order than requested. In these cases, a function may be provided to match the found results back to their input keys.</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">def</span> <span class="pl-en">fetch</span>(<span class="pl-v">ids</span>: <span class="pl-en">Set</span>[<span class="pl-k">Int</span>])<span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">Set</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> ...
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">def</span> <span class="pl-en">fetch</span>(<span class="pl-v">ids</span>: <span class="pl-en">Set</span>[<span class="pl-k">Int</span>])<span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">Set</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> ...
 
 <span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(fetch _)(_.id)
 
@@ -289,7 +298,7 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>The <code>Clump.sourceZip</code> methods accepts a function that produces a list of outputs for each provided input. The result must keep the same order as the inputs list.</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">def</span> <span class="pl-en">fetch</span>(<span class="pl-v">ids</span>: <span class="pl-en">List</span>[<span class="pl-k">Int</span>])<span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> ...
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">def</span> <span class="pl-en">fetch</span>(<span class="pl-v">ids</span>: <span class="pl-en">List</span>[<span class="pl-k">Int</span>])<span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> ...
 
 <span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.sourceZip(fetch _)
 
@@ -300,7 +309,7 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>For the three sourcing options above, it is possible to create sources that have up to four additional parameters, with the resulting <code>ClumpSource</code> accepting each parameter and a singular input. There is a restriction that the inputs must be the last parameter of the fetch function.</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">def</span> <span class="pl-en">fetch</span>(<span class="pl-v">session</span>: <span class="pl-en">UserSession</span>, <span class="pl-v">ids</span>: <span class="pl-en">List</span>[<span class="pl-k">Int</span>])<span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> ...
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">def</span> <span class="pl-en">fetch</span>(<span class="pl-v">session</span>: <span class="pl-en">UserSession</span>, <span class="pl-v">ids</span>: <span class="pl-en">List</span>[<span class="pl-k">Int</span>])<span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> ...
 
 <span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(fetch _)(_.id)
 
@@ -311,11 +320,11 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>Some services have a limitation on how many resources can be fetched in a single request. It is possible to define this limit for each source instance:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(fetch _).maxBatchSize(<span class="pl-c1">100</span>)</pre></div>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(fetch _).maxBatchSize(<span class="pl-c1">100</span>)</pre></div>
 
 <p>The source instance can be also configured to automatically retry failed fetches by using the <code>maxRetries</code> method. It receives a partial function that defines the number of retries for each type of exception. The default number of retries is zero.</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> 
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> 
     <span class="pl-en">Clump</span>.source(fetch _).maxRetries {
       <span class="pl-k">case</span> <span class="pl-v">e</span>: <span class="pl-en">SomeException</span> <span class="pl-k">=&gt;</span> <span class="pl-c1">10</span>
     }</pre></div>
@@ -327,20 +336,20 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>From a value:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-k">Int</span>] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.value(<span class="pl-c1">111</span>)</pre></div>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-k">Int</span>] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.value(<span class="pl-c1">111</span>)</pre></div>
 
 <p>From a future:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-c">// This method is useful as a bridge between Clump and non-batched services.</span>
+<div class="highlight highlight-source-scala"><pre><span class="pl-c">// This method is useful as a bridge between Clump and non-batched services.</span>
 <span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-k">Int</span>] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.future(counterService.currentValueFor(<span class="pl-c1">111</span>))</pre></div>
 
 <p>It is possible to create a failed Clump instance:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-k">Int</span>] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.exception(<span class="pl-k">new</span> <span class="pl-en">NumberFormatException)</span></pre></div>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-k">Int</span>] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.exception(<span class="pl-k">new</span> <span class="pl-en">NumberFormatException)</span></pre></div>
 
 <p>There is a shortcut for a constant empty Clump:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-k">Int</span>] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.empty</pre></div>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-k">Int</span>] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.empty</pre></div>
 
 <h2>
 <a id="composition" class="anchor" href="#composition" aria-hidden="true"><span class="octicon octicon-link"></span></a>Composition</h2>
@@ -349,12 +358,12 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>It is possible to apply a simple transformation by using <code>map</code>:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">intClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.value(<span class="pl-c1">1</span>)
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">intClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.value(<span class="pl-c1">1</span>)
 <span class="pl-k">val</span> <span class="pl-en">stringClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-k">String</span>] <span class="pl-k">=</span> intClump.map(_.toString)</pre></div>
 
 <p>If the transformation results on another Clump instance, it is possible to use <code>flatMap</code>:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">Track</span>, <span class="pl-en">User</span>)] <span class="pl-k">=</span>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">Track</span>, <span class="pl-en">User</span>)] <span class="pl-k">=</span>
   tracksSource.get(trackId).flatMap { track <span class="pl-k">=&gt;</span>
     usersSource.get(track.id).map { user <span class="pl-k">=&gt;</span>
       (track, user)
@@ -363,21 +372,21 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>The <code>join</code> method produces a Clump that has a tuple with the values of two Clump instances:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">User</span>, <span class="pl-en">List</span>[<span class="pl-en">Track</span>])] <span class="pl-k">=</span>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">User</span>, <span class="pl-en">List</span>[<span class="pl-en">Track</span>])] <span class="pl-k">=</span>
     usersSource.get(userId).join(userTracksSource.get(userId))</pre></div>
 
 <p>There are also methods to deal with collections. Use <code>collect</code> to transform a collection of Clump instances into a single Clump:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">userClumps</span><span class="pl-k">:</span> <span class="pl-en">List</span>[<span class="pl-en">Clump</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> userIds.map(usersSource.get(_))
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">userClumps</span><span class="pl-k">:</span> <span class="pl-en">List</span>[<span class="pl-en">Clump</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> userIds.map(usersSource.get(_))
 <span class="pl-k">val</span> <span class="pl-en">usersClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.collect(usersClump)</pre></div>
 
 <p>Instead of <code>map</code> and then <code>collect</code>, it is possible to use the shortcut <code>traverse</code>:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.traverse(userIds)(usersSource.get(_))</pre></div>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.traverse(userIds)(usersSource.get(_))</pre></div>
 
 <p>It is possible to use for-comprehensions as syntactic sugar to avoid having to write the compositions:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">trackClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">trackClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span>
     <span class="pl-k">for</span> {
       track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(trackId)
       creator <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(track.creatorId)
@@ -392,25 +401,25 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>To trigger execution, it is possible to use <code>get</code>:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">trackClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span> ...
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">trackClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span> ...
 <span class="pl-k">val</span> <span class="pl-en">user</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">Option</span>[<span class="pl-en">EnrichedTrack</span>]] <span class="pl-k">=</span> trackClump.get</pre></div>
 
 <p>Clump assumes that the remote services can return less elements than requested. That's why the result is an <code>Option</code>, since the input's result may be missing.</p>
 
 <p>It is possible to define a default value by using <code>getOrElse</code>:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">trackClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span> ...
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">trackClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span> ...
 <span class="pl-k">val</span> <span class="pl-en">user</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span> trackClump.getOrElse(unknownTrack)</pre></div>
 
 <p>If it is guaranteed that the underlying service will always return results for all fetched inputs, it is possible to use <code>apply</code>, that throws a <code>NotFoundException</code> if the result is empty:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">trackClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span> ...
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">trackClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span> ...
 <span class="pl-k">val</span> <span class="pl-en">user1</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span> trackClump.apply()
 <span class="pl-k">val</span> <span class="pl-en">user2</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span> trackClump() <span class="pl-c">// syntactic sugar</span></pre></div>
 
 <p>When a Clump instance has a collection, it is possible to use the <code>list</code> method. It returns an empty collection if the result is <code>None</code>:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.traverse(userIds)(usersSource.get(_))
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersClump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> <span class="pl-en">Clump</span>.traverse(userIds)(usersSource.get(_))
 <span class="pl-k">val</span> <span class="pl-en">users</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">List</span>[<span class="pl-en">User</span>]] <span class="pl-k">=</span> usersClump.list</pre></div>
 
 <h2>
@@ -418,7 +427,7 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>The composition of Clump instances takes in consideration that the sources may not return results for all requested inputs. It has a behavior similar to the relational databases' joins, where not found joined elements make the tuple be filtered-out.</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">Track</span>, <span class="pl-en">User</span>)]
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">Track</span>, <span class="pl-en">User</span>)]
   <span class="pl-k">for</span> {
     track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(<span class="pl-c1">111</span>)
     user <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(track.creator)
@@ -426,13 +435,13 @@ dependent resources. Worse, this problem of batching is often accidentally overl
 
 <p>In this example, if the track's creator isn't found, the final result will be <code>None</code>.</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">future</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">Option</span>[(<span class="pl-en">Track</span>, <span class="pl-en">User</span>)]] <span class="pl-k">=</span> clump.get
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">future</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">Option</span>[(<span class="pl-en">Track</span>, <span class="pl-en">User</span>)]] <span class="pl-k">=</span> clump.get
 <span class="pl-k">val</span> <span class="pl-en">result</span><span class="pl-k">:</span> <span class="pl-en">Option</span>[(<span class="pl-en">Track</span>, <span class="pl-en">User</span>)] <span class="pl-k">=</span> <span class="pl-en">Await</span>.result(future)
 require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</pre></div>
 
 <p>If a nested clump is expected to be optional, it is possible to use the <code>optional</code> method to have a behavior similar to an outer join.</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">Track</span>, <span class="pl-en">Option</span>[<span class="pl-en">User</span>])]
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">Track</span>, <span class="pl-en">Option</span>[<span class="pl-en">User</span>])]
   <span class="pl-k">for</span> {
     track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(<span class="pl-c1">111</span>)
     user <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(track.creator).optional
@@ -440,7 +449,7 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 
 <p>Another alternative is to define a fallback by using <code>orElse</code>:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">Track</span>, <span class="pl-en">Option</span>[<span class="pl-en">User</span>])]
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">Track</span>, <span class="pl-en">Option</span>[<span class="pl-en">User</span>])]
   <span class="pl-k">for</span> {
     track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(<span class="pl-c1">111</span>)
     user <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(track.creator).orElse(usersSource.get(track.uploader))
@@ -451,7 +460,7 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 
 <p>The behavior introduced by the optional fetch compositions allows defining of filtering conditions:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">Track</span>, <span class="pl-en">User</span>)]
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[(<span class="pl-en">Track</span>, <span class="pl-en">User</span>)]
   <span class="pl-k">for</span> {
     track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(<span class="pl-c1">111</span>) <span class="pl-k">if</span>(track.owner <span class="pl-k">==</span> currentUser)
     user <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(track.creator)
@@ -464,7 +473,7 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 
 <p>The <code>handle</code> method defines a fallback value given an exception:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">User</span>] <span class="pl-k">=</span>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">User</span>] <span class="pl-k">=</span>
     usersService.get(userId).handle {
       <span class="pl-k">case</span> <span class="pl-v">_</span>: <span class="pl-en">SomeException</span> <span class="pl-k">=&gt;</span>
         defaultUser
@@ -472,7 +481,7 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 
 <p>If the fallback value is another Clump instance, it is possible to use <code>rescue</code>:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">User</span>] <span class="pl-k">=</span>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">User</span>] <span class="pl-k">=</span>
     usersService.get(trackCreatorId).rescue {
       <span class="pl-k">case</span> <span class="pl-v">_</span>: <span class="pl-en">SomeException</span> <span class="pl-k">=&gt;</span>
         usersService.get(trackUploaderId)
@@ -497,7 +506,7 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 
 <p>Lets see what happens when this example is executed:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(usersService.fetch _)(_.id)
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(usersService.fetch _)(_.id)
 <span class="pl-k">val</span> <span class="pl-en">tracksSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(tracksService.fetch _)(_.id)
 
 <span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedTrack</span>]] <span class="pl-k">=</span>
@@ -515,7 +524,7 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 <h2>
 <a id="sources-creation" class="anchor" href="#sources-creation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Sources creation</h2>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(usersService.fetch _)(_.id)
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">usersSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(usersService.fetch _)(_.id)
 <span class="pl-k">val</span> <span class="pl-en">tracksSource</span> <span class="pl-k">=</span> <span class="pl-en">Clump</span>.source(tracksService.fetch _)(_.id)</pre></div>
 
 <p>The <code>ClumpSource</code> instances are created using one of the shortcuts that the <code>Clump</code> object provides. They don't hold any state and allow to create Clump instances representing the fetch. Clump uses the source's identity to group requests and perform batched fetches, so it is <strong>not</strong> possible to have multiple instances of the same source within a clump composition and execution.</p>
@@ -523,21 +532,21 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 <h2>
 <a id="composition-1" class="anchor" href="#composition-1" aria-hidden="true"><span class="octicon octicon-link"></span></a>Composition</h2>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedTrack</span>]] <span class="pl-k">=</span>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedTrack</span>]] <span class="pl-k">=</span>
     <span class="pl-en">Clump</span>.traverse(trackIds) { trackId <span class="pl-k">=&gt;</span>
       ...
     }</pre></div>
 
 <p>The <code>traverse</code> method is used as a shortcut for <code>map</code> and then <code>collect</code>, so this code could be rewritten as follows:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedTrack</span>]] <span class="pl-k">=</span>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedTrack</span>]] <span class="pl-k">=</span>
     <span class="pl-en">Clump</span>.collect(trackIds.map { trackId <span class="pl-k">=&gt;</span> 
       ...
     }</pre></div>
 
 <p>For each <code>trackId</code>, a for-comprehension is used to compose a Clump that has the <code>EnrichedTrack</code>:</p>
 
-<div class="highlight highlight-scala"><pre>      <span class="pl-k">for</span> {
+<div class="highlight highlight-source-scala"><pre>      <span class="pl-k">for</span> {
         track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(trackId)
         user <span class="pl-k">&lt;</span><span class="pl-k">-</span> usersSource.get(track.creatorId)
       } <span class="pl-k">yield</span> {
@@ -546,7 +555,7 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 
 <p>The for-comprehension is actually just syntactic sugar using <code>map</code> and <code>flatMap</code>, so this code is equivalent to:</p>
 
-<div class="highlight highlight-scala"><pre>      tracksSource.get(trackId).flatMap { track <span class="pl-k">=&gt;</span>
+<div class="highlight highlight-source-scala"><pre>      tracksSource.get(trackId).flatMap { track <span class="pl-k">=&gt;</span>
         usersSource.get(track.creatorId).map { user <span class="pl-k">=&gt;</span>
           <span class="pl-k">new</span> <span class="pl-en">EnrichedTrack</span>(track, user)
         }
@@ -580,7 +589,7 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 
 <p>This is the code that triggers the execution:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">tracks</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">List</span>[<span class="pl-en">Track</span>]] <span class="pl-k">=</span> clump.list</pre></div>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">tracks</span><span class="pl-k">:</span> <span class="pl-en">Future</span>[<span class="pl-en">List</span>[<span class="pl-en">Track</span>]] <span class="pl-k">=</span> clump.list</pre></div>
 
 <p>The <code>list</code> method is just a shortcut to ease getting the value of Clump instances that have a collection. The actual execution is triggered by the <code>get</code> method. It flushes the context and returns the Clump's result.</p>
 
@@ -602,7 +611,7 @@ require(result <span class="pl-k">===</span> <span class="pl-c1">None</span>)</p
 
 <p>In case you are wondering why we need this upstream mechanism since we have the Clump instance at hand and could start the execution from it: actually the instance used to trigger the execution isn't the "root" of the composition. For instance:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">EnrichedTrack</span>] <span class="pl-k">=</span>
     tracksSource.get(trackId).flatMap { track <span class="pl-k">=&gt;</span>
       usersSource.get(track.creatorId).map { user <span class="pl-k">=&gt;</span>
         <span class="pl-k">new</span> <span class="pl-en">EnrichedTrack</span>(track, user)
@@ -671,7 +680,7 @@ get--&gt; |   (line 2)   |                                   +-------&gt; Empty
 
 <p>The execution model is capable of batching requests that are in the same level of the composition. For instance, this example produces only one fetch from <code>usersSource</code>:</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedTrack</span>]] <span class="pl-k">=</span>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedTrack</span>]] <span class="pl-k">=</span>
     <span class="pl-en">Clump</span>.traverse(trackIds) { trackId <span class="pl-k">=&gt;</span>
       <span class="pl-k">for</span> {
         track <span class="pl-k">&lt;</span><span class="pl-k">-</span> tracksSource.get(trackId)
@@ -683,7 +692,7 @@ get--&gt; |   (line 2)   |                                   +-------&gt; Empty
 
 <p>The next example has two fetches from <code>usersSource</code>: one for the playlists' creators and other for the tracks' creators.</p>
 
-<div class="highlight highlight-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedPlaylist</span>]] <span class="pl-k">=</span>
+<div class="highlight highlight-source-scala"><pre><span class="pl-k">val</span> <span class="pl-en">clump</span><span class="pl-k">:</span> <span class="pl-en">Clump</span>[<span class="pl-en">List</span>[<span class="pl-en">EnrichedPlaylist</span>]] <span class="pl-k">=</span>
     <span class="pl-en">Clump</span>.traverse(playlistIds) { playlistId <span class="pl-k">=&gt;</span>
       <span class="pl-k">for</span> {
         playlist <span class="pl-k">&lt;</span><span class="pl-k">-</span> playlistsSource.get(playlistId)
