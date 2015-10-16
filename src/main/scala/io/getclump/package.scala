@@ -2,6 +2,11 @@ package io
 
 package object getclump {
 
+  private[getclump]type Try[+T] = scala.util.Try[T]
+  private[getclump] val Try = scala.util.Try
+  private[getclump] val Success = scala.util.Success
+  private[getclump] val Failure = scala.util.Failure
+
   private[getclump]type Promise[T] = scala.concurrent.Promise[T]
   private[getclump] val Promise = scala.concurrent.Promise
 

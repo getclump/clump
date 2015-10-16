@@ -27,15 +27,15 @@ private[getclump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
     val results = fetchWithRetries(batch, 0)
     for (input <- batch) {
       val fetch = fetches(input)
-      val fetchResult = results.map(_.get(input))
+      val fetchResult = results.map(_.get(input).map(_.get))
       fetchResult.onComplete(fetch.complete)
     }
     results
   }
 
-  private[this] def fetchWithRetries(batch: List[T], retries: Int)(implicit ec: ExecutionContext): Future[Map[T, U]] =
+  private[this] def fetchWithRetries(batch: List[T], retries: Int)(implicit ec: ExecutionContext): Future[Map[T, Try[U]]] =
     source.fetch(batch).recoverWith {
-      case exception: Throwable if (maxRetries(exception) > retries) =>
+      case exception: Throwable if maxRetries(exception) > retries =>
         fetchWithRetries(batch, retries + 1)
     }
 
@@ -44,6 +44,6 @@ private[getclump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
 
   private[this] def pendingFetches =
     fetches.collect {
-      case (key, fetch) if (!fetch.isCompleted) => key
+      case (key, fetch) if !fetch.isCompleted => key
     }.toList
 }

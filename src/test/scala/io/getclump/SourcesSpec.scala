@@ -154,7 +154,7 @@ class SourcesSpec extends Spec {
     }
   }
 
-  "creates a clump source from various input/ouput type fetch functions (ClumpSource.apply)" in {
+  "creates a clump source from various input/ouput type fetch functions" in {
     def setToSet: Set[Int] => Future[Set[String]] = { inputs => Future.successful(inputs.map(_.toString)) }
     def listToList: List[Int] => Future[List[String]] = { inputs => Future.successful(inputs.map(_.toString)) }
     def iterableToIterable: Iterable[Int] => Future[Iterable[String]] = { inputs => Future.successful(inputs.map(_.toString)) }
@@ -181,7 +181,7 @@ class SourcesSpec extends Spec {
     testSource(Clump.source(iterableToSet)(extractId))
   }
 
-  "creates a clump source from various input/ouput type fetch functions (ClumpSource.from)" in {
+  "creates a clump source from various input/ouput type fetch functions" in {
 
     def setToMap: Set[Int] => Future[Map[Int, String]] = { inputs => Future.successful(inputs.map(input => (input, input.toString)).toMap) }
     def listToMap: List[Int] => Future[Map[Int, String]] = { inputs => Future.successful(inputs.map(input => (input, input.toString)).toMap) }
