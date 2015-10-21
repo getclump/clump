@@ -34,7 +34,22 @@ private[getclump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
   }
 
   private[this] def fetchWithRetries(batch: List[T], retries: Int)(implicit ec: ExecutionContext): Future[Map[T, Try[U]]] =
-    source.fetch(batch).recoverWith {
+    source.fetch(batch).flatMap { results =>
+      // If there are individual failures then just retry those entries
+      val (toRetry, noRetry) = results.partition {
+        case (_, Success(_)) => false
+        case (_, Failure(e)) => maxRetries(e) > retries
+      }
+
+      val toRetryFuture = if (toRetry.nonEmpty) {
+        fetchWithRetries(toRetry.keys.toList, retries + 1)
+      } else {
+        Future.successful(Map.empty[T, Try[U]])
+      }
+
+      toRetryFuture.map(_ ++ noRetry)
+    }.recoverWith {
+      // If the entire fetch fails then retry the whole thing
       case exception: Throwable if maxRetries(exception) > retries =>
         fetchWithRetries(batch, retries + 1)
     }

@@ -78,7 +78,9 @@ protected[getclump] trait Sources extends Tuples {
     new ClumpSource(parameterizeFetch(normalize4, denormalize4[A, B, C, D, K], fetch4(fetch)))
 
   /**
-   * TODO
+   * Create a clump source from a function that accepts inputs and returns a future map from input to resulting value or failure.
+   * The `Try` in the value of the map allows marking of individual entries as failed. In regular [[source]] creation only the
+   * entire request's future can be marked as failed.
    */
   def sourceTry[KS, K, V](fetch: KS => Future[Map[K, Try[V]]])
                          (implicit cbf: CanBuildFrom[Nothing, K, KS], ec: ExecutionContext): ClumpSource[K, V] =
