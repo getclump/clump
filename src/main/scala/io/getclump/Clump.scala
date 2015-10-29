@@ -4,6 +4,49 @@ import scala.collection.generic.CanBuildFrom
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 
+/**
+ * The trait that represents Clumps.
+ *
+ * See <a href="https://getclump.io/">getclump.io</a>
+ *
+ * In a typical microservice-powered system, it is common to find awkward wrangling code to facilitate manually bulk-fetching dependent resources.
+ * Worse, this problem of batching is often accidentally overlooked, resulting in n calls to a micro-service instead of 1.
+ *
+ * Clump removes the need for the developer to even think about bulk-fetching, batching and retries, providing a powerful and composable interface for aggregating resources.
+ *
+ * An example of batching fetches using futures without Clump:
+ * (makes 1 call to tracksService and 1 call to usersService)
+ *
+ * {{{
+ * tracksService.get(trackIds).flatMap { tracks =>
+ *   val userIds = tracks.map(_.creator)
+ *   usersService.get(userIds).map { users =>
+ *     val userMap = userIds.zip(users).toMap
+ *     tracks.map { track =>
+ *       new EnrichedTrack(track, userMap(track.creator))
+ *     }
+ *   }
+ * }
+ * }}}
+ *
+ * The same composition using Clump:
+ * (also makes just 1 call to tracksService and 1 call to usersService)
+ *
+ * {{{
+ * Clump.traverse(trackIds) { trackId =>
+ *   for {
+ *     track <- trackSource.get(trackId)
+ *     user <- userSource.get(track.creator)
+ *   } yield {
+ *     new EnrichedTrack(track, user)
+ *   }
+ * }
+ * }}}
+ *
+ * Clump exposes an API very similar to [[Future]]
+ *
+ * @author Flavio Brasil, Steven Heidel, William Boxhall
+ */
 sealed trait Clump[+T] {
 
   /**
@@ -109,6 +152,9 @@ sealed trait Clump[+T] {
   protected[getclump] def result(implicit ec: ExecutionContext): Future[Option[T]]
 }
 
+/**
+ * Clump companion object.
+ */
 object Clump extends Joins with Sources {
 
   /**

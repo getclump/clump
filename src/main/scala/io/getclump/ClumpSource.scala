@@ -3,6 +3,20 @@ package io.getclump
 import scala.collection.generic.CanBuildFrom
 
 
+/**
+ * Sources represent the remote systems' batched interfaces.
+ *
+ * There are multiple create a ClumpSource:
+ * - [[Clump.source]] with a function that returns a Map
+ * - [[Clump.source]] with a function that returns a collection and another function that maps values to keys
+ * - [[Clump.sourceTry]] with a function that returns a Map where each entry can be Success or Failure
+ * - [[Clump.sourceZip]] with a function that returns a List with the same order and size as the input list
+ * - [[Clump.sourceSingle]] with a function that accepts a single id and returns a single resource
+ *
+ * Once created, a Clump can be retrieved from an id using the [[get]] method.
+ *
+ * See [[Clump]]
+ */
 class ClumpSource[T, U] private[getclump] (val fetch: List[T] => Future[Map[T, Try[U]]],
                                            val maxBatchSize: Int = 100,
                                            val _maxRetries: PartialFunction[Throwable, Int] = PartialFunction.empty) {
