@@ -29,6 +29,15 @@ class ClumpFetcherSpec extends Spec {
     val repo = smartMock[TestRepository]
   }
 
+  trait TryContext extends Scope {
+
+    trait TestRepository {
+      def fetch(inputs: Set[Int]): Future[Map[Int, Try[Int]]]
+    }
+
+    val repo = smartMock[TestRepository]
+  }
+
   "memoizes the results of previous fetches" in new SetContext {
     val source = Clump.source(repo.fetch _)
 
@@ -96,6 +105,44 @@ class ClumpFetcherSpec extends Spec {
       clumpResult(source.get(1)) must throwA[IllegalStateException]
 
       verify(repo, times(2)).fetch(Set(1))
+      verifyNoMoreInteractions(repo)
+    }
+
+    "success for individual entities (below the retries limit)" in new TryContext {
+      val source =
+        Clump.sourceTry(repo.fetch _).maxRetries {
+          case e: IllegalStateException => 1
+        }
+
+      when(repo.fetch(Set(1, 2)))
+        .thenReturn(Future.successful(Map(1 -> Success(10), 2 -> Failure(new IllegalStateException))))
+
+      when(repo.fetch(Set(2)))
+        .thenReturn(Future.successful(Map(2 -> Success(20))))
+
+      clumpResult(source.get(Set(1, 2))) mustEqual Some(Set(10, 20))
+
+      verify(repo, times(1)).fetch(Set(1,2))
+      verify(repo, times(1)).fetch(Set(2))
+      verifyNoMoreInteractions(repo)
+    }
+
+    "success for individual entities (above the retries limit)" in new TryContext {
+      val source =
+        Clump.sourceTry(repo.fetch _).maxRetries {
+          case e: IllegalStateException => 1
+        }
+
+      when(repo.fetch(Set(1, 2)))
+        .thenReturn(Future.successful(Map(1 -> Success(10), 2 -> Failure(new IllegalStateException))))
+
+      when(repo.fetch(Set(2)))
+        .thenReturn(Future.successful(Map(2 -> Failure(new IllegalStateException))))
+
+      clumpResult(source.get(Set(1, 2))) must throwA[IllegalStateException]
+
+      verify(repo, times(1)).fetch(Set(1,2))
+      verify(repo, times(1)).fetch(Set(2))
       verifyNoMoreInteractions(repo)
     }
   }

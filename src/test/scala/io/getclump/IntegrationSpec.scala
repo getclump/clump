@@ -13,6 +13,7 @@ class IntegrationSpec extends Spec {
   val likeRepository = new LikeRepository
   val trackRepository = new TrackRepository
   val topTracksRepository = new TopTracksRepository
+  val failingTweetRepository = new FailingTweetRepository
 
   val tweets = Clump.source(tweetRepository.tweetsFor _)
   val users = Clump.source(userRepository.usersFor _)
@@ -179,6 +180,27 @@ class IntegrationSpec extends Spec {
       (Tweet("Tweet2", 20), Some(User(20, "User20"))),
       (Tweet("Tweet3", 30), None)))
   }
+
+  "A Clump can have individual failing entities" in {
+    val source = Clump.sourceTry(failingTweetRepository.tweetsFor _)
+
+    def getTweetWithoutFallback(id: Long) = source.get(id)
+    def getTweetWithFallback(id: Long) = source.get(id).fallback(Tweet("<error>", 0))
+
+    val fail = for {
+      tweetA <- getTweetWithoutFallback(1)
+      tweetB <- getTweetWithoutFallback(-1)
+    } yield (tweetA, tweetB)
+
+    awaitResult(fail.get) must throwA[IllegalStateException]
+
+    val success = for {
+      tweetA <- getTweetWithFallback(1)
+      tweetB <- getTweetWithFallback(-1)
+    } yield (tweetA, tweetB)
+
+    awaitResult(success.get) ==== Some((Tweet("Tweet1", 10), Tweet("<error>", 0)))
+  }
 }
 
 case class Tweet(body: String, userId: Long)
@@ -199,6 +221,15 @@ class TweetRepository {
 
 trait ParameterizedTweetRepository {
   def tweetsFor(prefix: String, ids: Set[Long]): Future[Map[Long, Tweet]]
+}
+
+class FailingTweetRepository {
+  def tweetsFor(ids: Set[Long]): Future[Map[Long, Try[Tweet]]] = {
+    Future.successful(ids.map {
+      case id if id > 0 => id -> Success(Tweet(s"Tweet$id", id * 10))
+      case id => id -> Failure(new IllegalStateException)
+    }.toMap)
+  }
 }
 
 class UserRepository {
