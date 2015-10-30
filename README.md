@@ -38,6 +38,7 @@ Clump removes the need for the developer to even think about bulk-fetching, batc
 An example of batching fetches using futures without Clump:
 
 ```scala
+// makes 1 call to tracksService and 1 call to usersService
 tracksService.get(trackIds).flatMap { tracks =>
   val userIds = tracks.map(_.creator)
   usersService.get(userIds).map { users =>
@@ -52,18 +53,7 @@ tracksService.get(trackIds).flatMap { tracks =>
 The same composition using Clump:
 
 ```scala
-Clump.traverse(trackIds) { trackId =>
-  trackSource.get(trackId).flatMap { track =>
-    userSource.get(track.creator).map { user =>
-      new EnrichedTrack(track, user)
-    }
-  }
-}
-```
-
-Or expressed more elegantly with a for-comprehension:
-
-```scala
+// also makes just 1 call to tracksService and 1 call to usersService
 Clump.traverse(trackIds) { trackId =>
   for {
     track <- trackSource.get(trackId)
@@ -275,7 +265,7 @@ Sometimes sources can mark individual entries as failed, even though the entire 
 ```scala
 def fetch(ids: List[Int]): Future[Map[Int, Try[User]]] = ...
 
-val usersSource = Clump.source(fetch _)
+val usersSource = Clump.sourceTry(fetch _)
 
 val userClump = usersClump.get(id)
 ```
@@ -290,6 +280,18 @@ The ```Clump.sourceZip``` methods accepts a function that produces a list of out
 def fetch(ids: List[Int]): Future[List[User]] = ...
 
 val usersSource = Clump.sourceZip(fetch _)
+
+val userClump = usersSource.get(id)
+```
+
+### A single source ###
+
+The ```Clump.sourceSingle``` method accepts a functions that produces a single output for a single input. Useful for interfaces that don't expose batch endpoints.
+
+```scala
+def fetch(id: Int): Future[User] = ...
+
+val usersSource = Clump.sourceSingle(fetch _)
 
 val userClump = usersSource.get(id)
 ```
