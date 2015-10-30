@@ -90,6 +90,41 @@ class SourcesSpec extends Spec {
     }
   }
 
+  "creates a clump source that allows marking individual entries as failed" >> {
+    "list input" in {
+      def fetch(inputs: List[Int]) = Future.successful(inputs.map(x => x -> Try(1 / x)).toMap)
+      val source = Clump.sourceTry(fetch _)
+      clumpResult(source.get(1)) mustEqual Some(1)
+      clumpResult(source.get(0)) must throwA[ArithmeticException]
+    }
+    "extra params" >> {
+      "one" in {
+        def fetch(param1: Int, inputs: List[Int]) = Future.successful(inputs.map(x => x -> Try(1 / (x + param1))).toMap)
+        val source = Clump.sourceTry(fetch _)
+        clumpResult(source.get(1, 0)) mustEqual Some(1)
+        clumpResult(source.get(1, -1)) must throwA[ArithmeticException]
+      }
+      "two" in {
+        def fetch(param1: Int, param2: Int, inputs: List[Int]) = Future.successful(inputs.map(x => x -> Try(1 / (x + param1 + param2))).toMap)
+        val source = Clump.sourceTry(fetch _)
+        clumpResult(source.get(1, 0, 0)) mustEqual Some(1)
+        clumpResult(source.get(1, 1, -2)) must throwA[ArithmeticException]
+      }
+      "three" in {
+        def fetch(param1: Int, param2: Int, param3: Int, inputs: List[Int]) = Future.successful(inputs.map(x => x -> Try(1 / (x + param1 + param2 + param3))).toMap)
+        val source = Clump.sourceTry(fetch _)
+        clumpResult(source.get(1, 0, 0, 0)) mustEqual Some(1)
+        clumpResult(source.get(1, 1, 1, -3)) must throwA[ArithmeticException]
+      }
+      "four" in {
+        def fetch(param1: Int, param2: Int, param3: Int, param4: Int, inputs: List[Int]) = Future.successful(inputs.map(x => x -> Try(1 / (x + param1 + param2 + param3 + param4))).toMap)
+        val source = Clump.sourceTry(fetch _)
+        clumpResult(source.get(1, 0, 0, 0, 0)) mustEqual Some(1)
+        clumpResult(source.get(1, 1, 1, 1, -4)) must throwA[ArithmeticException]
+      }
+    }
+  }
+
   "creates a clump source with zip as the key function" >> {
     "list input" in {
       def fetch(inputs: List[Int]) = Future.successful(inputs.map(_.toString))
@@ -126,9 +161,17 @@ class SourcesSpec extends Spec {
 
       val source = Clump.sourceSingle(fetch _)
 
-      clumpResult(source.get(1)) ==== Some(Set(1, 2, 3))
-      clumpResult(source.get(2)) ==== Some(Set(2, 3, 4))
-      clumpResult(source.get(List(1, 2))) ==== Some(List(Set(1, 2, 3), Set(2, 3, 4)))
+      clumpResult(source.get(1)) mustEqual Some(Set(1, 2, 3))
+      clumpResult(source.get(2)) mustEqual Some(Set(2, 3, 4))
+      clumpResult(source.get(List(1, 2))) mustEqual Some(List(Set(1, 2, 3), Set(2, 3, 4)))
+    }
+    "function with failure" in {
+      def fetch(input: Int) = if (input % 2 == 0) Future.successful(input / 2) else Future.failed(new ArithmeticException)
+
+      val source = Clump.sourceSingle(fetch _)
+
+      clumpResult(source.get(2)) mustEqual Some(1)
+      clumpResult(source.get(1)) must throwA[ArithmeticException]
     }
     "extra params" >> {
       "one" in {
@@ -154,7 +197,7 @@ class SourcesSpec extends Spec {
     }
   }
 
-  "creates a clump source from various input/ouput type fetch functions (ClumpSource.apply)" in {
+  "creates a clump source from various input/ouput type fetch functions" in {
     def setToSet: Set[Int] => Future[Set[String]] = { inputs => Future.successful(inputs.map(_.toString)) }
     def listToList: List[Int] => Future[List[String]] = { inputs => Future.successful(inputs.map(_.toString)) }
     def iterableToIterable: Iterable[Int] => Future[Iterable[String]] = { inputs => Future.successful(inputs.map(_.toString)) }
@@ -181,7 +224,7 @@ class SourcesSpec extends Spec {
     testSource(Clump.source(iterableToSet)(extractId))
   }
 
-  "creates a clump source from various input/ouput type fetch functions (ClumpSource.from)" in {
+  "creates a clump source from various input/ouput type fetch functions" in {
 
     def setToMap: Set[Int] => Future[Map[Int, String]] = { inputs => Future.successful(inputs.map(input => (input, input.toString)).toMap) }
     def listToMap: List[Int] => Future[Map[Int, String]] = { inputs => Future.successful(inputs.map(input => (input, input.toString)).toMap) }

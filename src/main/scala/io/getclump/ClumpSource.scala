@@ -3,7 +3,7 @@ package io.getclump
 import scala.collection.generic.CanBuildFrom
 
 
-class ClumpSource[T, U] private[getclump] (val fetch: List[T] => Future[Map[T, U]],
+class ClumpSource[T, U] private[getclump] (val fetch: List[T] => Future[Map[T, Try[U]]],
                                            val maxBatchSize: Int = 100,
                                            val _maxRetries: PartialFunction[Throwable, Int] = PartialFunction.empty) {
 

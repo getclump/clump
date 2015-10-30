@@ -268,6 +268,20 @@ val usersSource = Clump.source(fetch _)(_.id)
 val userClump = usersSource.get(id)
 ```
 
+### Map with Success and Failure ###
+
+Sometimes sources can mark individual entries as failed, even though the entire fetch function succeeded. For these sources, a function can be provided that maps from id to a Try object that can be marked as either Success or Failure.
+
+```scala
+def fetch(ids: List[Int]): Future[Map[Int, Try[User]]] = ...
+
+val usersSource = Clump.source(fetch _)
+
+val userClump = usersClump.get(id)
+```
+
+The userClump will be either contain a User if the value for that id was Success(User), otherwise it will contain the exception in the Failure object for that id. As usual, if the id is not found in the map then the Clump will be undefined.
+
 ### List with zip function ###
 
 The ```Clump.sourceZip``` methods accepts a function that produces a list of outputs for each provided input. The result must keep the same order as the inputs list.
