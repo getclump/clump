@@ -1,3 +1,8 @@
+# 1.1.0 / 30-Oct-2015
+
+* Added .sourceTry method to allow individual results to be marked as failed in a batch fetch (https://github.com/getclump/clump/pull/109)
+* Add docs to Clump and ClumpSource files (https://github.com/getclump/clump/pull/110)
+
 # 1.0.0 / 21-Sep-2015
 
 * 1.0.0 Release
