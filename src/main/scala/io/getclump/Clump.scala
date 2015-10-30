@@ -15,9 +15,9 @@ import scala.util.control.NonFatal
  * Clump removes the need for the developer to even think about bulk-fetching, batching and retries, providing a powerful and composable interface for aggregating resources.
  *
  * An example of batching fetches using futures without Clump:
- * (makes 1 call to tracksService and 1 call to usersService)
  *
  * {{{
+ * // makes 1 call to tracksService and 1 call to usersService
  * tracksService.get(trackIds).flatMap { tracks =>
  *   val userIds = tracks.map(_.creator)
  *   usersService.get(userIds).map { users =>
@@ -30,9 +30,9 @@ import scala.util.control.NonFatal
  * }}}
  *
  * The same composition using Clump:
- * (also makes just 1 call to tracksService and 1 call to usersService)
  *
  * {{{
+ * // also makes just 1 call to tracksService and 1 call to usersService
  * Clump.traverse(trackIds) { trackId =>
  *   for {
  *     track <- trackSource.get(trackId)
