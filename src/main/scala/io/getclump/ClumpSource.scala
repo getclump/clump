@@ -26,7 +26,7 @@ class ClumpSource[T, U] private[getclump] (val fetch: List[T] => Future[Map[T, T
    */
   def get[C[_] <: Iterable[_]](inputs: C[T])(implicit cbf: CanBuildFrom[Nothing, U, C[U]]): Clump[C[U]] = {
     val listInputs = inputs.toList.asInstanceOf[List[T]]
-    val clumpList = Clump.collect(listInputs.map(get))
+    val clumpList = Clump.sequence(listInputs.map(get))
     clumpList.map(list => cbf.apply().++=(list).result())
   }
 

@@ -5,11 +5,11 @@ import scala.concurrent.ExecutionContext
 
 private[getclump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
 
-  private[this] val fetches = mutable.LinkedHashMap.empty[T, Promise[Option[U]]]
+  private[this] val fetches = mutable.LinkedHashMap.empty[T, Promise[U]]
 
-  def get(input: T): Future[Option[U]] =
+  def get(input: T): Future[U] =
     synchronized {
-      fetches.getOrElseUpdate(input, Promise[Option[U]]).future
+      fetches.getOrElseUpdate(input, Promise[U]).future
     }
 
   def flush(implicit ec: ExecutionContext): Future[Unit] =
@@ -27,7 +27,7 @@ private[getclump] final class ClumpFetcher[T, U](source: ClumpSource[T, U]) {
     val results = fetchWithRetries(batch, 0)
     for (input <- batch) {
       val fetch = fetches(input)
-      val fetchResult = results.map(_.get(input).map(_.get))
+      val fetchResult = results.map(_.getOrElse(input, throw ClumpNoSuchElementException(s"No key $input")).get)
       fetchResult.onComplete(fetch.complete)
     }
     results
