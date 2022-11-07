@@ -3,6 +3,9 @@ package io.getclump
 import org.junit.runner.RunWith
 import org.specs2.runner.JUnitRunner
 
+import java.time.Instant
+import java.util.Date
+
 @RunWith(classOf[JUnitRunner])
 class IntegrationSpec extends Spec {
   val tweetRepository = new TweetRepository
@@ -16,19 +19,35 @@ class IntegrationSpec extends Spec {
   val failingTweetRepository = new FailingTweetRepository
 
   val tweets = Clump.source(tweetRepository.tweetsFor _)
-  val users = Clump.source(userRepository.usersFor _)
+  val users = Clump.source(userRepository.usersFor _)(_.userId)
   val filteredUsers = Clump.source(filteredUserRepository.usersFor _)(_.userId)
   val zippedUsers = Clump.sourceZip(zipUserRepository.usersFor _)
   val timelines = Clump.source(timelineRepository.timelinesFor _)(_.timelineId)
   val likes = Clump.source(likeRepository.likesFor _)(_.likeId)
   val tracks = Clump.source(trackRepository.tracksFor _)(_.trackId)
 
+  val timelineService = new TimelineService
+  val tracksService = new TrackRepository
+  val playlistsService = new PlaylistsService
+  val playStatsService = new PlayStatsService
+  val usersService = new UserRepository
+  val likesService = new LikesService
+  val commentsService = new CommentsService
+
+  val tracksSource = Clump.source(tracksService.tracksFor _)(_.trackId)
+  val playStatsSource = Clump.source(playStatsService.forTracks _)(_.trackId)
+  val usersSource = Clump.source(usersService.usersFor _)(_.userId)
+  val playlistsSource = Clump.source(playlistsService.playlistsFor _)(_.playlistId)
+  val likesSource = Clump.source(likesService.forEntities _)(_.entityId)
+  val commentsSource = Clump.source(commentsService.forTracks _)(_.trackId)
+  val timelineSource = Clump.sourceSingle(timelineService.postsFor _)
+
   "A Clump should batch calls to services" in {
     val tweetRepositoryMock = mock[TweetRepository]
     val tweets = Clump.source(tweetRepositoryMock.tweetsFor _)
 
     val userRepositoryMock = mock[UserRepository]
-    val users = Clump.source(userRepositoryMock.usersFor _)
+    val users = Clump.source(userRepositoryMock.usersFor _)(_.userId)
     val topTracks = Clump.sourceSingle(topTracksRepository.topTracksFor _)
 
     tweetRepositoryMock.tweetsFor(Set(1L, 2L, 3L)) returns
@@ -39,10 +58,10 @@ class IntegrationSpec extends Spec {
       ))
 
     userRepositoryMock.usersFor(Set(10L, 20L, 30L)) returns
-      Future.successful(Map(
-        10L -> User(10, "User10"),
-        20L -> User(20, "User20"),
-        30L -> User(30, "User30")
+      Future.successful(Set(
+        User(10, "User10"),
+        User(20, "User20"),
+        User(30, "User30")
       ))
 
     val enrichedTweets = Clump.traverse(1, 2, 3) { tweetId =>
@@ -201,7 +220,108 @@ class IntegrationSpec extends Spec {
 
     awaitResult(success.get) ==== Some((Tweet("Tweet1", 10), Tweet("<error>", 0)))
   }
+
+  "Soundcloud extended timeline example" in {
+    val currentUserId = 123L
+    val enrichedPosts = timelineSource.get(currentUserId).flatMap { posts => Clump.collect(posts.map {
+      case TrackPost(trackId, timestamp) => for {
+        (track, trackComments, likes, stats) <- Clump.join(
+          tracksSource.get(trackId),
+          commentsSource.get(trackId),
+          likesSource.get(trackId),
+          playStatsSource.get(trackId)
+        )
+        creator <- usersSource.get(track.creatorId)
+        enrichedComments <- Clump.traverse(trackComments.comments) { comment =>
+          for {
+            commenter <- usersSource.get(comment.commenterId)
+          } yield {
+            EnrichedComment(comment.text, commenter.name, comment.timestamp)
+          }
+        }
+      } yield {
+        EnrichedTrackPost(EnrichedTrack(track, creator, stats.playCount, likes.likeCount, enrichedComments), timestamp)
+      }
+      case PlaylistPost(playlistId, timestamp) => for {
+        (playlist, likes) <- playlistsSource.get(playlistId) join likesSource.get(playlistId)
+        curator <- usersSource.get(playlist.curatorId)
+        enrichedTracks <- Clump.traverse(playlist.trackIds) { trackId =>
+          for {
+            (track, stats) <- tracksSource.get(trackId) join playStatsSource.get(trackId)
+            creator <- usersSource.get(track.creatorId)
+          } yield {
+            EnrichedTrack(track, creator, stats.playCount)
+          }
+        }
+      } yield {
+        EnrichedPlaylistPost(EnrichedPlaylist(enrichedTracks, curator, likes.likeCount, playlist.name), timestamp)
+      }
+    })}
+    awaitResult(enrichedPosts.get) ==== null
+  }
+
+  "Soundcloud extended timeline example without clump" in {
+    // timeline posts
+    // playlists
+    // tracks
+    // comments (track post tracks)
+    // stats (all tracks)
+    // likes (playlists, all tracks)
+    // users (playlists, tracks and comments)
+    val currentUserId = 123L
+    val enrichedPosts = for {
+      posts <- timelineService.postsFor(currentUserId)
+      playlistIds = posts.map { case PlaylistPost(playlistId, _) => playlistId }.toSet
+      trackPostTrackIds = posts.map { case TrackPost(trackId, _) => trackId }.toSet
+      (playlists, comments) <- playlistsService.playlistsFor(playlistIds) zip
+        commentsService.forTracks(trackPostTrackIds)
+      playlistTrackIds = playlists.flatMap(_.trackIds)
+      allTrackIds = playlistTrackIds union trackPostTrackIds
+      allEntityIds = allTrackIds union playlistIds
+      ((tracks, stats), likes) <- tracksService.tracksFor(allTrackIds) zip
+        playStatsService.forTracks(trackPostTrackIds) zip
+        likesService.forEntities(allEntityIds)
+      allUserIds = comments.flatMap(_.comments.map(_.commenterId)) union
+        playlists.map(_.curatorId) union tracks.map(_.creatorId)
+      users <- usersService.usersFor(allUserIds)
+    } yield {
+      val playlistIdMap = playlists.map { playlist => (playlist.playlistId, playlist) }.toMap
+      val trackIdMap = tracks.map { track => (track.trackId, track) }.toMap
+      val userIdMap = users.map { user => (user.userId, user) }.toMap
+      val statsIdMap = stats.map { stat => (stat.trackId, stat) }.toMap
+      val likesIdMap = likes.map { like => (like.entityId, like) }.toMap
+      val commentsIdMap = comments.map { comment => (comment.trackId, comment) }.toMap
+      posts.map {
+        case TrackPost(trackId, timestamp) =>
+          val track = trackIdMap(trackId)
+          val creator = userIdMap(track.creatorId)
+          val stats = statsIdMap(trackId)
+          val likes = likesIdMap(trackId)
+          val comments = commentsIdMap(trackId).comments.map { comment =>
+            EnrichedComment(comment.text, userIdMap(comment.commenterId).name, comment.timestamp)
+          }
+          EnrichedTrackPost(EnrichedTrack(track, creator, stats.playCount, likes.likeCount, comments), timestamp)
+        case PlaylistPost(playlistId, timestamp) =>
+          val playlist = playlistIdMap(playlistId)
+          val likes = likesIdMap(playlistId)
+          val tracks = playlist.trackIds.map { trackIdMap(_) }.map { track =>
+            EnrichedTrack(track, userIdMap(track.creatorId), statsIdMap(track.trackId).playCount)
+          }
+          EnrichedPlaylistPost(
+            EnrichedPlaylist(tracks, userIdMap(playlist.curatorId), likes.likeCount, playlist.name), timestamp
+          )
+      }
+    }
+    awaitResult(enrichedPosts) ==== null
+  }
 }
+
+case class EnrichedComment(text: String, name: String, timestamp: Instant)
+case class EnrichedTrack(track: Track, creator: User, plays: Int, likes: Int = 0, comments: List[EnrichedComment] = List())
+case class EnrichedPlaylist(tracks: List[EnrichedTrack], curator: User, likes: Int, name: String)
+sealed trait EnrichedPost
+case class EnrichedTrackPost(track: EnrichedTrack, timestamp: Instant) extends EnrichedPost
+case class EnrichedPlaylistPost(playlist: EnrichedPlaylist, timestamp: Instant) extends EnrichedPost
 
 case class Tweet(body: String, userId: Long)
 
@@ -211,7 +331,7 @@ case class Timeline(timelineId: Int, likeIds: List[Long])
 
 case class Like(likeId: Long, trackIds: List[Long], userIds: List[Long])
 
-case class Track(trackId: Long, name: String)
+case class Track(trackId: Long, name: String, creatorId: Long = 6L)
 
 class TweetRepository {
   def tweetsFor(ids: Set[Long]): Future[Map[Long, Tweet]] = {
@@ -233,8 +353,8 @@ class FailingTweetRepository {
 }
 
 class UserRepository {
-  def usersFor(ids: Set[Long]): Future[Map[Long, User]] = {
-    Future.successful(ids.map(id => id -> User(id, s"User$id")).toMap)
+  def usersFor(ids: Set[Long]): Future[Set[User]] = {
+    Future.successful(ids.map(id => User(id, s"User$id")))
   }
 }
 
@@ -268,14 +388,46 @@ class LikeRepository {
 
 class TrackRepository {
   def tracksFor(ids: Set[Long]): Future[Set[Track]] = {
-    Future.successful(ids.map(id => Track(id, s"Track$id")))
+    Future.successful(ids.map(id => Track(id, s"Track$id", id * 10)))
   }
 }
 
 class TopTracksRepository {
   def topTracksFor(user: User): Future[Set[Track]] = {
-    def track(id: Long): Track = Track(id, s"Track$id")
+    def track(id: Long): Track = Track(id, s"Track$id", id*100)
     val userId = user.userId
     Future.successful(Set(track(userId), track(userId + 1), track(userId + 2)))
   }
 }
+
+class TimelineService {
+  def postsFor(id: Long): Future[List[Post]] = Future.successful(List(
+    TrackPost(1L, Instant.now()),
+    PlaylistPost(2L, Instant.now())
+  ))
+}
+sealed trait Post
+case class TrackPost(trackId: Long, timestamp: Instant) extends Post
+case class PlaylistPost(playlistId: Long, timestamp: Instant) extends Post
+
+class PlaylistsService {
+  def playlistsFor(playlistIds: Set[Long]): Future[Set[Playlist]] = Future.successful(playlistIds.map { id => Playlist(id, s"playlist-$id", playlistIds.map { _ + 1}.toList, id * 100)})
+}
+case class Playlist(playlistId: Long, name: String, trackIds: List[Long], curatorId: Long)
+
+class PlayStatsService {
+  def forTracks(trackIds: Set[Long]): Future[Set[TrackPlayStats]] = Future.successful(trackIds.map { id => TrackPlayStats(id, (id*6).toInt)})
+}
+case class TrackPlayStats(trackId: Long, playCount: Int)
+
+class LikesService {
+  def forEntities(ids: Set[Long]): Future[Set[LikedEntity]] = Future.successful(ids.map { id => LikedEntity(id, (id*7).toInt)})
+}
+case class LikedEntity(entityId: Long, likeCount: Int) // TODO this would be a list of user ids
+
+class CommentsService {
+  def forTracks(ids: Set[Long]): Future[Set[TrackComments]] = Future.successful(ids.map { id => TrackComments(id, List(Comment(s"comment-$id", id * 8, Instant.now()))) })
+}
+
+case class TrackComments(trackId: Long, comments: List[Comment])
+case class Comment(text: String, commenterId: Long, timestamp: Instant)
